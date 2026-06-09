@@ -525,15 +525,17 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     document.getElementById('sb-user-name').textContent=meta.full_name||session.user.email;
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    await Promise.all([loadLeads(),loadConnections(),loadComms()]);
+    await loadLeads();
+    await loadConnections();
+    await loadComms();
     renderDashboard();
   }
 });
 
 // ── Data ──────────────────────────────────────────────────────────────────
-async function loadLeads(){const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});if(!error)allLeads=data||[];}
-async function loadConnections(){const{data,error}=await sb.from('connections').select('*').order('created_at',{ascending:false});if(!error)allConnections=data||[];}
-async function loadComms(){const{data,error}=await sb.from('communications').select('*').order('received_at',{ascending:false});if(!error)allComms=data||[];}
+async function loadLeads(){try{const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});if(error)console.error('leads error:',error);else allLeads=data||[];}catch(e){console.error('loadLeads failed:',e);}}
+async function loadConnections(){try{const{data,error}=await sb.from('connections').select('*').order('created_at',{ascending:false});if(error)console.error('connections error:',error);else allConnections=data||[];}catch(e){console.error('loadConnections failed:',e);}}
+async function loadComms(){try{const{data,error}=await sb.from('communications').select('*').order('received_at',{ascending:false});if(error)console.error('comms error:',error);else allComms=data||[];}catch(e){console.error('loadComms failed:',e);}}
 async function upsertLead(lead){const{data,error}=await sb.from('leads').upsert([lead],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertConnection(conn){const{data,error}=await sb.from('connections').upsert([conn],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
