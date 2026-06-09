@@ -525,9 +525,14 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     document.getElementById('sb-user-name').textContent=meta.full_name||session.user.email;
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').style.display='block';
+    // Load with visible status
+    document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">Loading leads...</div>';
     await loadLeads();
+    document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">Leads loaded: '+allLeads.length+'. Loading connections...</div>';
     await loadConnections();
+    document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">Connections loaded: '+allConnections.length+'. Loading comms...</div>';
     await loadComms();
+    document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
 });
