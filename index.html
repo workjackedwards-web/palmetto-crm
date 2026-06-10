@@ -424,7 +424,7 @@ tbody tr:hover td{background:#faf9f6;}
     </div>
 
     <!-- Booked section -->
-    <div class="fin-section" id="booked-section">
+    <div class="fin-section" id="scheduled-section">
       <div class="fin-title" style="color:var(--blue-600);">📅 Schedule job</div>
       <div class="form-grid">
         <div class="field"><label>Booked date *</label><input id="f-sched-date" type="date"></div>
@@ -670,7 +670,7 @@ function openAddLead(){
   document.getElementById('f-duration').value='';document.getElementById('f-completed-by').value='';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('fin-section').style.display='none';
-  document.getElementById('booked-section').style.display='none';
+  document.getElementById('scheduled-section').style.display='none';
   document.getElementById('profit-preview').style.display='none';
   document.getElementById('referral-link-field').style.display='none';
   ['f-sched-date','f-sched-time','f-sched-notes'].forEach(id=>document.getElementById(id).value='');
