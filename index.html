@@ -237,6 +237,11 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="referrals" onclick="nav(this)"><i class="ti ti-gift"></i><span>Referral Tracker</span></div>
       <div class="nav-section">Reports</div>
       <div class="nav-item" data-page="analytics" onclick="nav(this)"><i class="ti ti-chart-bar"></i><span>Analytics</span></div>
+      <div class="nav-section">Tools</div>
+      <div class="nav-item" data-page="quotes" onclick="nav(this)"><i class="ti ti-file-dollar"></i><span>Quote Builder</span></div>
+      <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
+      <div class="nav-item" data-page="route" onclick="nav(this)"><i class="ti ti-route"></i><span>Route Optimizer</span></div>
+      <div class="nav-item" data-page="followups" onclick="nav(this)"><i class="ti ti-bell"></i><span>Follow-ups</span></div>
       <div class="nav-section">Setup</div>
       <div class="nav-item" data-page="embed" onclick="nav(this)"><i class="ti ti-code"></i><span>Website Form</span></div>
     </nav>
@@ -376,6 +381,162 @@ tbody tr:hover td{background:#faf9f6;}
           <div class="card"><div class="card-title">Avg. job value by service</div><div id="avg-chart"></div></div>
         </div>
         <div class="card"><div class="card-title">Customer lifetime value — top accounts</div><div id="clv-table"></div></div>
+      </div>
+
+      <!-- QUOTE BUILDER -->
+      <div id="pg-quotes" class="page-content" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <select id="quote-lead-select" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:240px;" onchange="prefillQuote()">
+            <option value="">— Pre-fill from existing lead (optional) —</option>
+          </select>
+          <button class="btn btn-primary" onclick="printQuote()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+          <button class="btn" onclick="saveQuoteToCRM()"><i class="ti ti-device-floppy"></i> Save to customer record</button>
+          <button class="btn" onclick="clearQuote()"><i class="ti ti-refresh"></i> Clear</button>
+        </div>
+        <div id="quote-doc" style="background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:40px;max-width:900px;font-family:'DM Sans',sans-serif;">
+          <!-- Header -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--teal-600);">PALMETTO PRESSURE PROS</div>
+              <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Exterior Cleaning Specialists · Charleston, SC</div>
+              <div style="font-size:11px;color:var(--ink-2);margin-top:4px;line-height:1.8;">
+                (843) 608-0529<br>
+                info.palmettopressurepros@gmail.com<br>
+                palmettopressureprosllc.com
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:28px;font-weight:700;color:var(--ink-3);letter-spacing:.05em;">QUOTE</div>
+              <div style="display:grid;grid-template-columns:auto auto;gap:4px 12px;margin-top:8px;font-size:12px;">
+                <div style="color:var(--ink-3);">Quote #</div><input id="q-num" type="text" placeholder="2026-001" style="padding:3px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100px;font-family:var(--font);">
+                <div style="color:var(--ink-3);">Date</div><input id="q-date" type="date" style="padding:3px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:130px;font-family:var(--font);">
+                <div style="color:var(--ink-3);">Valid until</div><input id="q-valid" type="date" style="padding:3px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:130px;font-family:var(--font);">
+                <div style="color:var(--ink-3);">Prepared by</div><input id="q-by" type="text" placeholder="Jack" style="padding:3px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100px;font-family:var(--font);">
+              </div>
+            </div>
+          </div>
+          <div style="height:3px;background:var(--teal-600);border-radius:2px;margin-bottom:16px;"></div>
+
+          <!-- Customer info -->
+          <div style="background:#faf9f6;border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Customer / Property</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+              <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">NAME</div><input id="q-name" type="text" placeholder="John Smith" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+              <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">PHONE</div><input id="q-phone" type="text" placeholder="(843) 555-0100" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+              <div style="grid-column:span 2;"><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">PROPERTY ADDRESS</div><input id="q-addr" type="text" placeholder="123 King St, Charleston SC 29401" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+            </div>
+          </div>
+
+          <!-- Calculator section -->
+          <div style="background:var(--teal-50);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;color:var(--teal-700);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">📐 Quote Calculator — Enter measurements to auto-calculate</div>
+            <div id="calc-rows"></div>
+            <button class="btn btn-sm" onclick="addCalcRow()" style="margin-top:8px;background:var(--teal-600);color:#fff;border-color:var(--teal-600);"><i class="ti ti-plus"></i> Add service</button>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:16px;align-items:center;">
+              <div>
+                <label style="font-size:12px;color:var(--ink-3);margin-right:6px;">Discount %</label>
+                <input id="q-discount" type="number" value="0" min="0" max="100" style="width:60px;padding:4px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;font-family:var(--font);" oninput="recalcQuote()">
+              </div>
+              <div style="font-size:14px;font-weight:600;color:var(--teal-700);">Total: <span id="q-total" style="font-size:20px;">$0.00</span></div>
+            </div>
+          </div>
+
+          <!-- Services table -->
+          <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Service Description</div>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+            <thead><tr style="background:var(--teal-600);color:#fff;">
+              <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600;">Service</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600;">Description</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;">Sq Ft / Units</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;">Unit Price</th>
+              <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600;">Total</th>
+            </tr></thead>
+            <tbody id="q-svc-table"></tbody>
+          </table>
+
+          <!-- Totals -->
+          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <div style="width:280px;">
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>Subtotal</span><span id="q-subtotal-display">$0.00</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--red-600);"><span>Discount</span><span id="q-discount-display">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--teal-600);color:#fff;border-radius:var(--r-sm);margin-top:4px;font-size:14px;font-weight:600;"><span>TOTAL ESTIMATE</span><span id="q-total-display">$0.00</span></div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Notes & Scope of Work</div>
+            <textarea id="q-notes" placeholder="Enter any notes, special instructions, or scope clarifications here…" style="width:100%;padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-height:80px;resize:vertical;"></textarea>
+          </div>
+
+          <!-- Signature -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">CUSTOMER SIGNATURE</div><input type="text" placeholder="X ___________________________" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+            <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">PRINTED NAME</div><input type="text" placeholder="Full name" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+            <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">DATE ACCEPTED</div><input type="date" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
+          </div>
+
+          <!-- Footer -->
+          <div style="border-top:2px solid var(--teal-600);padding-top:10px;text-align:center;font-size:11px;color:var(--ink-3);">
+            Thank you for choosing Palmetto Pressure Pros! &nbsp;|&nbsp; (843) 608-0529 &nbsp;|&nbsp; info.palmettopressurepros@gmail.com &nbsp;|&nbsp; palmettopressureprosllc.com<br>
+            <span style="font-size:10px;">This quote is valid for 30 days from the date issued. All pricing subject to on-site assessment.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVOICES -->
+      <div id="pg-invoices" class="page-content" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <select id="invoice-lead-select" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:280px;" onchange="loadInvoice()">
+            <option value="">— Select completed job to generate invoice —</option>
+          </select>
+          <button class="btn btn-primary" onclick="printInvoice()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+        </div>
+        <div id="invoice-doc" style="background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:40px;max-width:900px;font-family:'DM Sans',sans-serif;">
+          <div style="text-align:center;color:var(--ink-3);padding:40px 0;font-size:13px;">Select a completed job above to generate an invoice.</div>
+        </div>
+      </div>
+
+      <!-- ROUTE OPTIMIZER -->
+      <div id="pg-route" class="page-content" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Route Optimizer — Plan your day</div>
+          <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Add jobs scheduled for a specific date and get the optimal driving order.</p>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <input type="date" id="route-date" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);" oninput="loadRouteJobs()">
+            <input type="text" id="route-start" placeholder="Starting address (e.g. your home address)" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:300px;">
+            <button class="btn btn-primary" onclick="optimizeRoute()"><i class="ti ti-route"></i> Optimize route</button>
+          </div>
+          <div id="route-jobs-list" style="margin-bottom:14px;"></div>
+        </div>
+        <div id="route-result" style="display:none;">
+          <div class="card">
+            <div class="card-title">Optimized route</div>
+            <div id="route-stops"></div>
+            <div style="margin-top:14px;">
+              <a id="route-maps-link" href="#" target="_blank" class="btn btn-primary"><i class="ti ti-map-2"></i> Open in Google Maps</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLLOW-UPS -->
+      <div id="pg-followups" class="page-content" style="display:none;">
+        <div class="metrics" id="followup-metrics"></div>
+        <div class="filters">
+          <select id="fu-filter" onchange="renderFollowups()">
+            <option value="">All follow-ups</option>
+            <option value="pending">Pending</option>
+            <option value="sent">Sent</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr>
+            <th>Customer</th><th>Job completed</th><th>Follow-up due</th><th>Status</th><th>Message preview</th><th></th>
+          </tr></thead>
+          <tbody id="followup-body"></tbody></table>
+        </div>
       </div>
 
       <!-- EMBED -->
@@ -1240,6 +1401,380 @@ async function ppSubmit(){
   ['pp-fn','pp-ln','pp-ph','pp-em','pp-ad','pp-nt'].forEach(id=>document.getElementById(id).value='');
 }
 <\/script>`;
+}
+// ── Page titles update ─────────────────────────────────────────────────────
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups'});
+
+// ── Quote Builder ──────────────────────────────────────────────────────────
+const QUOTE_SERVICES = [
+  {name:'House Washing (Soft Wash)', desc:'Full exterior soft wash — mold, mildew, algae & oxidation.', unit:'lin ft', rate:1.00},
+  {name:'Driveway / Walkway', desc:'Pressure cleaning of concrete or paver surfaces.', unit:'sq ft', rate:0.15},
+  {name:'Pool Deck', desc:'Pressure cleaning of pool deck and coping surfaces.', unit:'sq ft', rate:0.18},
+  {name:'Patio', desc:'Pressure cleaning of patio surfaces — pavers, concrete, slate.', unit:'sq ft', rate:0.18},
+  {name:'Roof Soft Wash', desc:'Low-pressure roof treatment — removes black streaks, lichen & moss.', unit:'sq ft', rate:0.25},
+  {name:'Fence Cleaning', desc:'Wood, vinyl or aluminum fence wash — full panel coverage.', unit:'lin ft', rate:0.75},
+  {name:'Gutter Cleaning', desc:'Flush gutters & downspouts; optional brightening treatment.', unit:'lin ft', rate:0.50},
+  {name:'Commercial Property', desc:'Storefront, walkways, building exterior.', unit:'sq ft', rate:0.20},
+];
+
+let calcRows=[];
+let calcRowId=0;
+
+function initQuotePage(){
+  const sel=document.getElementById('quote-lead-select');
+  sel.innerHTML='<option value="">— Pre-fill from existing lead (optional) —</option>'+
+    allLeads.map(l=>`<option value="${l.id}">${l.first_name} ${l.last_name} — ${l.address}</option>`).join('');
+  document.getElementById('q-date').value=new Date().toISOString().split('T')[0];
+  const valid=new Date(); valid.setDate(valid.getDate()+30);
+  document.getElementById('q-valid').value=valid.toISOString().split('T')[0];
+  document.getElementById('q-num').value='2026-'+String(allLeads.length+1).padStart(3,'0');
+  if(!calcRows.length) addCalcRow();
+}
+
+function addCalcRow(){
+  const id=++calcRowId;
+  calcRows.push(id);
+  const div=document.createElement('div');
+  div.id='calc-row-'+id;
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;';
+  div.innerHTML=`
+    <select onchange="updateCalcRow(${id})" style="padding:6px 8px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);">
+      ${QUOTE_SERVICES.map(s=>`<option value="${s.name}" data-rate="${s.rate}" data-unit="${s.unit}">${s.name}</option>`).join('')}
+      <option value="custom">Custom service...</option>
+    </select>
+    <div style="font-size:11px;color:var(--ink-3);text-align:center;" id="cr-unit-${id}">${QUOTE_SERVICES[0].unit}</div>
+    <input id="cr-qty-${id}" type="number" placeholder="0" min="0" style="padding:6px 8px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);" oninput="recalcQuote()">
+    <input id="cr-rate-${id}" type="number" placeholder="${QUOTE_SERVICES[0].rate}" step="0.01" value="${QUOTE_SERVICES[0].rate}" style="padding:6px 8px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);" oninput="recalcQuote()">
+    <button onclick="removeCalcRow(${id})" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:4px 8px;cursor:pointer;font-size:12px;">✕</button>
+  `;
+  document.getElementById('calc-rows').appendChild(div);
+  recalcQuote();
+}
+
+function updateCalcRow(id){
+  const sel=document.querySelector(`#calc-row-${id} select`);
+  const opt=sel.options[sel.selectedIndex];
+  const svc=QUOTE_SERVICES.find(s=>s.name===opt.value);
+  if(svc){
+    document.getElementById('cr-unit-'+id).textContent=svc.unit;
+    document.getElementById('cr-rate-'+id).value=svc.rate;
+  }
+  recalcQuote();
+}
+
+function removeCalcRow(id){
+  const el=document.getElementById('calc-row-'+id);
+  if(el) el.remove();
+  calcRows=calcRows.filter(r=>r!==id);
+  recalcQuote();
+}
+
+function recalcQuote(){
+  let subtotal=0;
+  const tbody=document.getElementById('q-svc-table');
+  tbody.innerHTML='';
+  const rows=document.querySelectorAll('#calc-rows > div');
+  rows.forEach(row=>{
+    const sel=row.querySelector('select');
+    const svcName=sel?sel.value:'';
+    const idMatch=row.id.replace('calc-row-','');
+    const qty=parseFloat(document.getElementById('cr-qty-'+idMatch)?.value)||0;
+    const rate=parseFloat(document.getElementById('cr-rate-'+idMatch)?.value)||0;
+    const unit=document.getElementById('cr-unit-'+idMatch)?.textContent||'';
+    const total=qty*rate;
+    subtotal+=total;
+    if(qty>0){
+      const svc=QUOTE_SERVICES.find(s=>s.name===svcName);
+      tbody.innerHTML+=`<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px 10px;font-size:13px;font-weight:500;">${svcName}</td>
+        <td style="padding:8px 10px;font-size:12px;color:var(--ink-3);">${svc?svc.desc:''}</td>
+        <td style="padding:8px 10px;font-size:13px;text-align:right;">${qty.toLocaleString()} ${unit}</td>
+        <td style="padding:8px 10px;font-size:13px;text-align:right;">$${rate.toFixed(2)}</td>
+        <td style="padding:8px 10px;font-size:13px;text-align:right;font-weight:500;">$${total.toFixed(2)}</td>
+      </tr>`;
+    }
+  });
+  const discPct=parseFloat(document.getElementById('q-discount')?.value)||0;
+  const disc=subtotal*(discPct/100);
+  const total=subtotal-disc;
+  document.getElementById('q-subtotal-display').textContent='$'+subtotal.toFixed(2);
+  document.getElementById('q-discount-display').textContent=disc>0?'-$'+disc.toFixed(2):'—';
+  document.getElementById('q-total-display').textContent='$'+total.toFixed(2);
+  document.getElementById('q-total').textContent='$'+total.toFixed(2);
+}
+
+function prefillQuote(){
+  const id=document.getElementById('quote-lead-select').value;
+  if(!id) return;
+  const l=allLeads.find(x=>x.id===id); if(!l) return;
+  document.getElementById('q-name').value=`${l.first_name} ${l.last_name}`;
+  document.getElementById('q-phone').value=l.phone||'';
+  document.getElementById('q-addr').value=l.address||'';
+}
+
+function clearQuote(){
+  ['q-name','q-phone','q-addr','q-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('calc-rows').innerHTML='';
+  calcRows=[];calcRowId=0;
+  addCalcRow();
+  document.getElementById('quote-lead-select').value='';
+}
+
+function printQuote(){
+  const doc=document.getElementById('quote-doc');
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Quote — Palmetto Pressure Pros</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"><style>body{font-family:"DM Sans",sans-serif;margin:0;padding:20px;}table{width:100%;border-collapse:collapse;}@media print{button,select,input[type=number]{display:none;}}</style></head><body>');
+  w.document.write(doc.innerHTML);
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+async function saveQuoteToCRM(){
+  const leadId=document.getElementById('quote-lead-select').value;
+  if(!leadId){alert('Please select a lead from the dropdown first.');return;}
+  const total=document.getElementById('q-total-display').textContent;
+  const amount=parseFloat(total.replace('$','').replace(',',''))||0;
+  if(amount===0){alert('Please add services and measurements first.');return;}
+  const lead=allLeads.find(l=>l.id===leadId);
+  if(!lead) return;
+  try{
+    const updated={...lead,quote:amount,updated_at:new Date().toISOString()};
+    const saved=await upsertLead(updated);
+    const idx=allLeads.findIndex(l=>l.id===leadId);
+    if(idx>-1) allLeads[idx]=saved;
+    alert(`Quote of $${amount.toFixed(2)} saved to ${lead.first_name} ${lead.last_name}'s record!`);
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+// ── Invoice Generator ──────────────────────────────────────────────────────
+function initInvoicePage(){
+  const sel=document.getElementById('invoice-lead-select');
+  const completed=allLeads.filter(l=>l.status==='Completed'||l.status==='Booked');
+  sel.innerHTML='<option value="">— Select completed job to generate invoice —</option>'+
+    completed.map(l=>`<option value="${l.id}">${l.first_name} ${l.last_name} — ${l.address} (${l.job_date||'no date'})</option>`).join('');
+}
+
+function loadInvoice(){
+  const id=document.getElementById('invoice-lead-select').value;
+  if(!id){document.getElementById('invoice-doc').innerHTML='<div style="text-align:center;color:var(--ink-3);padding:40px 0;font-size:13px;">Select a completed job above to generate an invoice.</div>';return;}
+  const l=allLeads.find(x=>x.id===id); if(!l) return;
+  const inv=+l.revenue||+l.quote||0;
+  const invNum='INV-'+new Date().getFullYear()+'-'+String(allLeads.indexOf(l)+1).padStart(3,'0');
+  document.getElementById('invoice-doc').innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--teal-600);">PALMETTO PRESSURE PROS</div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Exterior Cleaning Specialists · Charleston, SC</div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:4px;line-height:1.8;">(843) 608-0529<br>info.palmettopressurepros@gmail.com<br>palmettopressureprosllc.com</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:28px;font-weight:700;color:var(--ink-3);">INVOICE</div>
+        <div style="font-size:13px;margin-top:8px;line-height:2;">
+          <div><span style="color:var(--ink-3);">Invoice #: </span><strong>${invNum}</strong></div>
+          <div><span style="color:var(--ink-3);">Date: </span><strong>${l.job_date||new Date().toISOString().split('T')[0]}</strong></div>
+          <div><span style="color:var(--ink-3);">Due: </span><strong>Upon receipt</strong></div>
+        </div>
+      </div>
+    </div>
+    <div style="height:3px;background:var(--teal-600);border-radius:2px;margin-bottom:16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="background:#faf9f6;padding:12px;border-radius:var(--r-sm);">
+        <div style="font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:6px;text-transform:uppercase;">Bill To</div>
+        <div style="font-size:14px;font-weight:600;">${l.first_name} ${l.last_name}</div>
+        <div style="font-size:13px;color:var(--ink-2);margin-top:4px;line-height:1.8;">${l.address}<br>${l.phone||''}<br>${l.email||''}</div>
+      </div>
+      <div style="background:var(--teal-50);padding:12px;border-radius:var(--r-sm);">
+        <div style="font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:6px;text-transform:uppercase;">Job Summary</div>
+        <div style="font-size:13px;line-height:2;color:var(--ink-2);">
+          <div><span style="color:var(--ink-3);">Service: </span>${l.service}</div>
+          <div><span style="color:var(--ink-3);">Date completed: </span>${l.job_date||'—'}</div>
+          <div><span style="color:var(--ink-3);">Completed by: </span>${l.completed_by||'—'}</div>
+        </div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <thead><tr style="background:var(--teal-600);color:#fff;">
+        <th style="padding:10px;text-align:left;font-size:12px;">Service</th>
+        <th style="padding:10px;text-align:left;font-size:12px;">Description</th>
+        <th style="padding:10px;text-align:right;font-size:12px;">Amount</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px 10px;font-size:13px;font-weight:500;">${l.service}</td>
+          <td style="padding:12px 10px;font-size:12px;color:var(--ink-3);">${l.notes||'Exterior cleaning service — Palmetto Pressure Pros'}</td>
+          <td style="padding:12px 10px;font-size:13px;text-align:right;font-weight:500;">${$m(inv)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+      <div style="width:260px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--teal-600);color:#fff;border-radius:var(--r-sm);font-size:15px;font-weight:600;"><span>TOTAL DUE</span><span>${$m(inv)}</span></div>
+      </div>
+    </div>
+    ${l.notes?`<div style="background:#faf9f6;padding:12px;border-radius:var(--r-sm);margin-bottom:16px;"><div style="font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:6px;text-transform:uppercase;">Notes</div><div style="font-size:13px;">${l.notes}</div></div>`:''}
+    <div style="border-top:2px solid var(--teal-600);padding-top:12px;text-align:center;font-size:11px;color:var(--ink-3);">
+      Thank you for choosing Palmetto Pressure Pros! Please make checks payable to Palmetto Pressure Pros LLC.<br>
+      (843) 608-0529 &nbsp;|&nbsp; info.palmettopressurepros@gmail.com &nbsp;|&nbsp; palmettopressureprosllc.com
+    </div>
+  `;
+}
+
+function printInvoice(){
+  const id=document.getElementById('invoice-lead-select').value;
+  if(!id){alert('Please select a job first.');return;}
+  const doc=document.getElementById('invoice-doc');
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Invoice — Palmetto Pressure Pros</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"><style>body{font-family:"DM Sans",sans-serif;margin:0;padding:20px;}table{width:100%;border-collapse:collapse;}</style></head><body>');
+  w.document.write(doc.innerHTML);
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+// ── Route Optimizer ────────────────────────────────────────────────────────
+function loadRouteJobs(){
+  const date=document.getElementById('route-date').value;
+  if(!date) return;
+  const jobs=allLeads.filter(l=>l.sched_date===date&&l.status==='Booked');
+  const container=document.getElementById('route-jobs-list');
+  if(!jobs.length){container.innerHTML=`<div style="font-size:13px;color:var(--ink-3);padding:10px 0;">No booked jobs found for ${date}. Jobs must have status "Booked" and a scheduled date.</div>`;return;}
+  container.innerHTML=`<div style="font-size:13px;font-weight:500;margin-bottom:8px;">Jobs on this date (${jobs.length}):</div>`+
+    jobs.map((l,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:6px;">
+      <div style="width:24px;height:24px;background:var(--teal-600);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">${i+1}</div>
+      <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${l.first_name} ${l.last_name}</div><div style="font-size:12px;color:var(--ink-3);">${l.address} · ${l.service} · ${l.sched_time||'time TBD'}</div></div>
+    </div>`).join('');
+}
+
+function optimizeRoute(){
+  const date=document.getElementById('route-date').value;
+  const start=document.getElementById('route-start').value.trim();
+  if(!date){alert('Please select a date first.');return;}
+  const jobs=allLeads.filter(l=>l.sched_date===date&&l.status==='Booked');
+  if(!jobs.length){alert('No booked jobs found for this date.');return;}
+
+  // Sort by scheduled time if available, otherwise keep original order
+  const sorted=[...jobs].sort((a,b)=>{
+    if(a.sched_time&&b.sched_time) return a.sched_time.localeCompare(b.sched_time);
+    return 0;
+  });
+
+  const addresses=[start?start+', Charleston SC':'Charleston SC',...sorted.map(l=>l.address)];
+  const mapsUrl='https://www.google.com/maps/dir/'+addresses.map(a=>encodeURIComponent(a)).join('/');
+
+  document.getElementById('route-result').style.display='block';
+  document.getElementById('route-stops').innerHTML=`
+    ${start?`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#faf9f6;border-radius:var(--r-sm);margin-bottom:6px;"><div style="width:28px;height:28px;background:var(--ink-3);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">S</div><div><div style="font-weight:500;font-size:13px;">Start: ${start}</div></div></div>`:''}
+    ${sorted.map((l,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:6px;">
+      <div style="width:28px;height:28px;background:var(--teal-600);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${i+1}</div>
+      <div style="flex:1;">
+        <div style="font-weight:500;font-size:13px;">${l.first_name} ${l.last_name}</div>
+        <div style="font-size:12px;color:var(--ink-3);">${l.address}</div>
+        <div style="font-size:12px;color:var(--ink-3);">${l.service} · ${l.sched_time||'time TBD'} · ${l.sched_duration||'duration TBD'}</div>
+      </div>
+    </div>`).join('')}
+    <div style="margin-top:10px;font-size:12px;color:var(--ink-3);">Total stops: ${sorted.length} · Sorted by scheduled time</div>
+  `;
+  document.getElementById('route-maps-link').href=mapsUrl;
+}
+
+// ── Follow-ups ─────────────────────────────────────────────────────────────
+function getFollowupDue(lead){
+  if(!lead.job_date) return null;
+  const d=new Date(lead.job_date);
+  d.setDate(d.getDate()+1);
+  return d.toISOString().split('T')[0];
+}
+
+function getFollowupStatus(lead){
+  if(lead.followup_sent) return 'sent';
+  const due=getFollowupDue(lead);
+  if(!due) return 'pending';
+  const today=new Date().toISOString().split('T')[0];
+  if(due<today) return 'overdue';
+  return 'pending';
+}
+
+function getFollowupMessage(lead){
+  return `Hi ${lead.first_name}! This is Jack from Palmetto Pressure Pros. We hope you're loving the results from yesterday's cleaning! If you're happy with our work, we'd really appreciate a quick Google review — it helps us grow and serve more Charleston homeowners. Here's the link: https://g.page/r/palmettopressurepros/review — Thank you so much! 🙏`;
+}
+
+function renderFollowups(){
+  const filter=document.getElementById('fu-filter').value;
+  const leads=allLeads.filter(l=>l.status==='Completed');
+  const today=new Date().toISOString().split('T')[0];
+
+  const pending=leads.filter(l=>getFollowupStatus(l)==='pending').length;
+  const overdue=leads.filter(l=>getFollowupStatus(l)==='overdue').length;
+  const sent=leads.filter(l=>getFollowupStatus(l)==='sent').length;
+
+  document.getElementById('followup-metrics').innerHTML=`
+    <div class="metric amber"><div class="metric-label">Pending</div><div class="metric-value">${pending}</div><div class="metric-sub">Due today or upcoming</div></div>
+    <div class="metric red"><div class="metric-label">Overdue</div><div class="metric-value">${overdue}</div><div class="metric-sub">Past due date</div></div>
+    <div class="metric green"><div class="metric-label">Sent</div><div class="metric-value">${sent}</div><div class="metric-sub">Follow-up completed</div></div>
+    <div class="metric blue"><div class="metric-label">Total completed jobs</div><div class="metric-value">${leads.length}</div></div>
+  `;
+
+  let data=leads;
+  if(filter) data=leads.filter(l=>getFollowupStatus(l)===filter);
+
+  document.getElementById('followup-body').innerHTML=data.length?data.map(l=>{
+    const status=getFollowupStatus(l);
+    const due=getFollowupDue(l);
+    const msg=getFollowupMessage(l);
+    const statusBadgeHtml=status==='sent'?'<span class="badge badge-completed">Sent</span>':status==='overdue'?'<span class="badge badge-lost">Overdue</span>':'<span class="badge badge-quoted">Pending</span>';
+    const smsLink=`sms:${(l.phone||'').replace(/\D/g,'')}?body=${encodeURIComponent(msg)}`;
+    const emailLink=`mailto:${l.email||''}?subject=${encodeURIComponent('Thank you from Palmetto Pressure Pros!')}&body=${encodeURIComponent(msg)}`;
+    return`<tr>
+      <td style="font-weight:500;">${l.first_name} ${l.last_name}<div class="td-muted">${l.phone||''}</div></td>
+      <td>${l.job_date||'—'}</td>
+      <td style="font-weight:500;color:${status==='overdue'?'var(--red-600)':status==='sent'?'var(--green-600)':'var(--amber-600)'};">${due||'—'}</td>
+      <td>${statusBadgeHtml}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${msg.slice(0,80)}…</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          ${l.phone?`<a href="${smsLink}" class="btn btn-sm btn-primary" style="text-decoration:none;" onclick="markFollowupSent('${l.id}')"><i class="ti ti-message"></i> Text</a>`:''}
+          ${l.email?`<a href="${emailLink}" class="btn btn-sm" style="text-decoration:none;" onclick="markFollowupSent('${l.id}')"><i class="ti ti-mail"></i> Email</a>`:''}
+          ${status!=='sent'?`<button class="btn btn-sm" onclick="markFollowupSent('${l.id}')" style="background:var(--green-light);color:var(--green-600);border-color:#c3e6a0;">✓ Mark sent</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--ink-3);padding:30px;">No completed jobs found.</td></tr>';
+}
+
+async function markFollowupSent(leadId){
+  const lead=allLeads.find(l=>l.id===leadId); if(!lead) return;
+  try{
+    const updated={...lead,followup_sent:true,updated_at:new Date().toISOString()};
+    const saved=await upsertLead(updated);
+    const idx=allLeads.findIndex(l=>l.id===leadId);
+    if(idx>-1) allLeads[idx]=saved;
+    renderFollowups();
+  }catch(e){console.error(e);}
+}
+
+// ── Override nav for new pages ─────────────────────────────────────────────
+const _origNavFn=nav;
+function nav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
+  el.classList.add('active');
+  const page=el.dataset.page;
+  document.getElementById('pg-'+page).style.display='block';
+  document.getElementById('page-title').textContent=pageTitles[page]||page;
+  if(page==='leads')renderLeads();
+  if(page==='pipeline')renderPipeline();
+  if(page==='jobs')renderJobs();
+  if(page==='calendar')renderCalendar();
+  if(page==='comms')renderComms();
+  if(page==='connections')renderConnections();
+  if(page==='referrals')renderReferrals();
+  if(page==='analytics')renderAnalytics();
+  if(page==='quotes'){initQuotePage();}
+  if(page==='invoices'){initInvoicePage();}
+  if(page==='route'){document.getElementById('route-date').value=new Date().toISOString().split('T')[0];loadRouteJobs();}
+  if(page==='followups')renderFollowups();
+  if(page==='embed')renderEmbed();
 }
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
 </script>
