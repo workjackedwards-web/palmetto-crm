@@ -664,6 +664,8 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="del-btn"><i class="ti ti-trash"></i> Delete</button>
       <button class="btn btn-sm" id="edit-btn"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn btn-sm" id="send-reminder-btn" style="display:none;background:var(--blue-light);color:var(--blue-600);border-color:#bfdbfe;" onclick="sendReminderText()"><i class="ti ti-message"></i> Send reminder</button>
+      <button class="btn btn-sm" id="send-followup-btn" style="display:none;background:var(--green-light);color:var(--green-600);border-color:#c3e6a0;" onclick="sendFollowupText()"><i class="ti ti-star"></i> Send follow-up</button>
       <button class="btn" onclick="closeModal('view')">Close</button>
     </div>
   </div>
@@ -1123,6 +1125,12 @@ function viewLead(id){
   `;
   document.getElementById('edit-btn').onclick=()=>editLeadModal(l);
   document.getElementById('del-btn').onclick=()=>deleteLeadRecord(l.id);
+  // Show reminder button for Booked jobs with a scheduled date
+  const reminderBtn=document.getElementById('send-reminder-btn');
+  const followupBtn=document.getElementById('send-followup-btn');
+  reminderBtn.style.display=l.status==='Booked'&&l.phone?'inline-flex':'none';
+  followupBtn.style.display=l.status==='Completed'&&l.phone?'inline-flex':'none';
+  if(l.status==='Completed'&&l.followup_sent) followupBtn.innerHTML='<i class="ti ti-check"></i> Follow-up sent';
   openModal('view');
 }
 
@@ -1946,6 +1954,26 @@ async function deleteEvent(){
   allEvents=allEvents.filter(x=>x.id!==id);
   closeModal('event');
   renderCalendar();
+}
+
+// ── One-tap text messages ──────────────────────────────────────────────────
+function sendReminderText(){
+  const l=allLeads.find(x=>x.id===viewingLeadId); if(!l) return;
+  const time=l.sched_time?` We'll arrive at ${l.sched_time}.`:'';
+  const msg=`Hi ${l.first_name}! This is Palmetto Pressure Pros confirming your exterior cleaning appointment tomorrow.${time} If you have any questions, reply here or call (843) 608-0529. See you then!`;
+  const phone=(l.phone||'').replace(/\D/g,'');
+  window.open(`sms:${phone}?body=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function sendFollowupText(){
+  const l=allLeads.find(x=>x.id===viewingLeadId); if(!l) return;
+  const msg=`Hi ${l.first_name}! Thank you so much for choosing Palmetto Pressure Pros - it was a pleasure working on your property! If you're happy with the results, we'd love a quick Google review: https://g.page/r/palmettopressurepros/review It means the world to us. - Jack & the PPP team`;
+  const phone=(l.phone||'').replace(/\D/g,'');
+  window.open(`sms:${phone}?body=${encodeURIComponent(msg)}`,'_blank');
+  // Mark follow-up as sent
+  markFollowupSent(viewingLeadId);
+  const btn=document.getElementById('send-followup-btn');
+  if(btn) btn.innerHTML='<i class="ti ti-check"></i> Follow-up sent';
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
