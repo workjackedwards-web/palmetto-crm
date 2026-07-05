@@ -295,25 +295,35 @@ tbody tr:hover td{background:#faf9f6;}
 
       <!-- CALENDAR -->
       <div id="pg-calendar" class="page-content" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-          <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <button class="btn" onclick="calNav(-1)"><i class="ti ti-chevron-left"></i></button>
             <div id="cal-month-label" style="font-size:16px;font-weight:600;min-width:160px;text-align:center;"></div>
             <button class="btn" onclick="calNav(1)"><i class="ti ti-chevron-right"></i></button>
             <button class="btn btn-sm" onclick="calToday()">Today</button>
           </div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="cal-filter" onchange="renderCalendar()" style="padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+              <option value="">All events</option>
+              <option value="meeting">Meetings only</option>
+              <option value="job">Jobs only</option>
+              <option value="followup">Follow-ups only</option>
+              <option value="personal">Personal only</option>
+            </select>
             <button class="btn btn-sm" id="cal-view-month" onclick="setCalView('month',this)" style="background:var(--teal-600);color:#fff;border-color:var(--teal-600);">Month</button>
             <button class="btn btn-sm" id="cal-view-week" onclick="setCalView('week',this)">Week</button>
+            <button class="btn btn-primary" onclick="openAddEvent()"><i class="ti ti-plus"></i> Add event</button>
           </div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div id="cal-grid"></div>
         </div>
         <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#185FA5;"></div>Booked</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#0F6E56;"></div>Booked</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#3B6D11;"></div>Completed</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#185FA5;"></div>Booked Job</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#3B6D11;"></div>Completed Job</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#6b21a8;"></div>Meeting</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#BA7517;"></div>Follow-up</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#666;"></div>Personal</div>
         </div>
       </div>
 
@@ -717,13 +727,52 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- ADD/EDIT EVENT MODAL -->
+<div class="overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modal-event-title">Add event</h2><button class="btn btn-sm" onclick="closeModal('event')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="event-edit-id">
+    <div class="form-grid">
+      <div class="field span2"><label>Event title *</label><input id="ev-title" placeholder="e.g. Meeting with Sarah Johnson — Compass Realty"></div>
+      <div class="field">
+        <label>Event type</label>
+        <select id="ev-type">
+          <option value="meeting">Meeting</option>
+          <option value="followup">Follow-up</option>
+          <option value="personal">Personal</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Date *</label><input id="ev-date" type="date"></div>
+      <div class="field"><label>Start time</label><input id="ev-start" type="time"></div>
+      <div class="field"><label>End time</label><input id="ev-end" type="time"></div>
+      <div class="field"><label>With / Attendees</label><input id="ev-with" placeholder="e.g. Sarah Johnson, Charlie"></div>
+      <div class="field"><label>Location</label><input id="ev-location" placeholder="e.g. 123 King St, Zoom, Phone call"></div>
+      <div class="field">
+        <label>Link to customer (optional)</label>
+        <select id="ev-lead-id"><option value="">Not linked</option></select>
+      </div>
+      <div class="field">
+        <label>Link to contact (optional)</label>
+        <select id="ev-conn-id"><option value="">Not linked</option></select>
+      </div>
+      <div class="field span2"><label>Notes</label><textarea id="ev-notes" placeholder="Agenda, talking points, prep needed..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="ev-del-btn" style="display:none;" onclick="deleteEvent()"><i class="ti ti-trash"></i> Delete</button>
+      <button class="btn" onclick="closeModal('event')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-check"></i> Save event</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser=null, allLeads=[], allConnections=[], allComms=[], authMode='login', viewingLeadId=null;
+let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], authMode='login', viewingLeadId=null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function toggleAuthMode(){
@@ -770,6 +819,7 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     await loadConnections();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">Connections loaded: '+allConnections.length+'. Loading comms...</div>';
     await loadComms();
+    await loadEvents();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
@@ -779,6 +829,8 @@ sb.auth.onAuthStateChange(async(event,session)=>{
 async function loadLeads(){try{const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});if(error)console.error('leads error:',error);else allLeads=data||[];}catch(e){console.error('loadLeads failed:',e);}}
 async function loadConnections(){try{const{data,error}=await sb.from('connections').select('*').order('created_at',{ascending:false});if(error)console.error('connections error:',error);else allConnections=data||[];}catch(e){console.error('loadConnections failed:',e);}}
 async function loadComms(){try{const{data,error}=await sb.from('communications').select('*').order('received_at',{ascending:false});if(error)console.error('comms error:',error);else allComms=data||[];}catch(e){console.error('loadComms failed:',e);}}
+async function loadEvents(){try{const{data,error}=await sb.from('events').select('*').order('event_date',{ascending:true});if(error)console.error('events error:',error);else allEvents=data||[];}catch(e){console.error('loadEvents failed:',e);}}
+async function upsertEvent(ev){const{data,error}=await sb.from('events').upsert([ev],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertLead(lead){const{data,error}=await sb.from('leads').upsert([lead],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertConnection(conn){const{data,error}=await sb.from('connections').upsert([conn],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
@@ -894,8 +946,22 @@ function calNav(dir){
 
 function calToday(){ calDate = new Date(); renderCalendar(); }
 
+function getCalFilter(){return(document.getElementById('cal-filter')||{value:''}).value;}
+
 function getBookedLeads(){
-  return allLeads.filter(l=>l.sched_date&&['Booked','Booked','Completed'].includes(l.status));
+  const f=getCalFilter();
+  if(f==='meeting'||f==='followup'||f==='personal') return [];
+  return allLeads.filter(l=>l.sched_date&&['Booked','Completed'].includes(l.status));
+}
+
+function getCalEvents(){
+  const f=getCalFilter();
+  if(f==='job') return [];
+  return allEvents.filter(e=>!f||e.event_type===f);
+}
+
+function getEventColor(type){
+  return {meeting:'#6b21a8',followup:'#BA7517',personal:'#666',other:'#444'}[type]||'#444';
 }
 
 function renderCalendar(){
@@ -915,13 +981,19 @@ function renderCalendar(){
       const dt=new Date(calDate.getFullYear(),calDate.getMonth(),d);
       const isToday=dt.getTime()===today.getTime();
       const dateStr=dt.toISOString().split('T')[0];
-      const events=getBookedLeads().filter(l=>l.sched_date===dateStr);
+      const jobs=getBookedLeads().filter(l=>l.sched_date===dateStr);
+      const evts=getCalEvents().filter(e=>e.event_date===dateStr);
       html+=`<div class="cal-day${isToday?' today':''}">`;
       html+=`<div class="cal-day-num">${d}</div>`;
-      events.forEach(l=>{
+      jobs.forEach(l=>{
         const cls=l.status.toLowerCase();
         const time=l.sched_time?l.sched_time.slice(0,5)+' ':'';
         html+=`<div class="cal-event ${cls}" onclick="viewLead('${l.id}')" title="${l.first_name} ${l.last_name} — ${l.service}">${time}${l.first_name} ${l.last_name}</div>`;
+      });
+      evts.forEach(e=>{
+        const time=e.start_time?e.start_time.slice(0,5)+' ':'';
+        const color=getEventColor(e.event_type);
+        html+=`<div class="cal-event" style="background:${color};cursor:pointer;" onclick="viewEvent('${e.id}')" title="${e.title}">${time}${e.title}</div>`;
       });
       html+=`</div>`;
     }
@@ -1062,12 +1134,18 @@ function renderLeadComms(leadId){
     if(phone&&c.from_address&&c.from_address.replace(/\D/g,'').includes(phone))return true;
     return false;
   });
+  const linkedEvents=allEvents.filter(e=>e.lead_id===leadId);
   const container=document.getElementById('view-tab-commslog');
   container.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;">Communication history</div>
+      <div style="font-size:13px;font-weight:600;">Communication & activity history</div>
       <button class="btn btn-sm btn-primary" onclick="openAddCommForLead('${leadId}')"><i class="ti ti-plus"></i> Log</button>
     </div>
+    ${linkedEvents.length?`
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Linked calendar events</div>
+      ${linkedEvents.map(e=>`<div class="comm-item"><div class="comm-icon" style="background:#f0e6fb;color:#6b21a8;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-calendar-event"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${e.title}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${e.event_date}${e.start_time?' at '+e.start_time:''} · ${e.event_type||'event'}${e.attendees?' · with '+e.attendees:''}</div>${e.location?`<div style="font-size:12px;color:var(--ink-3);">📍 ${e.location}</div>`:''} ${e.notes?`<div style="font-size:12px;margin-top:4px;color:var(--ink-2);">${e.notes}</div>`:''}</div><button class="btn btn-sm" onclick="viewEvent('${e.id}')" style="flex-shrink:0;"><i class="ti ti-edit"></i></button></div>`).join('')}
+    </div>`:''}
     ${comms.length?comms.map(c=>{const ic=commIcon(c.type||c.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:500;font-size:13px;">${c.subject||c.type||'Communication'}</div>${commBadge(c.type||c.subject)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${c.from_address||'—'} · ${fmtDate(c.received_at)}</div>${c.body?`<div style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">${c.body}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications logged yet</div>'}
   `;
 }
@@ -1287,6 +1365,7 @@ function viewConnection(id){
   document.getElementById('view-conn-title').textContent=`${c.first_name} ${c.last_name}`;
   const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
   const tierInfo=getReferralTier(jobsReferred);
+  const linkedEvents=allEvents.filter(e=>e.connection_id===c.id);
   document.getElementById('view-conn-body').innerHTML=`
     <div class="record-section"><div class="record-grid">
       <div class="record-field"><div class="lbl">Type</div><div class="val">${c.contact_type||'—'}</div></div>
@@ -1298,6 +1377,21 @@ function viewConnection(id){
       ${c.is_referral_partner?`<div class="record-field"><div class="lbl">Current tier</div><div class="val">${tierInfo.label}</div></div><div class="record-field"><div class="lbl">Bonuses paid</div><div class="val">${$m(c.bonuses_paid)}</div></div>`:''}
     </div></div>
     ${c.notes?`<div class="record-section"><div class="record-section-title">Notes</div><div style="font-size:13px;line-height:1.6;">${c.notes}</div></div>`:''}
+    ${linkedEvents.length?`
+    <div class="record-section">
+      <div class="record-section-title">📅 Linked calendar events (${linkedEvents.length})</div>
+      ${linkedEvents.sort((a,b)=>b.event_date.localeCompare(a.event_date)).map(e=>`
+        <div class="comm-item">
+          <div class="comm-icon" style="background:#f0e6fb;color:#6b21a8;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;"><i class="ti ti-calendar-event"></i></div>
+          <div style="flex:1;">
+            <div style="font-weight:500;font-size:13px;">${e.title}</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${e.event_date}${e.start_time?' at '+e.start_time:''} · ${e.event_type||'event'}${e.attendees?' · with '+e.attendees:''}</div>
+            ${e.location?`<div style="font-size:12px;color:var(--ink-3);">📍 ${e.location}</div>`:''}
+            ${e.notes?`<div style="font-size:12px;margin-top:4px;color:var(--ink-2);">${e.notes}</div>`:''}
+          </div>
+          <button class="btn btn-sm" onclick="closeModal('view-conn');viewEvent('${e.id}')"><i class="ti ti-edit"></i></button>
+        </div>`).join('')}
+    </div>`:''}
   `;
   document.getElementById('conn-edit-btn').onclick=()=>editConnectionModal(c);
   document.getElementById('conn-del-btn').onclick=()=>deleteConnection(c.id);
@@ -1776,6 +1870,84 @@ function nav(el){
   if(page==='followups')renderFollowups();
   if(page==='embed')renderEmbed();
 }
+// ── Events (calendar meetings) ─────────────────────────────────────────────
+function openAddEvent(dateStr){
+  document.getElementById('modal-event-title').textContent='Add event';
+  document.getElementById('event-edit-id').value='';
+  document.getElementById('ev-title').value='';
+  document.getElementById('ev-type').value='meeting';
+  document.getElementById('ev-date').value=dateStr||new Date().toISOString().split('T')[0];
+  document.getElementById('ev-start').value='';
+  document.getElementById('ev-end').value='';
+  document.getElementById('ev-with').value='';
+  document.getElementById('ev-location').value='';
+  document.getElementById('ev-notes').value='';
+  document.getElementById('ev-del-btn').style.display='none';
+  const sel=document.getElementById('ev-lead-id');
+  sel.innerHTML='<option value="">Not linked</option>'+allLeads.map(l=>`<option value="${l.id}">${l.first_name} ${l.last_name}</option>`).join('');
+  const csel=document.getElementById('ev-conn-id');
+  csel.innerHTML='<option value="">Not linked</option>'+allConnections.map(c=>`<option value="${c.id}">${c.first_name} ${c.last_name}${c.company?' — '+c.company:''}</option>`).join('');
+  openModal('event');
+}
+
+function viewEvent(id){
+  const e=allEvents.find(x=>x.id===id); if(!e) return;
+  document.getElementById('modal-event-title').textContent='Edit event';
+  document.getElementById('event-edit-id').value=e.id;
+  document.getElementById('ev-title').value=e.title||'';
+  document.getElementById('ev-type').value=e.event_type||'meeting';
+  document.getElementById('ev-date').value=e.event_date||'';
+  document.getElementById('ev-start').value=e.start_time||'';
+  document.getElementById('ev-end').value=e.end_time||'';
+  document.getElementById('ev-with').value=e.attendees||'';
+  document.getElementById('ev-location').value=e.location||'';
+  document.getElementById('ev-notes').value=e.notes||'';
+  document.getElementById('ev-del-btn').style.display='inline-flex';
+  const sel=document.getElementById('ev-lead-id');
+  sel.innerHTML='<option value="">Not linked</option>'+allLeads.map(l=>`<option value="${l.id}" ${l.id===e.lead_id?'selected':''}>${l.first_name} ${l.last_name}</option>`).join('');
+  const csel=document.getElementById('ev-conn-id');
+  csel.innerHTML='<option value="">Not linked</option>'+allConnections.map(c=>`<option value="${c.id}" ${c.id===e.connection_id?'selected':''}>${c.first_name} ${c.last_name}${c.company?' — '+c.company:''}</option>`).join('');
+  openModal('event');
+}
+
+async function saveEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  const date=document.getElementById('ev-date').value;
+  if(!title||!date){alert('Title and date are required.');return;}
+  const id=document.getElementById('event-edit-id').value||uid();
+  const ev={
+    id, title,
+    event_type:document.getElementById('ev-type').value,
+    event_date:date,
+    start_time:document.getElementById('ev-start').value||null,
+    end_time:document.getElementById('ev-end').value||null,
+    attendees:document.getElementById('ev-with').value||null,
+    location:document.getElementById('ev-location').value||null,
+    lead_id:document.getElementById('ev-lead-id').value||null,
+    connection_id:document.getElementById('ev-conn-id').value||null,
+    notes:document.getElementById('ev-notes').value||null,
+    created_by:currentUser?.email,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const saved=await upsertEvent(ev);
+    const idx=allEvents.findIndex(x=>x.id===id);
+    if(idx>-1) allEvents[idx]=saved; else allEvents.push(saved);
+    closeModal('event');
+    renderCalendar();
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+async function deleteEvent(){
+  const id=document.getElementById('event-edit-id').value;
+  if(!id||!confirm('Delete this event?')) return;
+  const{error}=await sb.from('events').delete().eq('id',id);
+  if(error){alert('Delete failed: '+error.message);return;}
+  allEvents=allEvents.filter(x=>x.id!==id);
+  closeModal('event');
+  renderCalendar();
+}
+
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
 </script>
 </body>
