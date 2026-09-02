@@ -838,8 +838,29 @@ tbody tr:hover td{background:#faf9f6;}
     <div id="cust-tab-jobs" style="display:none;"></div>
     <div id="cust-tab-comms" style="display:none;"></div>
     <div class="modal-foot">
+      <button class="btn btn-sm" id="cust-edit-btn"><i class="ti ti-edit"></i> Edit info</button>
       <button class="btn btn-primary" id="cust-add-job-btn"><i class="ti ti-plus"></i> Add new job</button>
       <button class="btn" onclick="closeModal('view-customer')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CUSTOMER MODAL -->
+<div class="overlay" id="modal-edit-customer">
+  <div class="modal">
+    <div class="modal-head"><h2>Edit customer info</h2><button class="btn btn-sm" onclick="closeModal('edit-customer')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:16px;">Updates contact info across all this customer's records.</p>
+    <input type="hidden" id="edit-cust-key">
+    <div class="form-grid">
+      <div class="field"><label>First name</label><input id="ec-first" placeholder="John"></div>
+      <div class="field"><label>Last name</label><input id="ec-last" placeholder="Smith"></div>
+      <div class="field"><label>Phone</label><input id="ec-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
+      <div class="field"><label>Email</label><input id="ec-email" type="email" placeholder="john@email.com"></div>
+      <div class="field span2"><label>Property address</label><input id="ec-addr" placeholder="123 King St, Charleston SC 29401"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('edit-customer')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomerEdit()"><i class="ti ti-check"></i> Save changes</button>
     </div>
   </div>
 </div>
@@ -1396,7 +1417,7 @@ async function renderQuotePDFs(leadId){
   container.innerHTML=files.map(f=>{
     const{data}=sb.storage.from('job-photos').getPublicUrl(`${leadId}/quotes/${f.name}`);
     return`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:8px;">
-      <i class="ti ti-file-type-pdf" style="font-size:24px;color:var(--teal-600);flex-shrink:0;"></i>
+      <i class="ti ti-file-description" style="font-size:24px;color:var(--teal-600);flex-shrink:0;"></i>
       <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${f.name}</div><div style="font-size:11px;color:var(--ink-3);">Quote document</div></div>
       <a href="${data.publicUrl}" target="_blank" class="btn btn-sm btn-primary"><i class="ti ti-eye"></i> View</a>
       <button class="btn btn-sm btn-danger" onclick="deleteQuotePDF('${leadId}','${f.name}')"><i class="ti ti-trash"></i></button>
@@ -1406,12 +1427,13 @@ async function renderQuotePDFs(leadId){
 
 async function uploadQuotePDF(input,leadId){
   const file=input.files[0];if(!file)return;
-  if(file.type!=='application/pdf'){alert('Please upload a PDF file.');return;}
+  const allowed=['application/pdf','text/html'];
+  if(!allowed.includes(file.type)&&!file.name.endsWith('.html')&&!file.name.endsWith('.pdf')){alert('Please upload a PDF or HTML file.');return;}
   const area=input.parentElement;
-  area.innerHTML='<i class="ti ti-loader" style="font-size:24px;color:var(--teal-500);animation:spin .7s linear infinite;"></i><p style="font-size:13px;color:var(--ink-3);margin-top:8px;">Uploading PDF...</p>';
-  const filename=`quote_${Date.now()}.pdf`;
+  area.innerHTML='<i class="ti ti-loader" style="font-size:24px;color:var(--teal-500);animation:spin .7s linear infinite;"></i><p style="font-size:13px;color:var(--ink-3);margin-top:8px;">Uploading...</p>';
+  const filename=`quote_${Date.now()}.${file.name.split('.').pop()}`;
   const path=`${leadId}/quotes/${filename}`;
-  const{error}=await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:'application/pdf'});
+  const{error}=await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
   if(error){alert('Upload failed: '+error.message);}
   await loadQuoteTab(leadId);
 }
@@ -1999,12 +2021,88 @@ async function saveQuoteToCRM(){
   if(amount===0){alert('Please add services and measurements first.');return;}
   const lead=allLeads.find(l=>l.id===leadId);
   if(!lead) return;
+
+  // Capture all quote values
+  const quoteNum=document.getElementById('q-num').value||'—';
+  const quoteDate=document.getElementById('q-date').value||'—';
+  const quoteValid=document.getElementById('q-valid').value||'—';
+  const quoteBy=document.getElementById('q-by').value||'Jack';
+  const custName=document.getElementById('q-name').value||`${lead.first_name} ${lead.last_name}`;
+  const custPhone=document.getElementById('q-phone').value||lead.phone||'—';
+  const custAddr=document.getElementById('q-addr').value||lead.address||'—';
+  const notes=document.getElementById('q-notes').value||'';
+  const discPct=parseFloat(document.getElementById('q-discount').value)||0;
+  const fmtD=s=>{if(!s||s==='—')return'—';try{return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}catch(e){return s;}};
+
+  // Build line items
+  let lineItems=[];let subtotal=0;
+  const rows=document.querySelectorAll('#calc-rows > div[id^="calc-row-"]');
+  rows.forEach(row=>{
+    const idMatch=row.id.replace('calc-row-','');
+    const sel=row.querySelector('select');
+    const isCustom=sel&&sel.value==='custom';
+    const svcName=isCustom?(document.getElementById('cr-custom-name-'+idMatch)?.value||'Custom Service'):(sel?sel.value:'');
+    const svcDesc=isCustom?(document.getElementById('cr-custom-desc-'+idMatch)?.value||''):(QUOTE_SERVICES.find(s=>s.name===svcName)?.desc||'');
+    const qty=parseFloat(document.getElementById('cr-qty-'+idMatch)?.value)||0;
+    const rate=parseFloat(document.getElementById('cr-rate-'+idMatch)?.value)||0;
+    const unit=document.getElementById('cr-unit-'+idMatch)?.textContent||'';
+    const total=qty*rate;
+    if(qty>0&&svcName){lineItems.push({name:svcName,desc:svcDesc,qty,unit,rate,total});subtotal+=total;}
+  });
+
+  const disc=subtotal*(discPct/100);
+  const grandTotal=subtotal-disc;
+
+  // Generate the same clean HTML as printQuote
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote ${quoteNum}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;padding:32px 40px;}
+  .header{display:flex;justify-content:space-between;margin-bottom:12px;}.company-name{font-size:18px;font-weight:700;color:#0F6E56;}
+  .company-info{font-size:12px;color:#555;margin-top:8px;line-height:1.8;}.quote-label{font-size:28px;font-weight:700;color:#ccc;text-align:right;}
+  .meta-table td{padding:3px 0 3px 16px;font-size:12px;}.divider{height:3px;background:#0F6E56;margin:14px 0;}
+  .cust-box{background:#faf9f6;padding:14px;margin-bottom:16px;border-radius:6px;}
+  .section-label{font-size:10px;font-weight:bold;color:#999;text-transform:uppercase;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  thead tr{background:#0F6E56;color:#fff;}th{padding:9px 12px;text-align:left;font-size:11px;}
+  td{padding:9px 12px;border-bottom:1px solid #e8e6e0;font-size:12px;}
+  .totals{width:260px;margin-left:auto;margin-bottom:20px;}
+  .total-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e0e0e0;font-size:13px;}
+  .grand{background:#0F6E56;color:#fff;padding:10px 12px;border-radius:6px;font-size:14px;font-weight:bold;display:flex;justify-content:space-between;margin-top:4px;}
+  .footer{border-top:2px solid #0F6E56;padding-top:10px;text-align:center;font-size:11px;color:#888;}
+  </style></head><body>
+  <div class="header"><div><div class="company-name">PALMETTO PRESSURE PROS</div><div style="font-size:11px;color:#888;">Exterior Cleaning Specialists · Charleston, SC</div>
+  <div class="company-info">(843) 608-0529<br>info.palmettopressurepros@gmail.com<br>palmettopressureprosllc.com</div></div>
+  <div><div class="quote-label">QUOTE</div><table class="meta-table" style="margin-left:auto;width:auto;"><tr><td style="color:#999;text-align:right;">Quote #</td><td><b>${quoteNum}</b></td></tr>
+  <tr><td style="color:#999;text-align:right;">Date</td><td>${fmtD(quoteDate)}</td></tr><tr><td style="color:#999;text-align:right;">Valid until</td><td>${fmtD(quoteValid)}</td></tr>
+  <tr><td style="color:#999;text-align:right;">Prepared by</td><td>${quoteBy}</td></tr></table></div></div>
+  <div class="divider"></div>
+  <div class="cust-box"><div class="section-label">Customer / Property</div>
+  <table style="margin-bottom:0;"><tr><th>Name</th><th>Phone</th><th>Address</th></tr>
+  <tr><td>${custName}</td><td>${custPhone}</td><td>${custAddr}</td></tr></table></div>
+  <table><thead><tr><th>Service</th><th>Description</th><th>Measurement</th><th>Unit Price</th><th>Total</th></tr></thead><tbody>
+  ${lineItems.map(i=>`<tr><td><b>${i.name}</b></td><td style="color:#888;">${i.desc}</td><td>${i.qty.toLocaleString()} ${i.unit}</td><td>$${i.rate.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}
+  </tbody></table>
+  <div class="totals"><div class="total-row"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+  ${disc>0?`<div class="total-row" style="color:#A32D2D;"><span>Discount (${discPct}%)</span><span>-$${disc.toFixed(2)}</span></div>`:''}
+  <div class="grand"><span>TOTAL ESTIMATE</span><span>$${grandTotal.toFixed(2)}</span></div></div>
+  ${notes?`<div style="background:#faf9f6;padding:12px;border-radius:6px;margin-bottom:16px;font-size:13px;">${notes}</div>`:''}
+  <div class="footer">Thank you for choosing Palmetto Pressure Pros! · (843) 608-0529 · palmettopressureprosllc.com</div>
+  </body></html>`;
+
   try{
-    const updated={...lead,quote:amount,updated_at:new Date().toISOString()};
+    // Convert HTML to blob and upload to Supabase Storage
+    const blob=new Blob([html],{type:'text/html'});
+    const filename=`quote_${quoteNum.replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}.html`;
+    const path=`${leadId}/quotes/${filename}`;
+    const{error:uploadError}=await sb.storage.from('job-photos').upload(path,blob,{cacheControl:'3600',upsert:false,contentType:'text/html'});
+    if(uploadError) throw uploadError;
+
+    // Also save the quote amount to the lead record
+    const updated={...lead,quote:grandTotal,updated_at:new Date().toISOString()};
     const saved=await upsertLead(updated);
     const idx=allLeads.findIndex(l=>l.id===leadId);
     if(idx>-1) allLeads[idx]=saved;
-    alert(`Quote of $${amount.toFixed(2)} saved to ${lead.first_name} ${lead.last_name}'s record!`);
+
+    alert(`Quote saved to ${lead.first_name} ${lead.last_name}'s record!\n\nOpen their profile → Quote PDF tab to view it.`);
   }catch(e){alert('Save failed: '+e.message);}
 }
 
@@ -2522,6 +2620,7 @@ function viewCustomer(key){
     closeModal('view-customer');
     openAddLeadForCustomer(c);
   };
+  document.getElementById('cust-edit-btn').onclick=()=>openEditCustomer(c);
   openModal('view-customer');
 }
 
@@ -2647,6 +2746,53 @@ function selectExistingCustomer(key){
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   // Clear services for new job selection
   setSelectedServices('');
+}
+
+function openEditCustomer(c){
+  document.getElementById('edit-cust-key').value=c.key;
+  document.getElementById('ec-first').value=c.first_name||'';
+  document.getElementById('ec-last').value=c.last_name||'';
+  document.getElementById('ec-phone').value=c.phone||'';
+  document.getElementById('ec-email').value=c.email||'';
+  document.getElementById('ec-addr').value=c.address||'';
+  openModal('edit-customer');
+}
+
+async function saveCustomerEdit(){
+  const key=document.getElementById('edit-cust-key').value;
+  const first=document.getElementById('ec-first').value.trim();
+  const last=document.getElementById('ec-last').value.trim();
+  const phone=fmtPhoneNum(document.getElementById('ec-phone').value);
+  const email=document.getElementById('ec-email').value.trim();
+  const addr=document.getElementById('ec-addr').value.trim();
+  if(!first){alert('First name is required.');return;}
+
+  // Find all leads belonging to this customer and update them
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===key); if(!c) return;
+
+  try{
+    // Update all jobs for this customer
+    for(const lead of c.jobs){
+      const updated={...lead,
+        first_name:first, last_name:last,
+        phone:phone||lead.phone,
+        email:email||lead.email,
+        address:addr||lead.address,
+        updated_at:new Date().toISOString()
+      };
+      await upsertLead(updated);
+      const idx=allLeads.findIndex(l=>l.id===lead.id);
+      if(idx>-1) allLeads[idx]=updated;
+    }
+    closeModal('edit-customer');
+    // Refresh customer view with updated info
+    const updatedProfiles=getCustomerProfiles();
+    const updatedCustomer=updatedProfiles.find(p=>p.key===key)||
+      updatedProfiles.find(p=>p.first_name===first&&p.last_name===last);
+    if(updatedCustomer) viewCustomer(updatedCustomer.key);
+    renderCustomers();
+  }catch(e){alert('Save failed: '+e.message);}
 }
 
 function openAddLeadForCustomer(c){
