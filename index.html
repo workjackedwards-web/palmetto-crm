@@ -2911,7 +2911,10 @@ async function addrAutocomplete(input, suggestionsId){
     try{
       // Search biased toward South Carolina
       const encoded=encodeURIComponent(q);
-      const resp=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=6&countrycodes=us&viewbox=-80.2,32.6,-79.7,33.0&bounded=0&addressdetails=1`);
+      const resp=await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=6&countrycodes=us&addressdetails=1`,
+        {headers:{'Accept':'application/json'}}
+      );
       const results=await resp.json();
       if(!results.length){box.style.display='none';return;}
       addrActiveIndex=-1;
@@ -2979,16 +2982,22 @@ const STATUS_COLORS={
 
 async function geocodeAddress(address){
   if(geocodeCache[address]) return geocodeCache[address];
+  // Strip apartment/unit numbers which confuse geocoders
+  const cleaned=address.replace(/\b(apt|unit|ste|suite|#)\s*[\w-]+/gi,'').trim();
   try{
-    const q=encodeURIComponent(address+', Charleston SC');
-    const resp=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`);
+    const q=encodeURIComponent(cleaned);
+    const resp=await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=us`,
+      {headers:{'Accept':'application/json'}}
+    );
+    if(!resp.ok) return null;
     const data=await resp.json();
     if(data&&data.length>0){
       const result={lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon)};
       geocodeCache[address]=result;
       return result;
     }
-  }catch(e){console.error('Geocode failed:',e);}
+  }catch(e){console.warn('Geocode failed for:',address,e);}
   return null;
 }
 
@@ -3007,7 +3016,6 @@ function initMap(){
 
 async function renderMap(){
   initMap();
-  // Clear existing markers
   mapMarkers.forEach(m=>leafletMap.removeLayer(m));
   mapMarkers=[];
 
@@ -3019,7 +3027,7 @@ async function renderMap(){
   const showDoor=document.getElementById('mf-door')?.checked;
 
   const filterMap={Lead:showLead,Quoted:showQuoted,Booked:showBooked,Completed:showCompleted,Lost:showLost,'Door-to-door':showDoor};
-  const visibleLeads=allLeads.filter(l=>filterMap[l.status]);
+  const visibleLeads=allLeads.filter(l=>filterMap[l.status]&&l.address);
 
   // Update stats
   const counts={};
@@ -3033,18 +3041,27 @@ async function renderMap(){
     <div class="map-stat"><div class="map-stat-val">${allLeads.length}</div><div class="map-stat-lbl">Total</div></div>
   `;
 
-  // Geocode and plot each lead
+  if(!visibleLeads.length) return;
+
+  // Show loading message on map
+  const loadingMsg=L.popup({closeButton:false,autoClose:false,closeOnClick:false})
+    .setLatLng([32.7765,-79.9311])
+    .setContent(`<div style="font-family:var(--font);font-size:13px;padding:4px 8px;">Loading ${visibleLeads.length} locations...</div>`)
+    .openOn(leafletMap);
+
   let plotted=0;
   for(const lead of visibleLeads){
-    if(!lead.address) continue;
     const coords=await geocodeAddress(lead.address);
     if(!coords) continue;
 
     const color=STATUS_COLORS[lead.status]||'#888';
     const isCompleted=lead.status==='Completed';
 
-    // Create custom circle marker
-    const marker=L.circleMarker([coords.lat,coords.lng],{
+    // Add slight random jitter so overlapping addresses don't stack exactly
+    const jlat=coords.lat+(Math.random()-0.5)*0.0002;
+    const jlng=coords.lng+(Math.random()-0.5)*0.0002;
+
+    const marker=L.circleMarker([jlat,jlng],{
       radius:isCompleted?9:7,
       fillColor:color,
       color:'#fff',
@@ -3053,7 +3070,6 @@ async function renderMap(){
       fillOpacity:0.9
     });
 
-    // Tooltip on hover
     marker.bindTooltip(`
       <div style="font-family:-apple-system,sans-serif;min-width:160px;">
         <div style="font-weight:600;font-size:13px;">${lead.first_name} ${lead.last_name}</div>
@@ -3064,14 +3080,12 @@ async function renderMap(){
       </div>
     `,{sticky:false,offset:[0,-4]});
 
-    // Click to open profile
     marker.on('click',()=>{
       if(lead.status==='Completed'){
-        // Find customer profile key
         const phone=lead.phone?lead.phone.replace(/\D/g,''):`${lead.first_name}_${lead.last_name}`;
         const profiles=getCustomerProfiles();
         const cust=profiles.find(p=>p.key===phone)||profiles.find(p=>p.first_name===lead.first_name&&p.last_name===lead.last_name);
-        if(cust){viewCustomer(cust.key);}else{viewLead(lead.id);}
+        if(cust) viewCustomer(cust.key); else viewLead(lead.id);
       } else {
         viewLead(lead.id);
       }
@@ -3080,10 +3094,13 @@ async function renderMap(){
     marker.addTo(leafletMap);
     mapMarkers.push(marker);
     plotted++;
+
+    // Small delay between geocode requests to respect rate limits
+    await new Promise(r=>setTimeout(r,250));
   }
 
-  // Invalidate size after render to fix tile gaps
-  setTimeout(()=>leafletMap.invalidateSize(),100);
+  leafletMap.closePopup();
+  leafletMap.invalidateSize();
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
