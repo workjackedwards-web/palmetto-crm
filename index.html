@@ -578,33 +578,25 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field">
         <label>Services *</label>
         <div id="f-svc-wrap" style="border:1px solid var(--border-md);border-radius:var(--r-sm);padding:8px 10px;background:var(--surface);max-height:200px;overflow-y:auto;">
-          ${[
-            'House Washing (Soft Wash)',
-            'Driveway / Walkway',
-            'Pool Deck',
-            'Wood Deck',
-            'Patio',
-            'Roof Cleaning',
-            'Fence Cleaning',
-            'Gutter Cleaning',
-            'Car Wash Bay',
-            'Concrete Storefront',
-            'Gas Station Concrete',
-            'Residential Window Washing',
-            'Commercial Window Washing',
-            'Commercial Property',
-            'HOA / Community',
-            'Listing-Ready Package',
-            'Curb Appeal Package',
-            'Full Exterior Package',
-          ].map(s=>`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;">
-            <input type="checkbox" class="svc-check" value="${s}" style="width:14px;height:14px;accent-color:var(--teal-600);">
-            ${s}
-          </label>`).join('')}
-          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;">
-            <input type="checkbox" class="svc-check" value="__custom__" style="width:14px;height:14px;accent-color:var(--teal-600);" onchange="toggleCustomSvc(this)">
-            ✏️ Custom service...
-          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="House Washing (Soft Wash)" style="width:14px;height:14px;accent-color:var(--teal-600);"> House Washing (Soft Wash)</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Driveway / Walkway" style="width:14px;height:14px;accent-color:var(--teal-600);"> Driveway / Walkway</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Pool Deck" style="width:14px;height:14px;accent-color:var(--teal-600);"> Pool Deck</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Wood Deck" style="width:14px;height:14px;accent-color:var(--teal-600);"> Wood Deck</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Patio" style="width:14px;height:14px;accent-color:var(--teal-600);"> Patio</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Roof Cleaning" style="width:14px;height:14px;accent-color:var(--teal-600);"> Roof Cleaning</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Fence Cleaning" style="width:14px;height:14px;accent-color:var(--teal-600);"> Fence Cleaning</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Gutter Cleaning" style="width:14px;height:14px;accent-color:var(--teal-600);"> Gutter Cleaning</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Car Wash Bay" style="width:14px;height:14px;accent-color:var(--teal-600);"> Car Wash Bay</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Concrete Storefront" style="width:14px;height:14px;accent-color:var(--teal-600);"> Concrete Storefront</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Gas Station Concrete" style="width:14px;height:14px;accent-color:var(--teal-600);"> Gas Station Concrete</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Residential Window Washing" style="width:14px;height:14px;accent-color:var(--teal-600);"> Residential Window Washing</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Commercial Window Washing" style="width:14px;height:14px;accent-color:var(--teal-600);"> Commercial Window Washing</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Commercial Property" style="width:14px;height:14px;accent-color:var(--teal-600);"> Commercial Property</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="HOA / Community" style="width:14px;height:14px;accent-color:var(--teal-600);"> HOA / Community</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Listing-Ready Package" style="width:14px;height:14px;accent-color:var(--teal-600);"> Listing-Ready Package</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Curb Appeal Package" style="width:14px;height:14px;accent-color:var(--teal-600);"> Curb Appeal Package</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="Full Exterior Package" style="width:14px;height:14px;accent-color:var(--teal-600);"> Full Exterior Package</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;"><input type="checkbox" class="svc-check" value="__custom__" style="width:14px;height:14px;accent-color:var(--teal-600);" onchange="toggleCustomSvc(this)"> ✏️ Custom service...</label>
           <div id="f-svc-custom-wrap" style="display:none;margin-top:6px;">
             <input id="f-svc-custom" placeholder="Enter custom service name" style="padding:6px 10px;border:1px solid var(--teal-500);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);width:100%;">
           </div>
