@@ -576,8 +576,40 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="john@email.com"></div>
       <div class="field span2"><label>Property address *</label><input id="f-addr" placeholder="123 King St, Charleston SC 29401"></div>
       <div class="field">
-        <label>Service *</label>
-        <select id="f-svc"><option value="">Select service...</option><option>House Washing (Soft Wash)</option><option>Driveway / Walkway</option><option>Pool Deck</option><option>Patio</option><option>Roof Cleaning</option><option>Commercial Property</option><option>HOA / Community</option><option>Listing-Ready Package</option><option>Curb Appeal Package</option><option>Full Exterior Package</option><option>Other</option></select>
+        <label>Services *</label>
+        <div id="f-svc-wrap" style="border:1px solid var(--border-md);border-radius:var(--r-sm);padding:8px 10px;background:var(--surface);max-height:200px;overflow-y:auto;">
+          ${[
+            'House Washing (Soft Wash)',
+            'Driveway / Walkway',
+            'Pool Deck',
+            'Wood Deck',
+            'Patio',
+            'Roof Cleaning',
+            'Fence Cleaning',
+            'Gutter Cleaning',
+            'Car Wash Bay',
+            'Concrete Storefront',
+            'Gas Station Concrete',
+            'Residential Window Washing',
+            'Commercial Window Washing',
+            'Commercial Property',
+            'HOA / Community',
+            'Listing-Ready Package',
+            'Curb Appeal Package',
+            'Full Exterior Package',
+          ].map(s=>`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;">
+            <input type="checkbox" class="svc-check" value="${s}" style="width:14px;height:14px;accent-color:var(--teal-600);">
+            ${s}
+          </label>`).join('')}
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;">
+            <input type="checkbox" class="svc-check" value="__custom__" style="width:14px;height:14px;accent-color:var(--teal-600);" onchange="toggleCustomSvc(this)">
+            ✏️ Custom service...
+          </label>
+          <div id="f-svc-custom-wrap" style="display:none;margin-top:6px;">
+            <input id="f-svc-custom" placeholder="Enter custom service name" style="padding:6px 10px;border:1px solid var(--teal-500);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);width:100%;">
+          </div>
+        </div>
+        <input type="hidden" id="f-svc">
       </div>
       <div class="field">
         <label>Lead source</label>
@@ -881,7 +913,8 @@ function openAddLead(){
   document.getElementById('modal-lead-title').textContent='Add new lead';
   document.getElementById('edit-id').value='';
   ['f-first','f-last','f-phone','f-email','f-addr','f-quote','f-notes','f-rev','f-mat','f-lab','f-oth','f-chemicals'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('f-svc').value='';document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
+  setSelectedServices('');
+  document.getElementById('f-src').value='Website Form';document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
   document.getElementById('f-duration').value='';document.getElementById('f-completed-by').value='';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('fin-section').style.display='none';
@@ -901,7 +934,9 @@ function editLeadModal(lead){
   document.getElementById('edit-id').value=lead.id;
   document.getElementById('f-first').value=lead.first_name||'';document.getElementById('f-last').value=lead.last_name||'';
   document.getElementById('f-phone').value=lead.phone||'';document.getElementById('f-email').value=lead.email||'';
-  document.getElementById('f-addr').value=lead.address||'';document.getElementById('f-svc').value=lead.service||'';
+  document.getElementById('f-addr').value=lead.address||'';
+  setSelectedServices(lead.service||'');
+  document.getElementById('f-src').value=lead.source||'Website Form';
   document.getElementById('f-src').value=lead.source||'Website Form';document.getElementById('f-stat').value=lead.status||'Lead';
   document.getElementById('f-quote').value=lead.quote||'';document.getElementById('f-date').value=lead.job_date||'';
   document.getElementById('f-notes').value=lead.notes||'';document.getElementById('f-rev').value=lead.revenue||'';
@@ -1054,8 +1089,8 @@ function calcProfit(){
 async function saveLead(){
   const first=document.getElementById('f-first').value.trim();
   const addr=document.getElementById('f-addr').value.trim();
-  const svc=document.getElementById('f-svc').value;
-  if(!first||!addr||!svc){alert('Required: First name, Address, Service');return;}
+  const svc=getSelectedServices();
+  if(!first||!addr||!svc){alert('Required: First name, Address, and at least one Service');return;}
   const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('edit-id').value||uid();
   const lead={id,first_name:first,last_name:document.getElementById('f-last').value,phone:document.getElementById('f-phone').value,email:document.getElementById('f-email').value,address:addr,service:svc,source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,materials:document.getElementById('f-mat').value||null,labor:document.getElementById('f-lab').value||null,other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,completed_by:document.getElementById('f-completed-by').value||null,chemicals:document.getElementById('f-chemicals').value||null,referrer_id:document.getElementById('f-referrer-id').value||null,sched_date:document.getElementById('f-sched-date').value||null,sched_time:document.getElementById('f-sched-time').value||null,sched_partner:document.getElementById('f-sched-partner').value||null,sched_duration:document.getElementById('f-sched-duration').value||null,sched_notes:document.getElementById('f-sched-notes').value||null,added_by:currentUser?.email,updated_at:new Date().toISOString()};
@@ -1227,7 +1262,46 @@ function renderComms(){
     :'<div class="empty" style="padding:40px;">No communications yet. Google Voice notifications will appear here automatically, or use the Log button to add manually.</div>';
 }
 
-// ── Referral link helpers ──────────────────────────────────────────────────
+function toggleCustomSvc(cb){
+  document.getElementById('f-svc-custom-wrap').style.display=cb.checked?'block':'none';
+}
+
+function getSelectedServices(){
+  const checked=Array.from(document.querySelectorAll('.svc-check:checked'));
+  const services=checked.map(cb=>{
+    if(cb.value==='__custom__'){
+      return document.getElementById('f-svc-custom').value.trim();
+    }
+    return cb.value;
+  }).filter(Boolean);
+  return services.join(', ');
+}
+
+function setSelectedServices(serviceStr){
+  // Uncheck all first
+  document.querySelectorAll('.svc-check').forEach(cb=>cb.checked=false);
+  document.getElementById('f-svc-custom-wrap').style.display='none';
+  if(!serviceStr) return;
+  const parts=serviceStr.split(', ');
+  const knownServices=[
+    'House Washing (Soft Wash)','Driveway / Walkway','Pool Deck','Wood Deck','Patio',
+    'Roof Cleaning','Fence Cleaning','Gutter Cleaning','Car Wash Bay','Concrete Storefront',
+    'Gas Station Concrete','Residential Window Washing','Commercial Window Washing',
+    'Commercial Property','HOA / Community','Listing-Ready Package','Curb Appeal Package','Full Exterior Package'
+  ];
+  parts.forEach(svc=>{
+    const cb=Array.from(document.querySelectorAll('.svc-check')).find(c=>c.value===svc);
+    if(cb){cb.checked=true;}
+    else if(svc){
+      // custom service
+      const customCb=document.querySelector('.svc-check[value="__custom__"]');
+      if(customCb){customCb.checked=true;}
+      document.getElementById('f-svc-custom-wrap').style.display='block';
+      document.getElementById('f-svc-custom').value=svc;
+    }
+  });
+}
+
 function populateReferrerDropdown(selectedId){
   const sel=document.getElementById('f-referrer-id');
   sel.innerHTML='<option value="">Select referrer...</option>'+allConnections.map(c=>`<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.first_name} ${c.last_name}${c.company?' — '+c.company:''}</option>`).join('');
