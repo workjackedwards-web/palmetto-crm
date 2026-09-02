@@ -1278,11 +1278,11 @@ async function loadPhotosTab(leadId){
   const container=document.getElementById('view-tab-photos');
   container.innerHTML=`
     <div class="record-section"><div class="record-section-title">Before photos</div>
-      <div class="photo-upload-area" onclick="document.getElementById('upload-before').click()"><i class="ti ti-camera-plus"></i><p>Tap to upload before photos</p><input type="file" id="upload-before" multiple accept="image/*" onchange="uploadPhotos(this,'before','${leadId}')"></div>
+      <div class="photo-upload-area" onclick="document.getElementById('upload-before').click()"><i class="ti ti-camera-plus"></i><p>Tap to upload before photos or videos</p><input type="file" id="upload-before" multiple accept="image/*,video/*" onchange="uploadPhotos(this,'before','${leadId}')"></div>
       <div class="photo-grid" id="photos-before"></div>
     </div>
     <div class="record-section"><div class="record-section-title">After photos</div>
-      <div class="photo-upload-area" onclick="document.getElementById('upload-after').click()"><i class="ti ti-camera-plus"></i><p>Tap to upload after photos</p><input type="file" id="upload-after" multiple accept="image/*" onchange="uploadPhotos(this,'after','${leadId}')"></div>
+      <div class="photo-upload-area" onclick="document.getElementById('upload-after').click()"><i class="ti ti-camera-plus"></i><p>Tap to upload after photos or videos</p><input type="file" id="upload-after" multiple accept="image/*,video/*" onchange="uploadPhotos(this,'after','${leadId}')"></div>
       <div class="photo-grid" id="photos-after"></div>
     </div>
   `;
@@ -1293,14 +1293,19 @@ async function renderPhotos(leadId){
     const{data:files,error}=await sb.storage.from('job-photos').list(`${leadId}/${type}`);
     const grid=document.getElementById(`photos-${type}`);if(!grid)continue;
     if(error||!files||files.length===0){grid.innerHTML='';continue;}
-    grid.innerHTML=files.map(f=>{const{data}=sb.storage.from('job-photos').getPublicUrl(`${leadId}/${type}/${f.name}`);return`<div class="photo-thumb"><img src="${data.publicUrl}" alt="${type}" loading="lazy"><div class="photo-label">${type}</div><button class="photo-del" onclick="deletePhoto('${leadId}','${type}','${f.name}')" title="Delete">×</button></div>`;}).join('');
+    const isVideo=f=>f.name.match(/\.(mp4|mov|avi|webm|mkv|m4v)$/i);
+    grid.innerHTML=files.map(f=>{const{data}=sb.storage.from('job-photos').getPublicUrl(`${leadId}/${type}/${f.name}`);return`<div class="photo-thumb">${isVideo(f)?`<video src="${data.publicUrl}" style="width:100%;height:100%;object-fit:cover;" muted playsinline controls></video>`:` <img src="${data.publicUrl}" alt="${type}" loading="lazy">`}<div class="photo-label">${isVideo(f)?'▶ '+type:type}</div><button class="photo-del" onclick="deletePhoto('${leadId}','${type}','${f.name}')" title="Delete">×</button></div>`;}).join('');
   }
 }
 async function uploadPhotos(input,type,leadId){
   const files=Array.from(input.files);if(!files.length)return;
   const area=input.parentElement;
   area.innerHTML='<i class="ti ti-loader" style="font-size:24px;color:var(--teal-500);animation:spin .7s linear infinite;"></i><p style="font-size:13px;color:var(--ink-3);margin-top:8px;">Uploading...</p>';
-  for(const file of files){const ext=file.name.split('.').pop();const path=`${leadId}/${type}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false});}
+  for(const file of files){
+    const ext=file.name.split('.').pop();
+    const path=`${leadId}/${type}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||'application/octet-stream'});
+  }
   await loadPhotosTab(leadId);
 }
 async function viewQuoteInModal(url, filename){
