@@ -865,6 +865,20 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- QUOTE VIEWER MODAL -->
+<div class="overlay" id="modal-quote-viewer">
+  <div class="modal" style="width:900px;max-width:95vw;max-height:95vh;padding:0;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);">
+      <div style="font-size:15px;font-weight:600;" id="quote-viewer-title">Quote</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-primary" onclick="printQuoteFromModal()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+        <button class="btn btn-sm" onclick="closeModal('quote-viewer')"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <iframe id="quote-viewer-frame" style="width:100%;height:calc(95vh - 60px);border:none;" sandbox="allow-same-origin"></iframe>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
@@ -1289,11 +1303,26 @@ async function uploadPhotos(input,type,leadId){
   for(const file of files){const ext=file.name.split('.').pop();const path=`${leadId}/${type}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false});}
   await loadPhotosTab(leadId);
 }
-async function deletePhoto(leadId,type,filename){
-  if(!confirm('Delete this photo?'))return;
-  await sb.storage.from('job-photos').remove([`${leadId}/${type}/${filename}`]);
-  await renderPhotos(leadId);
+async function viewQuoteInModal(url, filename){
+  document.getElementById('quote-viewer-title').textContent=filename||'Quote';
+  // Fetch the HTML content and render it in the iframe
+  try{
+    const resp=await fetch(url);
+    const html=await resp.text();
+    const frame=document.getElementById('quote-viewer-frame');
+    frame.srcdoc=html;
+    frame.dataset.url=url;
+  }catch(e){
+    document.getElementById('quote-viewer-frame').srcdoc=`<p style="padding:20px;color:red;">Could not load quote: ${e.message}</p>`;
+  }
+  openModal('quote-viewer');
 }
+
+function printQuoteFromModal(){
+  const frame=document.getElementById('quote-viewer-frame');
+  frame.contentWindow.print();
+}
+
 
 // ── Communications ─────────────────────────────────────────────────────────
 function openAddComm(){
@@ -1416,10 +1445,14 @@ async function renderQuotePDFs(leadId){
   if(error||!files||files.length===0){container.innerHTML='<div style="font-size:13px;color:var(--ink-3);padding:10px 0;">No quote uploaded yet.</div>';return;}
   container.innerHTML=files.map(f=>{
     const{data}=sb.storage.from('job-photos').getPublicUrl(`${leadId}/quotes/${f.name}`);
+    const isHtml=f.name.endsWith('.html');
     return`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:8px;">
       <i class="ti ti-file-description" style="font-size:24px;color:var(--teal-600);flex-shrink:0;"></i>
       <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${f.name}</div><div style="font-size:11px;color:var(--ink-3);">Quote document</div></div>
-      <a href="${data.publicUrl}" target="_blank" class="btn btn-sm btn-primary"><i class="ti ti-eye"></i> View</a>
+      ${isHtml
+        ?`<button class="btn btn-sm btn-primary" onclick="viewQuoteInModal('${data.publicUrl}','${f.name}')"><i class="ti ti-eye"></i> View</button>`
+        :`<a href="${data.publicUrl}" target="_blank" class="btn btn-sm btn-primary" style="text-decoration:none;"><i class="ti ti-eye"></i> View</a>`
+      }
       <button class="btn btn-sm btn-danger" onclick="deleteQuotePDF('${leadId}','${f.name}')"><i class="ti ti-trash"></i></button>
     </div>`;
   }).join('');
