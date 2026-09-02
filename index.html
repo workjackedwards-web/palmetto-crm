@@ -182,12 +182,15 @@ tbody tr:hover td{background:#faf9f6;}
 .cal-week-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); height:50px; position:relative; padding:2px; }
 .cal-week-cell:nth-child(7n+1) { border-right:none; }
 .addr-wrap{position:relative;width:100%;}
-.addr-suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border-md);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
+.addr-wrap input{padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface);color:var(--ink);width:100%;}
+.addr-wrap input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+.addr-suggestions{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--border-md);border-radius:var(--r-sm);box-shadow:0 4px 16px rgba(0,0,0,0.13);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
 .addr-suggestion{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.4;}
 .addr-suggestion:last-child{border-bottom:none;}
 .addr-suggestion:hover,.addr-suggestion.active{background:var(--teal-50);color:var(--teal-700);}
 .addr-suggestion .addr-main{font-weight:500;}
-.addr-suggestion .addr-sub{font-size:11px;color:var(--ink-3);margin-top:1px;}width:100%;height:calc(100vh - 120px);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
+.addr-suggestion .addr-sub{font-size:11px;color:var(--ink-3);margin-top:1px;}
+.map-container{position:relative;width:100%;height:600px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
 #territory-map{width:100%;height:100%;}
 .map-legend{position:absolute;bottom:24px;left:24px;background:rgba(255,255,255,0.95);border-radius:var(--r-sm);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,0.15);z-index:1000;}
 .map-legend-title{font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
@@ -2906,27 +2909,33 @@ async function addrAutocomplete(input, suggestionsId){
   clearTimeout(addrDebounceTimer);
   addrDebounceTimer=setTimeout(async()=>{
     try{
-      const encoded=encodeURIComponent(q+', Charleston SC');
-      const resp=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=6&countrycodes=us&addressdetails=1`);
+      // Search biased toward South Carolina
+      const encoded=encodeURIComponent(q);
+      const resp=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=6&countrycodes=us&viewbox=-80.2,32.6,-79.7,33.0&bounded=0&addressdetails=1`);
       const results=await resp.json();
       if(!results.length){box.style.display='none';return;}
       addrActiveIndex=-1;
-      box.innerHTML=results.map((r,i)=>{
-        const parts=r.display_name.split(', ');
-        const main=parts.slice(0,2).join(', ');
-        const sub=parts.slice(2).join(', ');
-        return`<div class="addr-suggestion" data-val="${r.display_name.split(', United States')[0]}" onclick="selectAddr('${suggestionsId}','${input.id}',this.dataset.val)">
+      box.innerHTML=results.map((r)=>{
+        // Build clean address: house number + road + city + state + zip
+        const a=r.address||{};
+        const street=[a.house_number,a.road].filter(Boolean).join(' ');
+        const city=a.city||a.town||a.village||a.county||'';
+        const state=a.state_code||a.state||'';
+        const zip=a.postcode||'';
+        const main=street||r.display_name.split(',')[0];
+        const sub=[city,state,zip].filter(Boolean).join(', ');
+        const fullAddr=[street,city,state,zip].filter(Boolean).join(', ');
+        return`<div class="addr-suggestion" data-val="${fullAddr||main}" onclick="selectAddr('${suggestionsId}','${input.id}',this.dataset.val)">
           <div class="addr-main">${main}</div>
-          <div class="addr-sub">${sub}</div>
+          ${sub?`<div class="addr-sub">${sub}</div>`:''}
         </div>`;
       }).join('');
       box.style.display='block';
-      // Close on outside click
       document.addEventListener('click',function closeAddr(e){
         if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
       });
     }catch(e){box.style.display='none';}
-  },350);
+  },400);
 }
 
 function selectAddr(suggestionsId, inputId, val){
@@ -2984,12 +2993,16 @@ async function geocodeAddress(address){
 }
 
 function initMap(){
-  if(leafletMap) return;
-  leafletMap=L.map('territory-map').setView([32.7765,-79.9311],12);
+  if(leafletMap){
+    setTimeout(()=>{leafletMap.invalidateSize();},200);
+    return;
+  }
+  leafletMap=L.map('territory-map',{zoomControl:true}).setView([32.7765,-79.9311],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OpenStreetMap contributors',
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom:19
   }).addTo(leafletMap);
+  setTimeout(()=>leafletMap.invalidateSize(),300);
 }
 
 async function renderMap(){
