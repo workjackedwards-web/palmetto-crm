@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Palmetto Pressure Pros — CRM</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
@@ -180,7 +181,20 @@ tbody tr:hover td{background:#faf9f6;}
 .cal-week-time { font-size:10px; color:var(--ink-3); text-align:right; padding:0 8px 0 0; height:50px; display:flex; align-items:flex-start; padding-top:4px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
 .cal-week-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); height:50px; position:relative; padding:2px; }
 .cal-week-cell:nth-child(7n+1) { border-right:none; }
-@media(max-width:768px){ .cal-grid-month .cal-day { min-height:60px; } .cal-event { font-size:10px; } }
+.map-container{position:relative;width:100%;height:calc(100vh - 120px);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
+#territory-map{width:100%;height:100%;}
+.map-legend{position:absolute;bottom:24px;left:24px;background:rgba(255,255,255,0.95);border-radius:var(--r-sm);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,0.15);z-index:1000;}
+.map-legend-title{font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.map-legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);margin-bottom:5px;}
+.map-legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid rgba(0,0,0,0.2);}
+.map-filters{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.95);border-radius:var(--r-sm);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,0.15);z-index:1000;display:flex;flex-direction:column;gap:6px;}
+.map-filter-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);cursor:pointer;}
+.map-filter-label input{accent-color:var(--teal-600);}
+.map-stats{position:absolute;top:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:var(--r-sm);padding:10px 14px;box-shadow:0 2px 12px rgba(0,0,0,0.15);z-index:1000;display:flex;gap:16px;}
+.map-stat{text-align:center;}
+.map-stat-val{font-size:18px;font-weight:700;line-height:1;}
+.map-stat-lbl{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+@media(max-width:768px){.map-container{height:calc(100vh - 160px);}.map-filters{top:auto;bottom:80px;right:10px;}.map-stats{flex-wrap:wrap;gap:10px;}} .cal-grid-month .cal-day { min-height:60px; } .cal-event { font-size:10px; } }
   .sidebar{width:54px;}
   .sidebar-brand,.sidebar-sub,.sidebar-user-name,.sidebar-user-role,.nav-item span,.nav-section,.logout-btn span{display:none;}
   .nav-item{justify-content:center;padding:12px;}
@@ -238,6 +252,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="referrals" onclick="nav(this)"><i class="ti ti-gift"></i><span>Referral Tracker</span></div>
       <div class="nav-section">Reports</div>
       <div class="nav-item" data-page="analytics" onclick="nav(this)"><i class="ti ti-chart-bar"></i><span>Analytics</span></div>
+      <div class="nav-item" data-page="map" onclick="nav(this)"><i class="ti ti-map-2"></i><span>Territory Map</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="quotes" onclick="nav(this)"><i class="ti ti-file-dollar"></i><span>Quote Builder</span></div>
       <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
@@ -277,7 +292,7 @@ tbody tr:hover td{background:#faf9f6;}
           <div style="flex:1;"></div>
           <input type="text" id="search" placeholder="Search name, address, phone..." oninput="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
           <select id="f-status" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
-            <option value="">All active</option><option>Lead</option><option>Quoted</option><option>Booked</option>
+            <option value="">All active</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Door-to-door</option>
           </select>
           <select id="f-source" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
@@ -569,6 +584,34 @@ tbody tr:hover td{background:#faf9f6;}
         </div>
       </div>
 
+      <!-- MAP -->
+      <div id="pg-map" class="page-content" style="display:none;">
+        <div style="position:relative;">
+          <div class="map-stats" id="map-stats"></div>
+          <div class="map-filters" id="map-filters">
+            <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Show on map</div>
+            <label class="map-filter-label"><input type="checkbox" id="mf-lead" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#185FA5;display:inline-block;"></span> Leads</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-quoted" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#BA7517;display:inline-block;"></span> Quoted</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-booked" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#0F6E56;display:inline-block;"></span> Booked</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-completed" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#3B6D11;display:inline-block;"></span> Completed</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-lost" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#A32D2D;display:inline-block;"></span> Lost</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-door" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#6b21a8;display:inline-block;"></span> Door-to-door</label>
+          </div>
+          <div class="map-container">
+            <div id="territory-map"></div>
+          </div>
+          <div class="map-legend">
+            <div class="map-legend-title">Map legend</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#185FA5;"></div> Lead</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#BA7517;"></div> Quoted</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#0F6E56;"></div> Booked</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#3B6D11;"></div> Completed</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#A32D2D;"></div> Lost</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#6b21a8;"></div> Door-to-door</div>
+          </div>
+        </div>
+      </div>
+
       <!-- EMBED -->
       <div id="pg-embed" class="page-content" style="display:none;">
         <div class="card" style="margin-bottom:16px;">
@@ -632,7 +675,7 @@ tbody tr:hover td{background:#faf9f6;}
         <select id="f-referrer-id"><option value="">Select referrer...</option></select>
       </div>
       </div>
-      <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select></div>
+      <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option><option>Door-to-door</option></select></div>
       <div class="field"><label>Quote ($)</label><input id="f-quote" type="number" step="0.01" placeholder="0.00"></div>
       <div class="field"><label>Job date</label><input id="f-date" type="date"></div>
       <div class="field span2"><label>Notes</label><textarea id="f-notes" placeholder="Property details, access info, referral name..."></textarea></div>
@@ -879,6 +922,7 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
@@ -966,6 +1010,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
+  if(page==='map'){renderMap();}
   if(page==='embed')renderEmbed();
 }
 function refreshAll(){
@@ -1514,7 +1559,7 @@ function renderLeads(){
   const fSrc=document.getElementById('f-source')?.value||'';
   // Only show active leads - not Completed or Lost
   const data=allLeads.filter(l=>{
-    if(l.status==='Completed'||l.status==='Lost') return false;
+    if(l.status==='Completed') return false;
     const t=`${l.first_name} ${l.last_name} ${l.address} ${l.email||''} ${l.phone||''}`.toLowerCase();
     return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc);
   });
@@ -1712,7 +1757,7 @@ async function ppSubmit(){
 <\/script>`;
 }
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -2480,6 +2525,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
+  if(page==='map'){renderMap();}
   if(page==='quotes'){initQuotePage();}
   if(page==='invoices'){initInvoicePage();}
   if(page==='route'){document.getElementById('route-date').value=new Date().toISOString().split('T')[0];loadRouteJobs();}
@@ -2840,6 +2886,121 @@ function openAddLeadForCustomer(c){
   document.getElementById('f-phone').value=c.phone||'';
   document.getElementById('f-email').value=c.email||'';
   document.getElementById('f-addr').value=c.address||'';
+}
+
+// ── Territory Map ──────────────────────────────────────────────────────────
+let leafletMap=null;
+let mapMarkers=[];
+let geocodeCache={};
+
+const STATUS_COLORS={
+  'Lead':'#185FA5','Quoted':'#BA7517','Booked':'#0F6E56',
+  'Completed':'#3B6D11','Lost':'#A32D2D','Door-to-door':'#6b21a8'
+};
+
+async function geocodeAddress(address){
+  if(geocodeCache[address]) return geocodeCache[address];
+  try{
+    const q=encodeURIComponent(address+', Charleston SC');
+    const resp=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`);
+    const data=await resp.json();
+    if(data&&data.length>0){
+      const result={lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon)};
+      geocodeCache[address]=result;
+      return result;
+    }
+  }catch(e){console.error('Geocode failed:',e);}
+  return null;
+}
+
+function initMap(){
+  if(leafletMap) return;
+  leafletMap=L.map('territory-map').setView([32.7765,-79.9311],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap contributors',
+    maxZoom:19
+  }).addTo(leafletMap);
+}
+
+async function renderMap(){
+  initMap();
+  // Clear existing markers
+  mapMarkers.forEach(m=>leafletMap.removeLayer(m));
+  mapMarkers=[];
+
+  const showLead=document.getElementById('mf-lead')?.checked;
+  const showQuoted=document.getElementById('mf-quoted')?.checked;
+  const showBooked=document.getElementById('mf-booked')?.checked;
+  const showCompleted=document.getElementById('mf-completed')?.checked;
+  const showLost=document.getElementById('mf-lost')?.checked;
+  const showDoor=document.getElementById('mf-door')?.checked;
+
+  const filterMap={Lead:showLead,Quoted:showQuoted,Booked:showBooked,Completed:showCompleted,Lost:showLost,'Door-to-door':showDoor};
+  const visibleLeads=allLeads.filter(l=>filterMap[l.status]);
+
+  // Update stats
+  const counts={};
+  allLeads.forEach(l=>counts[l.status]=(counts[l.status]||0)+1);
+  document.getElementById('map-stats').innerHTML=`
+    <div class="map-stat"><div class="map-stat-val" style="color:#185FA5;">${counts['Lead']||0}</div><div class="map-stat-lbl">Leads</div></div>
+    <div class="map-stat"><div class="map-stat-val" style="color:#0F6E56;">${counts['Booked']||0}</div><div class="map-stat-lbl">Booked</div></div>
+    <div class="map-stat"><div class="map-stat-val" style="color:#3B6D11;">${counts['Completed']||0}</div><div class="map-stat-lbl">Done</div></div>
+    <div class="map-stat"><div class="map-stat-val" style="color:#A32D2D;">${counts['Lost']||0}</div><div class="map-stat-lbl">Lost</div></div>
+    <div class="map-stat"><div class="map-stat-val" style="color:#6b21a8;">${counts['Door-to-door']||0}</div><div class="map-stat-lbl">D2D</div></div>
+    <div class="map-stat"><div class="map-stat-val">${allLeads.length}</div><div class="map-stat-lbl">Total</div></div>
+  `;
+
+  // Geocode and plot each lead
+  let plotted=0;
+  for(const lead of visibleLeads){
+    if(!lead.address) continue;
+    const coords=await geocodeAddress(lead.address);
+    if(!coords) continue;
+
+    const color=STATUS_COLORS[lead.status]||'#888';
+    const isCompleted=lead.status==='Completed';
+
+    // Create custom circle marker
+    const marker=L.circleMarker([coords.lat,coords.lng],{
+      radius:isCompleted?9:7,
+      fillColor:color,
+      color:'#fff',
+      weight:2,
+      opacity:1,
+      fillOpacity:0.9
+    });
+
+    // Tooltip on hover
+    marker.bindTooltip(`
+      <div style="font-family:-apple-system,sans-serif;min-width:160px;">
+        <div style="font-weight:600;font-size:13px;">${lead.first_name} ${lead.last_name}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px;">${lead.service||'—'}</div>
+        <div style="font-size:11px;margin-top:3px;"><span style="background:${color};color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;">${lead.status}</span></div>
+        ${lead.job_date?`<div style="font-size:11px;color:#888;margin-top:2px;">${lead.job_date}</div>`:''}
+        <div style="font-size:10px;color:#aaa;margin-top:2px;">${lead.address}</div>
+      </div>
+    `,{sticky:false,offset:[0,-4]});
+
+    // Click to open profile
+    marker.on('click',()=>{
+      if(lead.status==='Completed'){
+        // Find customer profile key
+        const phone=lead.phone?lead.phone.replace(/\D/g,''):`${lead.first_name}_${lead.last_name}`;
+        const profiles=getCustomerProfiles();
+        const cust=profiles.find(p=>p.key===phone)||profiles.find(p=>p.first_name===lead.first_name&&p.last_name===lead.last_name);
+        if(cust){viewCustomer(cust.key);}else{viewLead(lead.id);}
+      } else {
+        viewLead(lead.id);
+      }
+    });
+
+    marker.addTo(leafletMap);
+    mapMarkers.push(marker);
+    plotted++;
+  }
+
+  // Invalidate size after render to fix tile gaps
+  setTimeout(()=>leafletMap.invalidateSize(),100);
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
