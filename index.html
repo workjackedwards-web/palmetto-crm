@@ -2905,40 +2905,41 @@ async function addrAutocomplete(input, suggestionsId){
   const q=input.value.trim();
   const box=document.getElementById(suggestionsId);
   if(!box) return;
-  if(q.length<4){box.style.display='none';box.innerHTML='';return;}
+  if(q.length<5){box.style.display='none';box.innerHTML='';return;}
   clearTimeout(addrDebounceTimer);
   addrDebounceTimer=setTimeout(async()=>{
     try{
-      // Search biased toward South Carolina
       const encoded=encodeURIComponent(q);
-      const resp=await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=6&countrycodes=us&addressdetails=1`,
-        {headers:{'Accept':'application/json'}}
-      );
-      const results=await resp.json();
-      if(!results.length){box.style.display='none';return;}
+      const url=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`;
+      const resp=await fetch(url);
+      if(!resp.ok){box.style.display='none';return;}
+      const data=await resp.json();
+      const matches=data?.result?.addressMatches||[];
+      if(!matches.length){
+        box.innerHTML='<div class="addr-suggestion" style="color:var(--ink-3);cursor:default;font-size:12px;">No matches — try including city or zip (e.g. "123 King St, Charleston SC")</div>';
+        box.style.display='block';
+        return;
+      }
       addrActiveIndex=-1;
-      box.innerHTML=results.map((r)=>{
-        // Build clean address: house number + road + city + state + zip
-        const a=r.address||{};
-        const street=[a.house_number,a.road].filter(Boolean).join(' ');
-        const city=a.city||a.town||a.village||a.county||'';
-        const state=a.state_code||a.state||'';
-        const zip=a.postcode||'';
-        const main=street||r.display_name.split(',')[0];
-        const sub=[city,state,zip].filter(Boolean).join(', ');
-        const fullAddr=[street,city,state,zip].filter(Boolean).join(', ');
-        return`<div class="addr-suggestion" data-val="${fullAddr||main}" onclick="selectAddr('${suggestionsId}','${input.id}',this.dataset.val)">
+      box.innerHTML=matches.slice(0,6).map(m=>{
+        const addr=m.matchedAddress||'';
+        const parts=addr.split(',');
+        const main=parts[0]?.trim()||addr;
+        const sub=parts.slice(1).join(',').trim();
+        return`<div class="addr-suggestion" data-val="${addr}" onclick="selectAddr('${suggestionsId}','${input.id}',this.dataset.val)">
           <div class="addr-main">${main}</div>
           ${sub?`<div class="addr-sub">${sub}</div>`:''}
         </div>`;
       }).join('');
       box.style.display='block';
       document.addEventListener('click',function closeAddr(e){
-        if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
+        if(!box.contains(e.target)&&e.target.id!==input.id){
+          box.style.display='none';
+          document.removeEventListener('click',closeAddr);
+        }
       });
-    }catch(e){box.style.display='none';}
-  },400);
+    }catch(e){console.warn('Autocomplete error:',e);box.style.display='none';}
+  },500);
 }
 
 function selectAddr(suggestionsId, inputId, val){
@@ -2982,22 +2983,40 @@ const STATUS_COLORS={
 
 async function geocodeAddress(address){
   if(geocodeCache[address]) return geocodeCache[address];
-  // Strip apartment/unit numbers which confuse geocoders
-  const cleaned=address.replace(/\b(apt|unit|ste|suite|#)\s*[\w-]+/gi,'').trim();
   try{
-    const q=encodeURIComponent(cleaned);
-    const resp=await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=us`,
-      {headers:{'Accept':'application/json'}}
-    );
-    if(!resp.ok) return null;
+    // US Census Bureau Geocoder - free, no API key, highly accurate for US addresses
+    const encoded=encodeURIComponent(address);
+    const url=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`;
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('Census API error');
     const data=await resp.json();
-    if(data&&data.length>0){
-      const result={lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon)};
-      geocodeCache[address]=result;
-      return result;
+    const matches=data?.result?.addressMatches;
+    if(matches&&matches.length>0){
+      const coords={
+        lat:matches[0].coordinates.y,
+        lng:matches[0].coordinates.x
+      };
+      geocodeCache[address]=coords;
+      return coords;
     }
-  }catch(e){console.warn('Geocode failed for:',address,e);}
+    // Fallback: try with just street + city
+    const parts=address.split(',');
+    if(parts.length>1){
+      const shortAddr=parts.slice(0,2).join(',').trim();
+      const encoded2=encodeURIComponent(shortAddr+', SC');
+      const url2=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded2}&benchmark=Public_AR_Current&format=json`;
+      const resp2=await fetch(url2);
+      if(resp2.ok){
+        const data2=await resp2.json();
+        const matches2=data2?.result?.addressMatches;
+        if(matches2&&matches2.length>0){
+          const coords={lat:matches2[0].coordinates.y,lng:matches2[0].coordinates.x};
+          geocodeCache[address]=coords;
+          return coords;
+        }
+      }
+    }
+  }catch(e){console.warn('Geocode failed:',address,e.message);}
   return null;
 }
 
