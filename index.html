@@ -225,7 +225,8 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-section">Overview</div>
       <div class="nav-item active" data-page="dashboard" onclick="nav(this)"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></div>
       <div class="nav-section">CRM</div>
-      <div class="nav-item" data-page="leads" onclick="nav(this)"><i class="ti ti-users"></i><span>Leads & Customers</span></div>
+      <div class="nav-item" data-page="leads" onclick="nav(this)"><i class="ti ti-user-plus"></i><span>Leads</span></div>
+      <div class="nav-item" data-page="customers" onclick="nav(this)"><i class="ti ti-users"></i><span>Customers</span></div>
       <div class="nav-item" data-page="pipeline" onclick="nav(this)"><i class="ti ti-columns"></i><span>Pipeline</span></div>
       <div class="nav-item" data-page="jobs" onclick="nav(this)"><i class="ti ti-briefcase"></i><span>Jobs & Revenue</span></div>
       <div class="nav-section">Schedule</div>
@@ -270,14 +271,33 @@ tbody tr:hover td{background:#faf9f6;}
 
       <!-- LEADS -->
       <div id="pg-leads" class="page-content" style="display:none;">
-        <div class="filters">
-          <input type="text" id="search" placeholder="Search name, address, phone..." oninput="renderLeads()">
-          <select id="f-status" onchange="renderLeads()"><option value="">All statuses</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select>
-          <select id="f-source" onchange="renderLeads()"><option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option><option>HOA</option><option>Property Manager</option><option>Social Media</option><option>Direct Outreach</option><option>Other</option></select>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="openAddLead()"><i class="ti ti-plus"></i> New lead</button>
+          <button class="btn" onclick="openExistingCustomerLead()" style="background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-300);"><i class="ti ti-user-search"></i> Existing customer</button>
+          <div style="flex:1;"></div>
+          <input type="text" id="search" placeholder="Search name, address, phone..." oninput="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
+          <select id="f-status" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All active</option><option>Lead</option><option>Quoted</option><option>Booked</option>
+          </select>
+          <select id="f-source" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
+            <option>HOA</option><option>Property Manager</option><option>Social Media</option><option>Direct Outreach</option><option>Other</option>
+          </select>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Customer</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
+          <table><thead><tr><th>Lead</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
           <tbody id="leads-body"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- CUSTOMERS -->
+      <div id="pg-customers" class="page-content" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="cust-search" placeholder="Search name, address, phone..." oninput="renderCustomers()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Customer</th><th>Address</th><th>Phone</th><th>Email</th><th>Jobs</th><th>Total Revenue</th><th>Last Job</th><th></th></tr></thead>
+          <tbody id="customers-body"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody></table>
         </div>
       </div>
 
@@ -572,7 +592,7 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="form-grid">
       <div class="field"><label>First name *</label><input id="f-first" placeholder="John"></div>
       <div class="field"><label>Last name *</label><input id="f-last" placeholder="Smith"></div>
-      <div class="field"><label>Phone</label><input id="f-phone" placeholder="(843) 555-0100"></div>
+      <div class="field"><label>Phone</label><input id="f-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="john@email.com"></div>
       <div class="field span2"><label>Property address *</label><input id="f-addr" placeholder="123 King St, Charleston SC 29401"></div>
       <div class="field">
@@ -727,7 +747,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field"><label>Last name *</label><input id="c-last" placeholder="Johnson"></div>
       <div class="field"><label>Company</label><input id="c-company" placeholder="Compass Real Estate"></div>
       <div class="field"><label>Contact type</label><select id="c-type"><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select></div>
-      <div class="field"><label>Phone</label><input id="c-phone" placeholder="(843) 555-0100"></div>
+      <div class="field"><label>Phone</label><input id="c-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="c-email" placeholder="sarah@compass.com"></div>
       <div class="field"><label>Referral partner?</label><select id="c-referral"><option value="no">No</option><option value="yes">Yes — enrolled in referral program</option></select></div>
       <div class="field"><label>Bonuses paid out ($)</label><input id="c-paid" type="number" step="0.01" placeholder="0.00"></div>
@@ -788,6 +808,38 @@ tbody tr:hover td{background:#faf9f6;}
       <button class="btn btn-danger btn-sm" id="ev-del-btn" style="display:none;" onclick="deleteEvent()"><i class="ti ti-trash"></i> Delete</button>
       <button class="btn" onclick="closeModal('event')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-check"></i> Save event</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXISTING CUSTOMER MODAL -->
+<div class="overlay" id="modal-existing-customer">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2>Add job for existing customer</h2><button class="btn btn-sm" onclick="closeModal('existing-customer')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Search for the customer and select them to pre-fill their info.</p>
+    <input type="text" id="existing-cust-search" placeholder="Search by name, phone, or address..." style="padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:12px;" oninput="searchExistingCustomers()">
+    <div id="existing-cust-results" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('existing-customer')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW CUSTOMER MODAL -->
+<div class="overlay" id="modal-view-customer">
+  <div class="modal" style="width:700px;">
+    <div class="modal-head"><h2 id="view-cust-title">Customer profile</h2><button class="btn btn-sm" onclick="closeModal('view-customer')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchCustTab('info',this)">Info</div>
+      <div class="modal-tab" onclick="switchCustTab('jobs',this)">Job history</div>
+      <div class="modal-tab" onclick="switchCustTab('comms',this)">Communications</div>
+    </div>
+    <div id="cust-tab-info"></div>
+    <div id="cust-tab-jobs" style="display:none;"></div>
+    <div id="cust-tab-comms" style="display:none;"></div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="cust-add-job-btn"><i class="ti ti-plus"></i> Add new job</button>
+      <button class="btn" onclick="closeModal('view-customer')">Close</button>
     </div>
   </div>
 </div>
@@ -862,7 +914,7 @@ async function upsertConnection(conn){const{data,error}=await sb.from('connectio
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads & Customers',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',embed:'Website Form'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',embed:'Website Form'};
 function nav(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
@@ -871,6 +923,7 @@ function nav(el){
   document.getElementById('pg-'+page).style.display='block';
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
+  if(page==='customers')renderCustomers();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
   if(page==='calendar')renderCalendar();
@@ -883,7 +936,7 @@ function nav(el){
 function refreshAll(){
   renderDashboard();
   const active=document.querySelector('.nav-item.active');
-  if(active){const p=active.dataset.page;if(p==='leads')renderLeads();if(p==='pipeline')renderPipeline();if(p==='jobs')renderJobs();if(p==='calendar')renderCalendar();if(p==='comms')renderComms();if(p==='connections')renderConnections();if(p==='referrals')renderReferrals();if(p==='analytics')renderAnalytics();}
+  if(active){const p=active.dataset.page;if(p==='leads')renderLeads();if(p==='customers')renderCustomers();if(p==='pipeline')renderPipeline();if(p==='jobs')renderJobs();if(p==='calendar')renderCalendar();if(p==='comms')renderComms();if(p==='connections')renderConnections();if(p==='referrals')renderReferrals();if(p==='analytics')renderAnalytics();}
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -1085,7 +1138,7 @@ async function saveLead(){
   if(!first||!addr||!svc){alert('Required: First name, Address, and at least one Service');return;}
   const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('edit-id').value||uid();
-  const lead={id,first_name:first,last_name:document.getElementById('f-last').value,phone:document.getElementById('f-phone').value,email:document.getElementById('f-email').value,address:addr,service:svc,source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,materials:document.getElementById('f-mat').value||null,labor:document.getElementById('f-lab').value||null,other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,completed_by:document.getElementById('f-completed-by').value||null,chemicals:document.getElementById('f-chemicals').value||null,referrer_id:document.getElementById('f-referrer-id').value||null,sched_date:document.getElementById('f-sched-date').value||null,sched_time:document.getElementById('f-sched-time').value||null,sched_partner:document.getElementById('f-sched-partner').value||null,sched_duration:document.getElementById('f-sched-duration').value||null,sched_notes:document.getElementById('f-sched-notes').value||null,added_by:currentUser?.email,updated_at:new Date().toISOString()};
+  const lead={id,first_name:first,last_name:document.getElementById('f-last').value,phone:fmtPhoneNum(document.getElementById('f-phone').value),email:document.getElementById('f-email').value,address:addr,service:svc,source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,materials:document.getElementById('f-mat').value||null,labor:document.getElementById('f-lab').value||null,other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,completed_by:document.getElementById('f-completed-by').value||null,chemicals:document.getElementById('f-chemicals').value||null,referrer_id:document.getElementById('f-referrer-id').value||null,sched_date:document.getElementById('f-sched-date').value||null,sched_time:document.getElementById('f-sched-time').value||null,sched_partner:document.getElementById('f-sched-partner').value||null,sched_duration:document.getElementById('f-sched-duration').value||null,sched_notes:document.getElementById('f-sched-notes').value||null,added_by:currentUser?.email,updated_at:new Date().toISOString()};
   try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);closeModal('lead');refreshAll();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save lead';
@@ -1254,6 +1307,21 @@ function renderComms(){
     :'<div class="empty" style="padding:40px;">No communications yet. Google Voice notifications will appear here automatically, or use the Log button to add manually.</div>';
 }
 
+function formatPhone(input){
+  const digits=input.value.replace(/\D/g,'').slice(0,10);
+  if(digits.length===0){input.value='';return;}
+  if(digits.length<=3) input.value='('+digits;
+  else if(digits.length<=6) input.value='('+digits.slice(0,3)+') '+digits.slice(3);
+  else input.value='('+digits.slice(0,3)+') '+digits.slice(3,6)+'-'+digits.slice(6);
+}
+
+function fmtPhoneNum(raw){
+  if(!raw) return '';
+  const digits=raw.replace(/\D/g,'').slice(0,10);
+  if(digits.length<10) return raw; // return as-is if not 10 digits
+  return '('+digits.slice(0,3)+') '+digits.slice(3,6)+'-'+digits.slice(6);
+}
+
 function toggleCustomSvc(cb){
   document.getElementById('f-svc-custom-wrap').style.display=cb.checked?'block':'none';
 }
@@ -1381,11 +1449,24 @@ function renderDashboard(){
 
 // ── Leads ──────────────────────────────────────────────────────────────────
 function renderLeads(){
-  const search=(document.getElementById('search').value||'').toLowerCase();
-  const fStat=document.getElementById('f-status').value;
-  const fSrc=document.getElementById('f-source').value;
-  const data=allLeads.filter(l=>{const t=`${l.first_name} ${l.last_name} ${l.address} ${l.email||''} ${l.phone||''}`.toLowerCase();return(!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc);});
-  document.getElementById('leads-body').innerHTML=data.length?data.map(l=>`<tr><td><div style="font-weight:500;">${l.first_name} ${l.last_name}</div><div class="td-muted">${l.phone||''}</div></td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td><td>${l.service}</td><td>${badge(l.status)}</td><td>${l.source||'—'}</td><td>${l.job_date||'—'}</td><td><button class="btn btn-sm" onclick="viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td></tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:30px;">No leads found.</td></tr>';
+  const search=(document.getElementById('search')?.value||'').toLowerCase();
+  const fStat=document.getElementById('f-status')?.value||'';
+  const fSrc=document.getElementById('f-source')?.value||'';
+  // Only show active leads - not Completed or Lost
+  const data=allLeads.filter(l=>{
+    if(l.status==='Completed'||l.status==='Lost') return false;
+    const t=`${l.first_name} ${l.last_name} ${l.address} ${l.email||''} ${l.phone||''}`.toLowerCase();
+    return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc);
+  });
+  document.getElementById('leads-body').innerHTML=data.length?data.map(l=>`<tr>
+    <td><div style="font-weight:500;">${l.first_name} ${l.last_name}</div><div class="td-muted">${l.phone||''}</div></td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">${l.service}</td>
+    <td>${badge(l.status)}</td>
+    <td>${l.source||'—'}</td>
+    <td>${l.job_date||'—'}</td>
+    <td><button class="btn btn-sm" onclick="viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td>
+  </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads. Click "New lead" to add one.</td></tr>';
 }
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
@@ -1423,7 +1504,7 @@ async function saveConnection(){
   const first=document.getElementById('c-first').value.trim();if(!first){alert('First name is required.');return;}
   const btn=document.getElementById('conn-save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('conn-edit-id').value||uid();
-  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:document.getElementById('c-type').value,phone:document.getElementById('c-phone').value,email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
+  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:document.getElementById('c-type').value,phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
   try{const saved=await upsertConnection(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);closeModal('connection');renderConnections();renderReferrals();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save contact';
@@ -1571,7 +1652,7 @@ async function ppSubmit(){
 <\/script>`;
 }
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -2255,6 +2336,7 @@ function nav(el){
   document.getElementById('pg-'+page).style.display='block';
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
+  if(page==='customers')renderCustomers();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
   if(page==='calendar')renderCalendar();
@@ -2364,6 +2446,216 @@ function sendFollowupText(){
   markFollowupSent(viewingLeadId);
   const btn=document.getElementById('send-followup-btn');
   if(btn) btn.innerHTML='<i class="ti ti-check"></i> Follow-up sent';
+}
+
+// ── Customers ──────────────────────────────────────────────────────────────
+function getCustomerProfiles(){
+  // Group completed leads by phone number (primary key) or name
+  const profiles={};
+  allLeads.filter(l=>l.status==='Completed').forEach(l=>{
+    const key=l.phone?l.phone.replace(/\D/g,''):`${l.first_name}_${l.last_name}`;
+    if(!profiles[key]){
+      profiles[key]={
+        key, first_name:l.first_name, last_name:l.last_name,
+        phone:l.phone, email:l.email, address:l.address,
+        jobs:[], totalRevenue:0, lastJob:''
+      };
+    }
+    profiles[key].jobs.push(l);
+    profiles[key].totalRevenue+=(+l.revenue||0);
+    if(!profiles[key].lastJob||l.job_date>profiles[key].lastJob) profiles[key].lastJob=l.job_date;
+  });
+  return Object.values(profiles).sort((a,b)=>b.jobs.length-a.jobs.length);
+}
+
+function renderCustomers(){
+  const search=(document.getElementById('cust-search')?.value||'').toLowerCase();
+  const profiles=getCustomerProfiles().filter(c=>{
+    const t=`${c.first_name} ${c.last_name} ${c.phone||''} ${c.address||''} ${c.email||''}`.toLowerCase();
+    return !search||t.includes(search);
+  });
+  document.getElementById('customers-body').innerHTML=profiles.length?profiles.map(c=>`<tr>
+    <td><div style="font-weight:500;">${c.first_name} ${c.last_name}</div></td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">${c.address}</td>
+    <td>${c.phone||'—'}</td>
+    <td style="font-size:12px;">${c.email||'—'}</td>
+    <td style="font-weight:600;color:var(--teal-500);">${c.jobs.length}</td>
+    <td style="font-weight:500;">${$m(c.totalRevenue)}</td>
+    <td>${c.lastJob||'—'}</td>
+    <td><button class="btn btn-sm" onclick="viewCustomer('${c.key}')"><i class="ti ti-eye"></i></button></td>
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No customers yet. Completed jobs will appear here automatically.</td></tr>';
+}
+
+let viewingCustomerKey=null;
+
+function viewCustomer(key){
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===key); if(!c) return;
+  viewingCustomerKey=key;
+  document.getElementById('view-cust-title').textContent=`${c.first_name} ${c.last_name}`;
+  // Reset tabs
+  document.querySelectorAll('#modal-view-customer .modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.getElementById('cust-tab-info').style.display='block';
+  document.getElementById('cust-tab-jobs').style.display='none';
+  document.getElementById('cust-tab-comms').style.display='none';
+  // Info tab
+  document.getElementById('cust-tab-info').innerHTML=`
+    <div class="record-section"><div class="record-section-title">Contact information</div>
+      <div class="record-grid">
+        <div class="record-field"><div class="lbl">Name</div><div class="val" style="font-weight:500;">${c.first_name} ${c.last_name}</div></div>
+        <div class="record-field"><div class="lbl">Phone</div><div class="val">${c.phone||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Email</div><div class="val">${c.email||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Address</div><div class="val">${c.address||'—'}</div></div>
+      </div>
+    </div>
+    <div class="record-section"><div class="record-section-title">Account summary</div>
+      <div class="record-grid">
+        <div class="record-field"><div class="lbl">Total jobs</div><div class="val" style="font-weight:600;color:var(--teal-500);font-size:18px;">${c.jobs.length}</div></div>
+        <div class="record-field"><div class="lbl">Total revenue</div><div class="val" style="font-weight:600;color:var(--green-600);font-size:18px;">${$m(c.totalRevenue)}</div></div>
+        <div class="record-field"><div class="lbl">Last job</div><div class="val">${c.lastJob||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Customer since</div><div class="val">${c.jobs.length?c.jobs.sort((a,b)=>a.job_date?.localeCompare(b.job_date||'')||0)[0].job_date||'—':'—'}</div></div>
+      </div>
+    </div>
+  `;
+  // Set up add job button
+  document.getElementById('cust-add-job-btn').onclick=()=>{
+    closeModal('view-customer');
+    openAddLeadForCustomer(c);
+  };
+  openModal('view-customer');
+}
+
+function switchCustTab(tab,el){
+  document.querySelectorAll('#modal-view-customer .modal-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cust-tab-info').style.display=tab==='info'?'block':'none';
+  document.getElementById('cust-tab-jobs').style.display=tab==='jobs'?'block':'none';
+  document.getElementById('cust-tab-comms').style.display=tab==='comms'?'block':'none';
+  if(tab==='jobs') renderCustomerJobHistory();
+  if(tab==='comms') renderCustomerComms();
+}
+
+function renderCustomerJobHistory(){
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===viewingCustomerKey); if(!c) return;
+  const jobs=c.jobs.sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||''));
+  document.getElementById('cust-tab-jobs').innerHTML=`
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Job history (${jobs.length} completed jobs)</div>
+    ${jobs.map((l,i)=>{
+      const p=profit(l); const m=margin(l);
+      return`<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;${i===0?'border-color:var(--teal-300);background:var(--teal-50);':''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${l.service}</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${l.job_date||'—'}${l.completed_by?' · '+l.completed_by:''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:600;color:var(--green-600);">${$m(l.revenue)}</div>
+            ${l.revenue?`<div style="font-size:11px;color:var(--ink-3);">Profit: ${$m(p)} (${pct(m)})</div>`:''}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;">
+          ${l.duration?`<div><span style="color:var(--ink-3);">Duration: </span>${l.duration}</div>`:''}
+          ${l.chemicals?`<div style="grid-column:span 2;"><span style="color:var(--ink-3);">Chemicals: </span>${l.chemicals}</div>`:''}
+        </div>
+        ${l.notes?`<div style="font-size:12px;color:var(--ink-3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${l.notes}</div>`:''}
+        <div style="margin-top:8px;"><button class="btn btn-sm" onclick="closeModal('view-customer');viewLead('${l.id}')"><i class="ti ti-eye"></i> View full record</button></div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function renderCustomerComms(){
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===viewingCustomerKey); if(!c) return;
+  const leadIds=c.jobs.map(j=>j.id);
+  const phone=(c.phone||'').replace(/\D/g,'');
+  const comms=allComms.filter(cm=>{
+    if(leadIds.includes(cm.lead_id)) return true;
+    if(phone&&cm.from_address&&cm.from_address.replace(/\D/g,'').includes(phone)) return true;
+    return false;
+  });
+  const linkedEvents=allEvents.filter(e=>leadIds.includes(e.lead_id));
+  document.getElementById('cust-tab-comms').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Communication history</div>
+      <button class="btn btn-sm btn-primary" onclick="openAddCommForCustomer('${viewingCustomerKey}')"><i class="ti ti-plus"></i> Log</button>
+    </div>
+    ${linkedEvents.length?`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;margin-bottom:8px;">Linked calendar events</div>${linkedEvents.map(e=>`<div class="comm-item"><div class="comm-icon" style="background:#f0e6fb;color:#6b21a8;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-calendar-event"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${e.title}</div><div style="font-size:12px;color:var(--ink-3);">${e.event_date}${e.start_time?' at '+e.start_time:''}</div></div></div>`).join('')}</div>`:''}
+    ${comms.length?comms.map(cm=>{const ic=commIcon(cm.type||cm.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${cm.subject||cm.type||'Communication'}</div><div style="font-size:12px;color:var(--ink-3);">${cm.from_address||'—'} · ${fmtDate(cm.received_at)}</div>${cm.body?`<div style="font-size:12px;margin-top:4px;color:var(--ink-2);">${cm.body.slice(0,200)}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications yet.</div>'}
+  `;
+}
+
+function openAddCommForCustomer(key){
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===key); if(!c) return;
+  closeModal('view-customer');
+  openAddComm();
+  // Pre-fill from address with phone
+  if(c.phone) document.getElementById('comm-from').value=c.phone;
+  // Link to most recent job
+  if(c.jobs.length){
+    const recent=c.jobs.sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||''))[0];
+    document.getElementById('comm-lead-id').value=recent.id;
+  }
+}
+
+// ── Existing customer lead flow ────────────────────────────────────────────
+function openExistingCustomerLead(){
+  document.getElementById('existing-cust-search').value='';
+  searchExistingCustomers();
+  openModal('existing-customer');
+}
+
+function searchExistingCustomers(){
+  const q=(document.getElementById('existing-cust-search').value||'').toLowerCase();
+  const profiles=getCustomerProfiles();
+  const results=q?profiles.filter(c=>{
+    const t=`${c.first_name} ${c.last_name} ${c.phone||''} ${c.address||''}`.toLowerCase();
+    return t.includes(q);
+  }):profiles;
+  const container=document.getElementById('existing-cust-results');
+  if(!results.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">No customers found. Try a different search.</div>';
+    return;
+  }
+  container.innerHTML=results.map(c=>`
+    <div onclick="selectExistingCustomer('${c.key}')" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .1s;" onmouseover="this.style.background='var(--teal-50)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-weight:500;font-size:13px;">${c.first_name} ${c.last_name}</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${c.phone||''} · ${c.address}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;color:var(--teal-500);font-weight:500;">${c.jobs.length} job${c.jobs.length!==1?'s':''}</div>
+        <div style="font-size:11px;color:var(--ink-3);">Last: ${c.lastJob||'—'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectExistingCustomer(key){
+  const profiles=getCustomerProfiles();
+  const c=profiles.find(p=>p.key===key); if(!c) return;
+  closeModal('existing-customer');
+  // Open add lead modal pre-filled with customer info
+  openAddLead();
+  document.getElementById('f-first').value=c.first_name||'';
+  document.getElementById('f-last').value=c.last_name||'';
+  document.getElementById('f-phone').value=c.phone||'';
+  document.getElementById('f-email').value=c.email||'';
+  document.getElementById('f-addr').value=c.address||'';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  // Clear services for new job selection
+  setSelectedServices('');
+}
+
+function openAddLeadForCustomer(c){
+  openAddLead();
+  document.getElementById('f-first').value=c.first_name||'';
+  document.getElementById('f-last').value=c.last_name||'';
+  document.getElementById('f-phone').value=c.phone||'';
+  document.getElementById('f-email').value=c.email||'';
+  document.getElementById('f-addr').value=c.address||'';
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
