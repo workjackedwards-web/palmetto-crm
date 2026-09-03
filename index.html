@@ -2902,34 +2902,42 @@ let addrDebounceTimer=null;
 let addrActiveIndex=-1;
 
 async function addrAutocomplete(input, suggestionsId){
-  const q=input.value.trim().toLowerCase();
+  const q=input.value.trim();
   const box=document.getElementById(suggestionsId);
   if(!box) return;
   if(q.length<3){box.style.display='none';box.innerHTML='';return;}
   clearTimeout(addrDebounceTimer);
   addrDebounceTimer=setTimeout(async()=>{
     const suggestions=[];
-    // 1. Search existing lead addresses first (instant, no API)
+    // 1. Search existing addresses in CRM (instant)
     const existing=[...new Set(allLeads.map(l=>l.address).filter(Boolean))];
-    existing.forEach(addr=>{if(addr.toLowerCase().includes(q))suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});});
-    // 2. Call Census API for additional suggestions
+    existing.forEach(addr=>{
+      if(addr.toLowerCase().includes(q.toLowerCase()))
+        suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});
+    });
+    // 2. Photon geocoder (open CORS, no API key)
     try{
-      const resp=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(input.value.trim())}&benchmark=Public_AR_Current&format=json`);
+      const resp=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`);
       if(resp.ok){
         const data=await resp.json();
-        const matches=data?.result?.addressMatches||[];
-        matches.forEach(m=>{
-          const addr=m.matchedAddress||'';
-          if(!suggestions.find(s=>s.val===addr)){
-            suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});
-          }
+        (data.features||[]).forEach(f=>{
+          const p=f.properties||{};
+          const street=[p.housenumber,p.street].filter(Boolean).join(' ');
+          const city=p.city||p.county||'';
+          const state=p.state||'';
+          const postcode=p.postcode||'';
+          const main=street||p.name||'';
+          const sub=[city,state,postcode].filter(Boolean).join(', ');
+          const val=[street,city,state,postcode].filter(Boolean).join(', ');
+          if(val&&!suggestions.find(s=>s.val===val))
+            suggestions.push({main,sub,val});
         });
       }
     }catch(e){}
     if(!suggestions.length){box.style.display='none';return;}
     addrActiveIndex=-1;
     const sid=suggestionsId;const iid=input.id;
-    box.innerHTML=suggestions.slice(0,8).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,"&quot;")}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
+    box.innerHTML=suggestions.slice(0,8).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,'&quot;')}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main||s.val}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
     box.style.display='block';
     document.addEventListener('click',function closeAddr(e){
       if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
@@ -2979,22 +2987,34 @@ const STATUS_COLORS={
 async function geocodeAddress(address){
   if(geocodeCache[address]) return geocodeCache[address];
   try{
-    const encoded=encodeURIComponent(address);
-    const resp=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`);
-    if(!resp.ok) return null;
+    // Photon (Komoot) - open CORS, no API key, works from browsers
+    const q=encodeURIComponent(address);
+    const resp=await fetch(`https://photon.komoot.io/api/?q=${q}&limit=1&lang=en`);
+    if(!resp.ok) throw new Error('Photon error');
     const data=await resp.json();
-    const m=data?.result?.addressMatches;
-    if(m&&m.length>0){
-      const c={lat:m[0].coordinates.y,lng:m[0].coordinates.x};
-      geocodeCache[address]=c; return c;
+    const features=data?.features;
+    if(features&&features.length>0){
+      const [lng,lat]=features[0].geometry.coordinates;
+      const coords={lat,lng};
+      geocodeCache[address]=coords;
+      return coords;
     }
-    // fallback: street only + SC
-    const street=address.split(',')[0].trim();
-    if(street){
-      const r2=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(street+' SC')}&benchmark=Public_AR_Current&format=json`);
-      if(r2.ok){const d2=await r2.json();const m2=d2?.result?.addressMatches;if(m2&&m2.length>0){const c={lat:m2[0].coordinates.y,lng:m2[0].coordinates.x};geocodeCache[address]=c;return c;}}
-    }
-  }catch(e){console.warn('Geocode fail:',e.message);}
+  }catch(e){
+    // Fallback: Census Bureau
+    try{
+      const resp2=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(address)}&benchmark=Public_AR_Current&format=json`);
+      if(resp2.ok){
+        const d2=await resp2.json();
+        const m=d2?.result?.addressMatches;
+        if(m&&m.length>0){
+          const coords={lat:m[0].coordinates.y,lng:m[0].coordinates.x};
+          geocodeCache[address]=coords;
+          return coords;
+        }
+      }
+    }catch(e2){}
+  }
+  console.warn('Could not geocode:',address);
   return null;
 }
 
