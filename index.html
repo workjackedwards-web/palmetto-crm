@@ -2907,43 +2907,47 @@ async function addrAutocomplete(input, suggestionsId){
   if(!box) return;
   if(q.length<3){box.style.display='none';box.innerHTML='';return;}
   clearTimeout(addrDebounceTimer);
-  addrDebounceTimer=setTimeout(async()=>{
-    const suggestions=[];
-    // 1. Search existing addresses in CRM (instant)
-    const existing=[...new Set(allLeads.map(l=>l.address).filter(Boolean))];
-    existing.forEach(addr=>{
-      if(addr.toLowerCase().includes(q.toLowerCase()))
-        suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});
-    });
-    // 2. Photon geocoder (open CORS, no API key)
-    try{
-      const resp=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`);
-      if(resp.ok){
-        const data=await resp.json();
-        (data.features||[]).forEach(f=>{
-          const p=f.properties||{};
-          const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-          const city=p.city||p.county||'';
-          const state=p.state||'';
-          const postcode=p.postcode||'';
-          const main=street||p.name||'';
-          const sub=[city,state,postcode].filter(Boolean).join(', ');
-          const val=[street,city,state,postcode].filter(Boolean).join(', ');
-          if(val&&!suggestions.find(s=>s.val===val))
-            suggestions.push({main,sub,val});
-        });
-      }
-    }catch(e){}
-    if(!suggestions.length){box.style.display='none';return;}
-    addrActiveIndex=-1;
+
+  // First: search existing CRM addresses (instant)
+  const suggestions=[];
+  const existing=[...new Set(allLeads.map(l=>l.address).filter(Boolean))];
+  existing.forEach(addr=>{
+    if(addr.toLowerCase().includes(q.toLowerCase()))
+      suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});
+  });
+
+  // Show existing matches immediately
+  if(suggestions.length){
     const sid=suggestionsId;const iid=input.id;
-    box.innerHTML=suggestions.slice(0,8).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,'&quot;')}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main||s.val}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
+    box.innerHTML=suggestions.slice(0,4).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,'&quot;')}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
     box.style.display='block';
-    document.addEventListener('click',function closeAddr(e){
-      if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
-    });
-  },350);
+  }
+
+  // Then: Google Places Autocomplete
+  addrDebounceTimer=setTimeout(async()=>{
+    try{
+      const resp=await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&types=address&components=country:us&key=${GOOGLE_API_KEY}`);
+      if(!resp.ok) return;
+      const data=await resp.json();
+      const preds=data.predictions||[];
+      const sid=suggestionsId;const iid=input.id;
+      const googleResults=preds.slice(0,6).map(p=>{
+        const desc=p.description||'';
+        const main=p.structured_formatting?.main_text||desc.split(',')[0];
+        const sub=p.structured_formatting?.secondary_text||desc.split(',').slice(1).join(',').trim();
+        return{main,sub,val:desc};
+      });
+      const all=[...suggestions,...googleResults.filter(g=>!suggestions.find(s=>s.val===g.val))];
+      if(!all.length){box.style.display='none';return;}
+      box.innerHTML=all.slice(0,8).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,'&quot;')}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
+      box.style.display='block';
+      document.addEventListener('click',function closeAddr(e){
+        if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
+      });
+    }catch(e){console.warn('Places autocomplete error:',e);}
+  },400);
 }
+
 
 function selectAddr(suggestionsId, inputId, val){
   const input=document.getElementById(inputId);
@@ -2984,39 +2988,26 @@ const STATUS_COLORS={
   'Completed':'#3B6D11','Lost':'#A32D2D','Door-to-door':'#6b21a8'
 };
 
+const GOOGLE_API_KEY='AIzaSyA3xo1EwyBqqvvPsrgjHwLKrdShMHww-Iw';
+
 async function geocodeAddress(address){
   if(geocodeCache[address]) return geocodeCache[address];
   try{
-    // Photon (Komoot) - open CORS, no API key, works from browsers
-    const q=encodeURIComponent(address);
-    const resp=await fetch(`https://photon.komoot.io/api/?q=${q}&limit=1&lang=en`);
-    if(!resp.ok) throw new Error('Photon error');
+    const encoded=encodeURIComponent(address);
+    const resp=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${GOOGLE_API_KEY}`);
+    if(!resp.ok) return null;
     const data=await resp.json();
-    const features=data?.features;
-    if(features&&features.length>0){
-      const [lng,lat]=features[0].geometry.coordinates;
-      const coords={lat,lng};
+    if(data.status==='OK'&&data.results.length>0){
+      const loc=data.results[0].geometry.location;
+      const coords={lat:loc.lat,lng:loc.lng};
       geocodeCache[address]=coords;
       return coords;
     }
-  }catch(e){
-    // Fallback: Census Bureau
-    try{
-      const resp2=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(address)}&benchmark=Public_AR_Current&format=json`);
-      if(resp2.ok){
-        const d2=await resp2.json();
-        const m=d2?.result?.addressMatches;
-        if(m&&m.length>0){
-          const coords={lat:m[0].coordinates.y,lng:m[0].coordinates.x};
-          geocodeCache[address]=coords;
-          return coords;
-        }
-      }
-    }catch(e2){}
-  }
-  console.warn('Could not geocode:',address);
+    console.warn('Google geocode no result:',data.status,address);
+  }catch(e){console.warn('Geocode error:',e.message);}
   return null;
 }
+
 
 function addMapMarker(lead,lat,lng){
   const color=STATUS_COLORS[lead.status]||'#888';
