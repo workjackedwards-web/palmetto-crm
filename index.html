@@ -2902,44 +2902,39 @@ let addrDebounceTimer=null;
 let addrActiveIndex=-1;
 
 async function addrAutocomplete(input, suggestionsId){
-  const q=input.value.trim();
+  const q=input.value.trim().toLowerCase();
   const box=document.getElementById(suggestionsId);
   if(!box) return;
-  if(q.length<5){box.style.display='none';box.innerHTML='';return;}
+  if(q.length<3){box.style.display='none';box.innerHTML='';return;}
   clearTimeout(addrDebounceTimer);
   addrDebounceTimer=setTimeout(async()=>{
+    const suggestions=[];
+    // 1. Search existing lead addresses first (instant, no API)
+    const existing=[...new Set(allLeads.map(l=>l.address).filter(Boolean))];
+    existing.forEach(addr=>{if(addr.toLowerCase().includes(q))suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});});
+    // 2. Call Census API for additional suggestions
     try{
-      const encoded=encodeURIComponent(q);
-      const url=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`;
-      const resp=await fetch(url);
-      if(!resp.ok){box.style.display='none';return;}
-      const data=await resp.json();
-      const matches=data?.result?.addressMatches||[];
-      if(!matches.length){
-        box.innerHTML='<div class="addr-suggestion" style="color:var(--ink-3);cursor:default;font-size:12px;">No matches — try including city or zip (e.g. "123 King St, Charleston SC")</div>';
-        box.style.display='block';
-        return;
+      const resp=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(input.value.trim())}&benchmark=Public_AR_Current&format=json`);
+      if(resp.ok){
+        const data=await resp.json();
+        const matches=data?.result?.addressMatches||[];
+        matches.forEach(m=>{
+          const addr=m.matchedAddress||'';
+          if(!suggestions.find(s=>s.val===addr)){
+            suggestions.push({main:addr.split(',')[0],sub:addr.split(',').slice(1).join(',').trim(),val:addr});
+          }
+        });
       }
-      addrActiveIndex=-1;
-      box.innerHTML=matches.slice(0,6).map(m=>{
-        const addr=m.matchedAddress||'';
-        const parts=addr.split(',');
-        const main=parts[0]?.trim()||addr;
-        const sub=parts.slice(1).join(',').trim();
-        return`<div class="addr-suggestion" data-val="${addr}" onclick="selectAddr('${suggestionsId}','${input.id}',this.dataset.val)">
-          <div class="addr-main">${main}</div>
-          ${sub?`<div class="addr-sub">${sub}</div>`:''}
-        </div>`;
-      }).join('');
-      box.style.display='block';
-      document.addEventListener('click',function closeAddr(e){
-        if(!box.contains(e.target)&&e.target.id!==input.id){
-          box.style.display='none';
-          document.removeEventListener('click',closeAddr);
-        }
-      });
-    }catch(e){console.warn('Autocomplete error:',e);box.style.display='none';}
-  },500);
+    }catch(e){}
+    if(!suggestions.length){box.style.display='none';return;}
+    addrActiveIndex=-1;
+    const sid=suggestionsId;const iid=input.id;
+    box.innerHTML=suggestions.slice(0,8).map(s=>`<div class="addr-suggestion" data-val="${s.val.replace(/"/g,"&quot;")}" onclick="selectAddr('${sid}','${iid}',this.dataset.val)"><div class="addr-main">${s.main}</div>${s.sub?`<div class="addr-sub">${s.sub}</div>`:''}</div>`).join('');
+    box.style.display='block';
+    document.addEventListener('click',function closeAddr(e){
+      if(!box.contains(e.target)&&e.target.id!==input.id){box.style.display='none';document.removeEventListener('click',closeAddr);}
+    });
+  },350);
 }
 
 function selectAddr(suggestionsId, inputId, val){
@@ -2984,51 +2979,58 @@ const STATUS_COLORS={
 async function geocodeAddress(address){
   if(geocodeCache[address]) return geocodeCache[address];
   try{
-    // US Census Bureau Geocoder - free, no API key, highly accurate for US addresses
     const encoded=encodeURIComponent(address);
-    const url=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`;
-    const resp=await fetch(url);
-    if(!resp.ok) throw new Error('Census API error');
+    const resp=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded}&benchmark=Public_AR_Current&format=json`);
+    if(!resp.ok) return null;
     const data=await resp.json();
-    const matches=data?.result?.addressMatches;
-    if(matches&&matches.length>0){
-      const coords={
-        lat:matches[0].coordinates.y,
-        lng:matches[0].coordinates.x
-      };
-      geocodeCache[address]=coords;
-      return coords;
+    const m=data?.result?.addressMatches;
+    if(m&&m.length>0){
+      const c={lat:m[0].coordinates.y,lng:m[0].coordinates.x};
+      geocodeCache[address]=c; return c;
     }
-    // Fallback: try with just street + city
-    const parts=address.split(',');
-    if(parts.length>1){
-      const shortAddr=parts.slice(0,2).join(',').trim();
-      const encoded2=encodeURIComponent(shortAddr+', SC');
-      const url2=`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encoded2}&benchmark=Public_AR_Current&format=json`;
-      const resp2=await fetch(url2);
-      if(resp2.ok){
-        const data2=await resp2.json();
-        const matches2=data2?.result?.addressMatches;
-        if(matches2&&matches2.length>0){
-          const coords={lat:matches2[0].coordinates.y,lng:matches2[0].coordinates.x};
-          geocodeCache[address]=coords;
-          return coords;
-        }
-      }
+    // fallback: street only + SC
+    const street=address.split(',')[0].trim();
+    if(street){
+      const r2=await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(street+' SC')}&benchmark=Public_AR_Current&format=json`);
+      if(r2.ok){const d2=await r2.json();const m2=d2?.result?.addressMatches;if(m2&&m2.length>0){const c={lat:m2[0].coordinates.y,lng:m2[0].coordinates.x};geocodeCache[address]=c;return c;}}
     }
-  }catch(e){console.warn('Geocode failed:',address,e.message);}
+  }catch(e){console.warn('Geocode fail:',e.message);}
   return null;
 }
 
+function addMapMarker(lead,lat,lng){
+  const color=STATUS_COLORS[lead.status]||'#888';
+  const r=lead.status==='Completed'?9:7;
+  const jlat=lat+(Math.random()-0.5)*0.0003;
+  const jlng=lng+(Math.random()-0.5)*0.0003;
+  const marker=L.circleMarker([jlat,jlng],{radius:r,fillColor:color,color:'#fff',weight:2,opacity:1,fillOpacity:0.9});
+  marker.bindTooltip(
+    `<div style="font-family:-apple-system,sans-serif;min-width:160px;padding:2px;">
+      <div style="font-weight:600;font-size:13px;">${lead.first_name} ${lead.last_name}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">${lead.service||'—'}</div>
+      <div style="margin-top:4px;"><span style="background:${color};color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;">${lead.status}</span></div>
+      ${lead.job_date?`<div style="font-size:11px;color:#888;margin-top:3px;">${lead.job_date}</div>`:''}
+      <div style="font-size:10px;color:#bbb;margin-top:2px;">${lead.address}</div>
+    </div>`,
+    {sticky:false,offset:[0,-4],className:''}
+  );
+  marker.on('click',()=>{
+    if(lead.status==='Completed'){
+      const phone=lead.phone?lead.phone.replace(/\D/g,''):`${lead.first_name}_${lead.last_name}`;
+      const profiles=getCustomerProfiles();
+      const cust=profiles.find(p=>p.key===phone)||profiles.find(p=>p.first_name===lead.first_name&&p.last_name===lead.last_name);
+      if(cust)viewCustomer(cust.key);else viewLead(lead.id);
+    } else {viewLead(lead.id);}
+  });
+  marker.addTo(leafletMap);
+  mapMarkers.push(marker);
+}
+
 function initMap(){
-  if(leafletMap){
-    setTimeout(()=>{leafletMap.invalidateSize();},200);
-    return;
-  }
+  if(leafletMap){setTimeout(()=>leafletMap.invalidateSize(),200);return;}
   leafletMap=L.map('territory-map',{zoomControl:true}).setView([32.7765,-79.9311],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom:19
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:19
   }).addTo(leafletMap);
   setTimeout(()=>leafletMap.invalidateSize(),300);
 }
@@ -3038,89 +3040,56 @@ async function renderMap(){
   mapMarkers.forEach(m=>leafletMap.removeLayer(m));
   mapMarkers=[];
 
-  const showLead=document.getElementById('mf-lead')?.checked;
-  const showQuoted=document.getElementById('mf-quoted')?.checked;
-  const showBooked=document.getElementById('mf-booked')?.checked;
-  const showCompleted=document.getElementById('mf-completed')?.checked;
-  const showLost=document.getElementById('mf-lost')?.checked;
-  const showDoor=document.getElementById('mf-door')?.checked;
+  const filterMap={
+    Lead:document.getElementById('mf-lead')?.checked,
+    Quoted:document.getElementById('mf-quoted')?.checked,
+    Booked:document.getElementById('mf-booked')?.checked,
+    Completed:document.getElementById('mf-completed')?.checked,
+    Lost:document.getElementById('mf-lost')?.checked,
+    'Door-to-door':document.getElementById('mf-door')?.checked
+  };
 
-  const filterMap={Lead:showLead,Quoted:showQuoted,Booked:showBooked,Completed:showCompleted,Lost:showLost,'Door-to-door':showDoor};
-  const visibleLeads=allLeads.filter(l=>filterMap[l.status]&&l.address);
-
-  // Update stats
   const counts={};
   allLeads.forEach(l=>counts[l.status]=(counts[l.status]||0)+1);
-  document.getElementById('map-stats').innerHTML=`
+  const statsEl=document.getElementById('map-stats');
+  if(statsEl) statsEl.innerHTML=`
     <div class="map-stat"><div class="map-stat-val" style="color:#185FA5;">${counts['Lead']||0}</div><div class="map-stat-lbl">Leads</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#0F6E56;">${counts['Booked']||0}</div><div class="map-stat-lbl">Booked</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#3B6D11;">${counts['Completed']||0}</div><div class="map-stat-lbl">Done</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#A32D2D;">${counts['Lost']||0}</div><div class="map-stat-lbl">Lost</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#6b21a8;">${counts['Door-to-door']||0}</div><div class="map-stat-lbl">D2D</div></div>
-    <div class="map-stat"><div class="map-stat-val">${allLeads.length}</div><div class="map-stat-lbl">Total</div></div>
-  `;
+    <div class="map-stat"><div class="map-stat-val">${allLeads.length}</div><div class="map-stat-lbl">Total</div></div>`;
 
-  if(!visibleLeads.length) return;
+  const visibleLeads=allLeads.filter(l=>filterMap[l.status]&&l.address);
 
-  // Show loading message on map
-  const loadingMsg=L.popup({closeButton:false,autoClose:false,closeOnClick:false})
-    .setLatLng([32.7765,-79.9311])
-    .setContent(`<div style="font-family:var(--font);font-size:13px;padding:4px 8px;">Loading ${visibleLeads.length} locations...</div>`)
-    .openOn(leafletMap);
-
-  let plotted=0;
+  // Phase 1: instantly plot leads with stored coords
+  const needsGeocode=[];
   for(const lead of visibleLeads){
-    const coords=await geocodeAddress(lead.address);
-    if(!coords) continue;
-
-    const color=STATUS_COLORS[lead.status]||'#888';
-    const isCompleted=lead.status==='Completed';
-
-    // Add slight random jitter so overlapping addresses don't stack exactly
-    const jlat=coords.lat+(Math.random()-0.5)*0.0002;
-    const jlng=coords.lng+(Math.random()-0.5)*0.0002;
-
-    const marker=L.circleMarker([jlat,jlng],{
-      radius:isCompleted?9:7,
-      fillColor:color,
-      color:'#fff',
-      weight:2,
-      opacity:1,
-      fillOpacity:0.9
-    });
-
-    marker.bindTooltip(`
-      <div style="font-family:-apple-system,sans-serif;min-width:160px;">
-        <div style="font-weight:600;font-size:13px;">${lead.first_name} ${lead.last_name}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px;">${lead.service||'—'}</div>
-        <div style="font-size:11px;margin-top:3px;"><span style="background:${color};color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;">${lead.status}</span></div>
-        ${lead.job_date?`<div style="font-size:11px;color:#888;margin-top:2px;">${lead.job_date}</div>`:''}
-        <div style="font-size:10px;color:#aaa;margin-top:2px;">${lead.address}</div>
-      </div>
-    `,{sticky:false,offset:[0,-4]});
-
-    marker.on('click',()=>{
-      if(lead.status==='Completed'){
-        const phone=lead.phone?lead.phone.replace(/\D/g,''):`${lead.first_name}_${lead.last_name}`;
-        const profiles=getCustomerProfiles();
-        const cust=profiles.find(p=>p.key===phone)||profiles.find(p=>p.first_name===lead.first_name&&p.last_name===lead.last_name);
-        if(cust) viewCustomer(cust.key); else viewLead(lead.id);
-      } else {
-        viewLead(lead.id);
-      }
-    });
-
-    marker.addTo(leafletMap);
-    mapMarkers.push(marker);
-    plotted++;
-
-    // Small delay between geocode requests to respect rate limits
-    await new Promise(r=>setTimeout(r,250));
+    if(lead.lat&&lead.lng){
+      addMapMarker(lead,lead.lat,lead.lng);
+    } else {
+      needsGeocode.push(lead);
+    }
   }
+  leafletMap.invalidateSize();
+  if(needsGeocode.length===0) return;
 
-  leafletMap.closePopup();
+  // Phase 2: geocode missing addresses in background, save result to DB
+  for(const lead of needsGeocode){
+    const coords=await geocodeAddress(lead.address);
+    if(!coords){await new Promise(r=>setTimeout(r,200));continue;}
+    addMapMarker(lead,coords.lat,coords.lng);
+    try{
+      const updated={...lead,lat:coords.lat,lng:coords.lng,updated_at:new Date().toISOString()};
+      const saved=await upsertLead(updated);
+      const idx=allLeads.findIndex(l=>l.id===lead.id);
+      if(idx>-1)allLeads[idx]=saved||updated;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,400));
+  }
   leafletMap.invalidateSize();
 }
+
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
 </script>
