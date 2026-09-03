@@ -262,6 +262,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-section">Reports</div>
       <div class="nav-item" data-page="analytics" onclick="nav(this)"><i class="ti ti-chart-bar"></i><span>Analytics</span></div>
       <div class="nav-item" data-page="map" onclick="nav(this)"><i class="ti ti-map-2"></i><span>Territory Map</span></div>
+      <div class="nav-item" data-page="recurring" onclick="nav(this)"><i class="ti ti-repeat"></i><span>Recurring Jobs</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="quotes" onclick="nav(this)"><i class="ti ti-file-dollar"></i><span>Quote Builder</span></div>
       <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
@@ -322,6 +323,29 @@ tbody tr:hover td{background:#faf9f6;}
         <div class="table-wrap">
           <table><thead><tr><th>Customer</th><th>Address</th><th>Phone</th><th>Email</th><th>Jobs</th><th>Total Revenue</th><th>Last Job</th><th></th></tr></thead>
           <tbody id="customers-body"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- RECURRING JOBS -->
+      <div id="pg-recurring" class="page-content" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="openAddRecurring()"><i class="ti ti-plus"></i> New recurring contract</button>
+          <div style="flex:1;"></div>
+          <input type="text" id="recurring-search" placeholder="Search name, address, service..." oninput="renderRecurring()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
+          <select id="recurring-filter-status" onchange="renderRecurring()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Paused">Paused</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="metrics" id="recurring-metrics"></div>
+        <div class="table-wrap">
+          <table><thead><tr>
+            <th>Customer</th><th>Service</th><th>Frequency</th><th>Rate/Visit</th><th>Annual Value</th><th>Partner</th><th>Status</th><th>Next cleaning</th><th></th>
+          </tr></thead>
+          <tbody id="recurring-body"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
+          </table>
         </div>
       </div>
 
@@ -931,6 +955,111 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- ADD/EDIT RECURRING CONTRACT MODAL -->
+<div class="overlay" id="modal-recurring">
+  <div class="modal" style="width:680px;">
+    <div class="modal-head"><h2 id="modal-recurring-title">New recurring contract</h2><button class="btn btn-sm" onclick="closeModal('recurring')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="rec-edit-id">
+    <div class="form-grid">
+      <div class="field"><label>First name *</label><input id="rec-first" placeholder="John"></div>
+      <div class="field"><label>Last name *</label><input id="rec-last" placeholder="Smith"></div>
+      <div class="field"><label>Phone</label><input id="rec-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
+      <div class="field"><label>Email</label><input id="rec-email" type="email" placeholder="john@email.com"></div>
+      <div class="field span2"><label>Property address *</label><div class="addr-wrap"><input id="rec-addr" placeholder="123 King St, Charleston SC 29401" oninput="addrAutocomplete(this,'rec-addr-suggestions')" onkeydown="addrKeydown(event,'rec-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="rec-addr-suggestions"></div></div></div>
+      <div class="field"><label>Service *</label>
+        <select id="rec-service">
+          <option value="">Select service...</option>
+          <option>House Washing (Soft Wash)</option><option>Driveway / Walkway</option>
+          <option>Pool Deck</option><option>Wood Deck</option><option>Patio</option>
+          <option>Roof Cleaning</option><option>Fence Cleaning</option><option>Gutter Cleaning</option>
+          <option>Commercial Property</option><option>HOA / Community</option>
+          <option>Residential Window Washing</option><option>Commercial Window Washing</option>
+          <option>Full Exterior Package</option><option>Custom</option>
+        </select>
+      </div>
+      <div class="field"><label>Frequency *</label>
+        <select id="rec-frequency">
+          <option value="">Select frequency...</option>
+          <option>Weekly</option><option>Biweekly</option><option>Monthly</option>
+          <option>Bimonthly</option><option>Quarterly</option><option>Semi-annual</option>
+          <option>Annual</option><option>Custom</option>
+        </select>
+      </div>
+      <div class="field"><label>Rate per visit ($) *</label><input id="rec-rate" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Assigned partner</label>
+        <select id="rec-partner">
+          <option value="">TBD</option><option>Jack</option><option>Charlie</option><option>Tanner</option>
+          <option>Jack + Charlie</option><option>Jack + Tanner</option><option>Charlie + Tanner</option><option>All three</option>
+        </select>
+      </div>
+      <div class="field"><label>Contract start date</label><input id="rec-start" type="date"></div>
+      <div class="field"><label>Contract end date</label><input id="rec-end" type="date" placeholder="Leave blank if ongoing"></div>
+      <div class="field"><label>Status</label>
+        <select id="rec-status"><option>Active</option><option>Paused</option><option>Cancelled</option></select>
+      </div>
+      <div class="field"><label>Lead source</label>
+        <select id="rec-source"><option>Referral</option><option>Realtor</option><option>HOA</option><option>Property Manager</option><option>Website Form</option><option>Direct Outreach</option><option>Other</option></select>
+      </div>
+      <div class="field span2"><label>Notes / Contract details</label><textarea id="rec-notes" placeholder="Property access info, special instructions, what's included in the contract..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('recurring')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecurring()"><i class="ti ti-check"></i> Save contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW RECURRING PROFILE MODAL -->
+<div class="overlay" id="modal-view-recurring">
+  <div class="modal" style="width:740px;">
+    <div class="modal-head"><h2 id="view-rec-title">Recurring contract</h2><button class="btn btn-sm" onclick="closeModal('view-recurring')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchRecTab('overview',this)">Overview</div>
+      <div class="modal-tab" onclick="switchRecTab('schedule',this)">Schedule</div>
+      <div class="modal-tab" onclick="switchRecTab('history',this)">Visit history</div>
+      <div class="modal-tab" onclick="switchRecTab('contract',this)">Contract PDF</div>
+      <div class="modal-tab" onclick="switchRecTab('comms',this)">Communications</div>
+    </div>
+    <div id="rec-tab-overview"></div>
+    <div id="rec-tab-schedule" style="display:none;"></div>
+    <div id="rec-tab-history" style="display:none;"></div>
+    <div id="rec-tab-contract" style="display:none;"></div>
+    <div id="rec-tab-comms" style="display:none;"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="rec-del-btn"><i class="ti ti-trash"></i> Delete contract</button>
+      <button class="btn btn-sm" id="rec-edit-btn"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn" onclick="closeModal('view-recurring')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG VISIT MODAL -->
+<div class="overlay" id="modal-log-visit">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2>Log completed visit</h2><button class="btn btn-sm" onclick="closeModal('log-visit')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="lv-contract-id">
+    <input type="hidden" id="lv-visit-id">
+    <div class="form-grid">
+      <div class="field"><label>Visit date *</label><input id="lv-date" type="date"></div>
+      <div class="field"><label>Revenue ($)</label><input id="lv-revenue" type="number" step="0.01" placeholder="Auto-fills from contract rate"></div>
+      <div class="field"><label>Duration</label>
+        <select id="lv-duration"><option value="">Select...</option><option>Under 1 hour</option><option>1 hour</option><option>1.5 hours</option><option>2 hours</option><option>2.5 hours</option><option>3 hours</option><option>3.5 hours</option><option>4 hours</option><option>5 hours</option><option>6 hours</option><option>Full day (7+ hours)</option></select>
+      </div>
+      <div class="field"><label>Completed by</label>
+        <select id="lv-partner"><option value="">Select...</option><option>Jack</option><option>Charlie</option><option>Tanner</option><option>Jack + Charlie</option><option>Jack + Tanner</option><option>Charlie + Tanner</option><option>All three</option></select>
+      </div>
+      <div class="field span2"><label>Chemicals used</label><input id="lv-chemicals" placeholder="e.g. SH 12.5% diluted 3:1..."></div>
+      <div class="field span2"><label>Notes</label><textarea id="lv-notes" placeholder="Any notes about this visit..."></textarea></div>
+      <div class="field"><label>Schedule next visit</label><input id="lv-next" type="date"></div>
+      <div class="field" style="align-self:flex-end;"><label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;"><input type="checkbox" id="lv-log-to-customer" checked style="accent-color:var(--teal-600);"> Log to customer history</label></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('log-visit')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVisitLog()"><i class="ti ti-check"></i> Log visit</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -938,7 +1067,7 @@ const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], authMode='login', viewingLeadId=null;
+let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], authMode='login', viewingLeadId=null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function toggleAuthMode(){
@@ -986,6 +1115,8 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">Connections loaded: '+allConnections.length+'. Loading comms...</div>';
     await loadComms();
     await loadEvents();
+    await loadRecurring();
+    await loadVisits();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
@@ -996,13 +1127,17 @@ async function loadLeads(){try{const{data,error}=await sb.from('leads').select('
 async function loadConnections(){try{const{data,error}=await sb.from('connections').select('*').order('created_at',{ascending:false});if(error)console.error('connections error:',error);else allConnections=data||[];}catch(e){console.error('loadConnections failed:',e);}}
 async function loadComms(){try{const{data,error}=await sb.from('communications').select('*').order('received_at',{ascending:false});if(error)console.error('comms error:',error);else allComms=data||[];}catch(e){console.error('loadComms failed:',e);}}
 async function loadEvents(){try{const{data,error}=await sb.from('events').select('*').order('event_date',{ascending:true});if(error)console.error('events error:',error);else allEvents=data||[];}catch(e){console.error('loadEvents failed:',e);}}
+async function loadRecurring(){try{const{data,error}=await sb.from('recurring_contracts').select('*').order('created_at',{ascending:false});if(error)console.error('recurring error:',error);else allRecurring=data||[];}catch(e){console.error('loadRecurring failed:',e);}}
+async function loadVisits(){try{const{data,error}=await sb.from('recurring_visits').select('*').order('visit_date',{ascending:true});if(error)console.error('visits error:',error);else allVisits=data||[];}catch(e){console.error('loadVisits failed:',e);}}
+async function upsertRecurring(rec){const{data,error}=await sb.from('recurring_contracts').upsert([rec],{onConflict:'id'}).select();if(error)throw error;return data[0];}
+async function upsertVisit(v){const{data,error}=await sb.from('recurring_visits').upsert([v],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertEvent(ev){const{data,error}=await sb.from('events').upsert([ev],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertLead(lead){const{data,error}=await sb.from('leads').upsert([lead],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertConnection(conn){const{data,error}=await sb.from('connections').upsert([conn],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',embed:'Website Form'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',embed:'Website Form'};
 function nav(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
@@ -1012,6 +1147,7 @@ function nav(el){
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
   if(page==='customers')renderCustomers();
+  if(page==='recurring')renderRecurring();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
   if(page==='calendar')renderCalendar();
@@ -1766,7 +1902,7 @@ async function ppSubmit(){
 <\/script>`;
 }
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -2527,6 +2663,7 @@ function nav(el){
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
   if(page==='customers')renderCustomers();
+  if(page==='recurring')renderRecurring();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
   if(page==='calendar')renderCalendar();
@@ -3103,6 +3240,441 @@ async function renderMap(){
   leafletMap.invalidateSize();
 }
 
+
+// ── Recurring Jobs ─────────────────────────────────────────────────────────
+let viewingRecId=null;
+
+const FREQ_VISITS={Weekly:52,Biweekly:26,Monthly:12,Bimonthly:6,Quarterly:4,'Semi-annual':2,Annual:1,Custom:1};
+
+function getNextVisit(contractId){
+  const upcoming=allVisits.filter(v=>v.contract_id===contractId&&v.status==='Scheduled'&&v.visit_date>=new Date().toISOString().split('T')[0]);
+  if(!upcoming.length) return null;
+  return upcoming.sort((a,b)=>a.visit_date.localeCompare(b.visit_date))[0].visit_date;
+}
+
+function isOverdue(contractId){
+  const today=new Date().toISOString().split('T')[0];
+  return allVisits.some(v=>v.contract_id===contractId&&v.status==='Scheduled'&&v.visit_date<today);
+}
+
+function annualValue(rec){
+  const visits=FREQ_VISITS[rec.frequency]||1;
+  return (parseFloat(rec.rate_per_visit)||0)*visits;
+}
+
+function renderRecurring(){
+  const search=(document.getElementById('recurring-search')?.value||'').toLowerCase();
+  const fStatus=document.getElementById('recurring-filter-status')?.value||'';
+  const data=allRecurring.filter(r=>{
+    const t=`${r.first_name} ${r.last_name} ${r.address||''} ${r.service||''}`.toLowerCase();
+    return(!search||t.includes(search))&&(!fStatus||r.status===fStatus);
+  });
+
+  // Metrics
+  const active=allRecurring.filter(r=>r.status==='Active');
+  const monthlyRevenue=active.reduce((s,r)=>{
+    const visitsPerYear=FREQ_VISITS[r.frequency]||1;
+    return s+(parseFloat(r.rate_per_visit)||0)*(visitsPerYear/12);
+  },0);
+  const overdue=allRecurring.filter(r=>r.status==='Active'&&isOverdue(r.id));
+  document.getElementById('recurring-metrics').innerHTML=`
+    <div class="metric teal"><div class="metric-label">Active contracts</div><div class="metric-value">${active.length}</div></div>
+    <div class="metric green"><div class="metric-label">Monthly recurring revenue</div><div class="metric-value">${$m(monthlyRevenue)}</div></div>
+    <div class="metric amber"><div class="metric-label">Annual recurring revenue</div><div class="metric-value">${$m(monthlyRevenue*12)}</div></div>
+    <div class="metric red"><div class="metric-label">Overdue visits</div><div class="metric-value">${overdue.length}</div><div class="metric-sub">Scheduled but not logged</div></div>
+  `;
+
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('recurring-body').innerHTML=data.length?data.map(r=>{
+    const next=getNextVisit(r.id);
+    const overdueBool=isOverdue(r.id);
+    const statusBadge=r.status==='Active'?'<span class="badge badge-completed">Active</span>':r.status==='Paused'?'<span class="badge badge-quoted">Paused</span>':'<span class="badge badge-lost">Cancelled</span>';
+    const nextDisplay=next?`<span style="font-weight:600;color:${next<today?'var(--red-600)':'var(--teal-600)'};">${next}${overdueBool?' ⚠️':''}</span>`:'<span style="color:var(--ink-3);">Not scheduled</span>';
+    return`<tr>
+      <td><div style="font-weight:500;">${r.first_name} ${r.last_name}</div><div class="td-muted">${r.frequency||'—'}</div></td>
+      <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.service||'—'}</td>
+      <td><span style="background:var(--teal-50);color:var(--teal-700);padding:3px 8px;border-radius:12px;font-size:12px;font-weight:500;">${r.frequency||'—'}</span></td>
+      <td style="font-weight:500;">${$m(r.rate_per_visit)}</td>
+      <td style="color:var(--green-600);font-weight:500;">${$m(annualValue(r))}</td>
+      <td style="font-size:12px;">${r.assigned_partner||'—'}</td>
+      <td>${statusBadge}</td>
+      <td>${nextDisplay}</td>
+      <td><button class="btn btn-sm" onclick="viewRecurring('${r.id}')"><i class="ti ti-eye"></i></button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--ink-3);padding:30px;">No recurring contracts yet. Click "New recurring contract" to add one.</td></tr>';
+}
+
+function openAddRecurring(){
+  document.getElementById('modal-recurring-title').textContent='New recurring contract';
+  document.getElementById('rec-edit-id').value='';
+  ['rec-first','rec-last','rec-phone','rec-email','rec-addr','rec-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('rec-service').value='';
+  document.getElementById('rec-frequency').value='';
+  document.getElementById('rec-rate').value='';
+  document.getElementById('rec-partner').value='';
+  document.getElementById('rec-status').value='Active';
+  document.getElementById('rec-source').value='Referral';
+  document.getElementById('rec-start').value=new Date().toISOString().split('T')[0];
+  document.getElementById('rec-end').value='';
+  openModal('recurring');
+}
+
+function editRecurringModal(rec){
+  closeModal('view-recurring');
+  document.getElementById('modal-recurring-title').textContent='Edit contract';
+  document.getElementById('rec-edit-id').value=rec.id;
+  document.getElementById('rec-first').value=rec.first_name||'';
+  document.getElementById('rec-last').value=rec.last_name||'';
+  document.getElementById('rec-phone').value=rec.phone||'';
+  document.getElementById('rec-email').value=rec.email||'';
+  document.getElementById('rec-addr').value=rec.address||'';
+  document.getElementById('rec-service').value=rec.service||'';
+  document.getElementById('rec-frequency').value=rec.frequency||'';
+  document.getElementById('rec-rate').value=rec.rate_per_visit||'';
+  document.getElementById('rec-partner').value=rec.assigned_partner||'';
+  document.getElementById('rec-status').value=rec.status||'Active';
+  document.getElementById('rec-source').value=rec.source||'Referral';
+  document.getElementById('rec-start').value=rec.start_date||'';
+  document.getElementById('rec-end').value=rec.end_date||'';
+  document.getElementById('rec-notes').value=rec.notes||'';
+  openModal('recurring');
+}
+
+async function saveRecurring(){
+  const first=document.getElementById('rec-first').value.trim();
+  const addr=document.getElementById('rec-addr').value.trim();
+  const service=document.getElementById('rec-service').value;
+  const freq=document.getElementById('rec-frequency').value;
+  const rate=document.getElementById('rec-rate').value;
+  if(!first||!addr||!service||!freq||!rate){alert('Required: Name, Address, Service, Frequency, Rate');return;}
+  const id=document.getElementById('rec-edit-id').value||uid();
+  const rec={
+    id, first_name:first, last_name:document.getElementById('rec-last').value,
+    phone:fmtPhoneNum(document.getElementById('rec-phone').value),
+    email:document.getElementById('rec-email').value,
+    address:addr, service, frequency:freq,
+    rate_per_visit:parseFloat(rate),
+    assigned_partner:document.getElementById('rec-partner').value,
+    status:document.getElementById('rec-status').value,
+    source:document.getElementById('rec-source').value,
+    start_date:document.getElementById('rec-start').value||null,
+    end_date:document.getElementById('rec-end').value||null,
+    notes:document.getElementById('rec-notes').value,
+    created_by:currentUser?.email,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const saved=await upsertRecurring(rec);
+    const idx=allRecurring.findIndex(r=>r.id===id);
+    if(idx>-1) allRecurring[idx]=saved; else allRecurring.unshift(saved);
+    closeModal('recurring');
+    renderRecurring();
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+async function deleteRecurring(id){
+  if(!confirm('Delete this contract and all its visit records?')) return;
+  await sb.from('recurring_visits').delete().eq('contract_id',id);
+  const{error}=await sb.from('recurring_contracts').delete().eq('id',id);
+  if(error){alert('Delete failed: '+error.message);return;}
+  allRecurring=allRecurring.filter(r=>r.id!==id);
+  allVisits=allVisits.filter(v=>v.contract_id!==id);
+  closeModal('view-recurring');
+  renderRecurring();
+}
+
+function viewRecurring(id){
+  const rec=allRecurring.find(r=>r.id===id); if(!rec) return;
+  viewingRecId=id;
+  document.getElementById('view-rec-title').textContent=`${rec.first_name} ${rec.last_name}`;
+  document.querySelectorAll('#modal-view-recurring .modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  ['overview','schedule','history','contract','comms'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t==='overview'?'block':'none';});
+  renderRecOverview(rec);
+  document.getElementById('rec-edit-btn').onclick=()=>editRecurringModal(rec);
+  document.getElementById('rec-del-btn').onclick=()=>deleteRecurring(rec.id);
+  openModal('view-recurring');
+}
+
+function switchRecTab(tab,el){
+  document.querySelectorAll('#modal-view-recurring .modal-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['overview','schedule','history','contract','comms'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t===tab?'block':'none';});
+  const rec=allRecurring.find(r=>r.id===viewingRecId);
+  if(tab==='schedule') renderRecSchedule(rec);
+  if(tab==='history') renderRecHistory(rec);
+  if(tab==='contract') renderRecContract(rec);
+  if(tab==='comms') renderRecComms(rec);
+}
+
+function renderRecOverview(rec){
+  const next=getNextVisit(rec.id);
+  const visits=allVisits.filter(v=>v.contract_id===rec.id);
+  const completed=visits.filter(v=>v.status==='Completed');
+  const totalRev=completed.reduce((s,v)=>s+(parseFloat(v.revenue)||0),0);
+  const overdueBool=isOverdue(rec.id);
+  document.getElementById('rec-tab-overview').innerHTML=`
+    <div class="record-section"><div class="record-section-title">Contract summary</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        <div style="background:var(--teal-50);padding:12px;border-radius:var(--r-sm);text-align:center;">
+          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;margin-bottom:4px;">Rate/visit</div>
+          <div style="font-size:18px;font-weight:700;color:var(--teal-600);">${$m(rec.rate_per_visit)}</div>
+        </div>
+        <div style="background:var(--green-light);padding:12px;border-radius:var(--r-sm);text-align:center;">
+          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;margin-bottom:4px;">Annual value</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green-600);">${$m(annualValue(rec))}</div>
+        </div>
+        <div style="background:var(--blue-light);padding:12px;border-radius:var(--r-sm);text-align:center;">
+          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;margin-bottom:4px;">Total revenue</div>
+          <div style="font-size:18px;font-weight:700;color:var(--blue-600);">${$m(totalRev)}</div>
+        </div>
+        <div style="background:${overdueBool?'var(--red-light)':'#faf9f6'};padding:12px;border-radius:var(--r-sm);text-align:center;">
+          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;margin-bottom:4px;">Next visit</div>
+          <div style="font-size:14px;font-weight:700;color:${overdueBool?'var(--red-600)':next?'var(--teal-600)':'var(--ink-3)'};">${next||'Not scheduled'}${overdueBool?' ⚠️':''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="record-section"><div class="record-section-title">Contact & contract info</div>
+      <div class="record-grid">
+        <div class="record-field"><div class="lbl">Name</div><div class="val" style="font-weight:500;">${rec.first_name} ${rec.last_name}</div></div>
+        <div class="record-field"><div class="lbl">Status</div><div class="val">${rec.status==='Active'?'<span class="badge badge-completed">Active</span>':rec.status==='Paused'?'<span class="badge badge-quoted">Paused</span>':'<span class="badge badge-lost">Cancelled</span>'}</div></div>
+        <div class="record-field"><div class="lbl">Phone</div><div class="val">${rec.phone||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Email</div><div class="val">${rec.email||'—'}</div></div>
+        <div class="record-field" style="grid-column:1/-1;"><div class="lbl">Address</div><div class="val">${rec.address||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Service</div><div class="val">${rec.service||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Frequency</div><div class="val">${rec.frequency||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Assigned to</div><div class="val">${rec.assigned_partner||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Source</div><div class="val">${rec.source||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Contract start</div><div class="val">${rec.start_date||'—'}</div></div>
+        <div class="record-field"><div class="lbl">Contract end</div><div class="val">${rec.end_date||'Ongoing'}</div></div>
+        <div class="record-field"><div class="lbl">Visits completed</div><div class="val" style="font-weight:600;color:var(--teal-500);">${completed.length}</div></div>
+        <div class="record-field"><div class="lbl">Visits scheduled</div><div class="val">${visits.filter(v=>v.status==='Scheduled').length}</div></div>
+      </div>
+    </div>
+    ${rec.notes?`<div class="record-section"><div class="record-section-title">Notes</div><div style="font-size:13px;line-height:1.6;">${rec.notes}</div></div>`:''}
+  `;
+}
+
+function renderRecSchedule(rec){
+  const visits=allVisits.filter(v=>v.contract_id===rec.id).sort((a,b)=>a.visit_date.localeCompare(b.visit_date));
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('rec-tab-schedule').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Scheduled visits</div>
+      <button class="btn btn-sm btn-primary" onclick="openAddVisit('${rec.id}')"><i class="ti ti-plus"></i> Add visit date</button>
+    </div>
+    ${visits.length?visits.map(v=>{
+      const isPast=v.visit_date<today;
+      const isOverdueV=v.status==='Scheduled'&&isPast;
+      return`<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-sm);margin-bottom:8px;background:${v.status==='Completed'?'var(--green-light)':isOverdueV?'var(--red-light)':'var(--teal-50)'};">
+        <div style="width:36px;height:36px;border-radius:50%;background:${v.status==='Completed'?'var(--green-600)':isOverdueV?'var(--red-600)':'var(--teal-600)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
+          <i class="ti ${v.status==='Completed'?'ti-check':isOverdueV?'ti-alert-triangle':'ti-calendar'}"></i>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:500;font-size:14px;">${v.visit_date}</div>
+          <div style="font-size:12px;color:var(--ink-3);">${v.status}${isOverdueV?' — OVERDUE':''}</div>
+        </div>
+        ${v.status==='Scheduled'?`<button class="btn btn-sm btn-primary" onclick="openLogVisit('${rec.id}','${v.id}','${v.visit_date}')"><i class="ti ti-check"></i> Log visit</button>`:''}
+        ${v.status==='Scheduled'?`<button class="btn btn-sm btn-danger" onclick="deleteVisit('${v.id}')"><i class="ti ti-trash"></i></button>`:''}
+      </div>`;
+    }).join(''):'<div class="empty">No visits scheduled yet. Add a visit date to get started.</div>'}
+  `;
+}
+
+function renderRecHistory(rec){
+  const completed=allVisits.filter(v=>v.contract_id===rec.id&&v.status==='Completed').sort((a,b)=>b.visit_date.localeCompare(a.visit_date));
+  const totalRev=completed.reduce((s,v)=>s+(parseFloat(v.revenue)||0),0);
+  document.getElementById('rec-tab-history').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">${completed.length} completed visits · Total: ${$m(totalRev)}</div>
+    </div>
+    ${completed.length?completed.map(v=>`
+      <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div style="font-weight:500;">${v.visit_date}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${v.completed_by||'—'}${v.duration?' · '+v.duration:''}</div></div>
+          <div style="font-weight:600;color:var(--green-600);">${$m(v.revenue)}</div>
+        </div>
+        ${v.chemicals?`<div style="font-size:12px;color:var(--ink-3);margin-top:6px;">Chemicals: ${v.chemicals}</div>`:''}
+        ${v.notes?`<div style="font-size:12px;color:var(--ink-2);margin-top:4px;">${v.notes}</div>`:''}
+      </div>`).join(''):'<div class="empty">No completed visits yet.</div>'}
+  `;
+}
+
+async function renderRecContract(rec){
+  const container=document.getElementById('rec-tab-contract');
+  container.innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;font-weight:600;">Signed contract</div>
+    <div class="photo-upload-area" onclick="document.getElementById('upload-rec-contract').click()">
+      <i class="ti ti-file-upload"></i><p>Upload signed PDF contract</p>
+      <input type="file" id="upload-rec-contract" accept="application/pdf" onchange="uploadRecContract(this,'${rec.id}')">
+    </div>
+    <div id="rec-contract-list" style="margin-top:14px;"></div>
+  `;
+  await renderRecContractFiles(rec.id);
+}
+
+async function renderRecContractFiles(contractId){
+  const{data:files,error}=await sb.storage.from('job-photos').list(`contracts/${contractId}`);
+  const container=document.getElementById('rec-contract-list');
+  if(!container) return;
+  if(error||!files||!files.length){container.innerHTML='<div style="font-size:13px;color:var(--ink-3);padding:8px 0;">No contract uploaded yet.</div>';return;}
+  container.innerHTML=files.map(f=>{
+    const{data}=sb.storage.from('job-photos').getPublicUrl(`contracts/${contractId}/${f.name}`);
+    return`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:8px;">
+      <i class="ti ti-file-type-pdf" style="font-size:24px;color:var(--teal-600);flex-shrink:0;"></i>
+      <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${f.name}</div><div style="font-size:11px;color:var(--ink-3);">Signed contract</div></div>
+      <a href="${data.publicUrl}" target="_blank" class="btn btn-sm btn-primary" style="text-decoration:none;"><i class="ti ti-eye"></i> View</a>
+      <button class="btn btn-sm btn-danger" onclick="deleteRecContract('${contractId}','${f.name}')"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+async function uploadRecContract(input,contractId){
+  const file=input.files[0]; if(!file) return;
+  if(file.type!=='application/pdf'){alert('Please upload a PDF file.');return;}
+  const area=input.parentElement;
+  area.innerHTML='<i class="ti ti-loader" style="font-size:24px;color:var(--teal-500);animation:spin .7s linear infinite;"></i><p style="font-size:13px;color:var(--ink-3);margin-top:8px;">Uploading...</p>';
+  const filename=`contract_${Date.now()}.pdf`;
+  const{error}=await sb.storage.from('job-photos').upload(`contracts/${contractId}/${filename}`,file,{cacheControl:'3600',upsert:false,contentType:'application/pdf'});
+  if(error){alert('Upload failed: '+error.message);}
+  const rec=allRecurring.find(r=>r.id===contractId);
+  if(rec) await renderRecContract(rec);
+}
+
+async function deleteRecContract(contractId,filename){
+  if(!confirm('Delete this contract?')) return;
+  await sb.storage.from('job-photos').remove([`contracts/${contractId}/${filename}`]);
+  await renderRecContractFiles(contractId);
+}
+
+function renderRecComms(rec){
+  const phone=(rec.phone||'').replace(/\D/g,'');
+  const comms=allComms.filter(c=>{
+    if(phone&&c.from_address&&c.from_address.replace(/\D/g,'').includes(phone)) return true;
+    return false;
+  });
+  document.getElementById('rec-tab-comms').innerHTML=`
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Communication history</div>
+    ${comms.length?comms.map(c=>{const ic=commIcon(c.type||c.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${c.subject||c.type||'Communication'}</div><div style="font-size:12px;color:var(--ink-3);">${c.from_address||'—'} · ${fmtDate(c.received_at)}</div>${c.body?`<div style="font-size:12px;margin-top:4px;">${c.body.slice(0,200)}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications found for this number.</div>'}
+  `;
+}
+
+// Visit scheduling
+function openAddVisit(contractId){
+  const modal=document.createElement('div');
+  modal.innerHTML=`<div class="overlay open" id="modal-add-visit" style="z-index:2100;">
+    <div class="modal" style="width:400px;">
+      <div class="modal-head"><h2>Add visit date</h2><button class="btn btn-sm" onclick="document.getElementById('modal-add-visit').remove()"><i class="ti ti-x"></i></button></div>
+      <div class="field"><label>Visit date *</label><input id="av-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="modal-foot" style="margin-top:16px;">
+        <button class="btn" onclick="document.getElementById('modal-add-visit').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAddVisit('${contractId}')"><i class="ti ti-check"></i> Add date</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal.firstElementChild);
+}
+
+async function saveAddVisit(contractId){
+  const date=document.getElementById('av-date')?.value;
+  if(!date){alert('Please select a date.');return;}
+  const visit={id:uid(),contract_id:contractId,visit_date:date,status:'Scheduled',created_at:new Date().toISOString()};
+  try{
+    const saved=await upsertVisit(visit);
+    allVisits.push(saved);
+    document.getElementById('modal-add-visit')?.remove();
+    const rec=allRecurring.find(r=>r.id===contractId);
+    if(rec){renderRecSchedule(rec);renderRecOverview(rec);}
+    renderRecurring();
+  }catch(e){alert('Failed: '+e.message);}
+}
+
+async function deleteVisit(visitId){
+  if(!confirm('Remove this scheduled visit?')) return;
+  await sb.from('recurring_visits').delete().eq('id',visitId);
+  allVisits=allVisits.filter(v=>v.id!==visitId);
+  const rec=allRecurring.find(r=>r.id===viewingRecId);
+  if(rec){renderRecSchedule(rec);renderRecOverview(rec);}
+  renderRecurring();
+}
+
+function openLogVisit(contractId,visitId,visitDate){
+  const rec=allRecurring.find(r=>r.id===contractId); if(!rec) return;
+  document.getElementById('lv-contract-id').value=contractId;
+  document.getElementById('lv-visit-id').value=visitId;
+  document.getElementById('lv-date').value=visitDate||new Date().toISOString().split('T')[0];
+  document.getElementById('lv-revenue').value=rec.rate_per_visit||'';
+  document.getElementById('lv-duration').value='';
+  document.getElementById('lv-partner').value=rec.assigned_partner||'';
+  document.getElementById('lv-chemicals').value='';
+  document.getElementById('lv-notes').value='';
+  // Suggest next visit based on frequency
+  const nextDate=suggestNextVisit(visitDate,rec.frequency);
+  document.getElementById('lv-next').value=nextDate||'';
+  document.getElementById('lv-log-to-customer').checked=true;
+  openModal('log-visit');
+}
+
+function suggestNextVisit(fromDate,frequency){
+  if(!fromDate||!frequency) return '';
+  const d=new Date(fromDate+'T00:00:00');
+  const map={Weekly:7,Biweekly:14,Monthly:30,Bimonthly:60,Quarterly:91,'Semi-annual':182,Annual:365};
+  const days=map[frequency];
+  if(!days) return '';
+  d.setDate(d.getDate()+days);
+  return d.toISOString().split('T')[0];
+}
+
+async function saveVisitLog(){
+  const contractId=document.getElementById('lv-contract-id').value;
+  const visitId=document.getElementById('lv-visit-id').value;
+  const date=document.getElementById('lv-date').value;
+  if(!date){alert('Please select a visit date.');return;}
+  const rec=allRecurring.find(r=>r.id===contractId); if(!rec) return;
+  const revenue=parseFloat(document.getElementById('lv-revenue').value)||parseFloat(rec.rate_per_visit)||0;
+  const nextDate=document.getElementById('lv-next').value;
+  const logToCustomer=document.getElementById('lv-log-to-customer').checked;
+
+  try{
+    // Update existing visit to Completed
+    const updatedVisit={id:visitId,contract_id:contractId,visit_date:date,status:'Completed',
+      revenue,duration:document.getElementById('lv-duration').value,
+      completed_by:document.getElementById('lv-partner').value,
+      chemicals:document.getElementById('lv-chemicals').value,
+      notes:document.getElementById('lv-notes').value,
+      updated_at:new Date().toISOString()};
+    const savedVisit=await upsertVisit(updatedVisit);
+    const idx=allVisits.findIndex(v=>v.id===visitId);
+    if(idx>-1) allVisits[idx]=savedVisit; else allVisits.push(savedVisit);
+
+    // Schedule next visit if provided
+    if(nextDate){
+      const nextVisit={id:uid(),contract_id:contractId,visit_date:nextDate,status:'Scheduled',created_at:new Date().toISOString()};
+      const savedNext=await upsertVisit(nextVisit);
+      allVisits.push(savedNext);
+    }
+
+    // Log to customer history as a completed lead
+    if(logToCustomer){
+      const leadId=uid();
+      const newLead={id:leadId,first_name:rec.first_name,last_name:rec.last_name,
+        phone:rec.phone,email:rec.email,address:rec.address,service:rec.service,
+        source:rec.source||'Recurring Contract',status:'Completed',
+        job_date:date,revenue,duration:document.getElementById('lv-duration').value,
+        completed_by:document.getElementById('lv-partner').value,
+        chemicals:document.getElementById('lv-chemicals').value,
+        notes:`Recurring visit — ${rec.frequency} contract. ${document.getElementById('lv-notes').value}`,
+        added_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+      const savedLead=await upsertLead(newLead);
+      allLeads.unshift(savedLead);
+    }
+
+    closeModal('log-visit');
+    const updatedRec=allRecurring.find(r=>r.id===contractId);
+    if(updatedRec){renderRecSchedule(updatedRec);renderRecHistory(updatedRec);renderRecOverview(updatedRec);}
+    renderRecurring();
+    renderDashboard();
+  }catch(e){alert('Failed to log visit: '+e.message);}
+}
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
 </script>
