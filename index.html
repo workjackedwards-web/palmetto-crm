@@ -303,7 +303,7 @@ tbody tr:hover td{background:#faf9f6;}
           </select>
           <select id="f-source" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
-            <option>HOA</option><option>Property Manager</option><option>Social Media</option><option>Direct Outreach</option><option>Other</option>
+            <option>HOA</option><option>Property Manager</option><option>Social Media</option><option>Direct Outreach</option><option>Door-to-door</option><option>Other</option>
           </select>
         </div>
         <div class="table-wrap">
@@ -698,7 +698,7 @@ tbody tr:hover td{background:#faf9f6;}
       </div>
       <div class="field">
         <label>Lead source</label>
-        <select id="f-src" onchange="toggleReferralField()"><option value="Website Form">Website Form</option><option value="Referral">Referral</option><option value="Realtor">Realtor</option><option value="HOA">HOA</option><option value="Property Manager">Property Manager</option><option value="Social Media">Social Media</option><option value="Direct Outreach">Direct Outreach</option><option value="Other">Other</option></select>
+        <select id="f-src" onchange="toggleReferralField()"><option value="Website Form">Website Form</option><option value="Referral">Referral</option><option value="Realtor">Realtor</option><option value="HOA">HOA</option><option value="Property Manager">Property Manager</option><option value="Social Media">Social Media</option><option value="Direct Outreach">Direct Outreach</option><option value="Door-to-door">Door-to-door</option><option value="Other">Other</option></select>
       </div>
       <div class="field span2" id="referral-link-field" style="display:none;">
         <label>Referred by (link to contact)</label>
@@ -1908,10 +1908,19 @@ const QUOTE_SERVICES = [
   {name:'Pool Deck', desc:'Pressure cleaning of pool deck and coping surfaces.', unit:'sq ft', rate:0.18},
   {name:'Wood Deck', desc:'Soft wash or pressure cleaning of wood deck surfaces — removes mold, mildew & grey weathering.', unit:'sq ft', rate:0.35},
   {name:'Patio', desc:'Pressure cleaning of patio surfaces — pavers, concrete, slate.', unit:'sq ft', rate:0.18},
-  {name:'Roof Soft Wash', desc:'Low-pressure roof treatment — removes black streaks, lichen & moss.', unit:'sq ft', rate:0.25},
+  {name:'Roof Cleaning', desc:'Low-pressure roof treatment — removes black streaks, lichen & moss.', unit:'sq ft', rate:0.25},
   {name:'Fence Cleaning', desc:'Wood, vinyl or aluminum fence wash — full panel coverage.', unit:'lin ft', rate:0.75},
   {name:'Gutter Cleaning', desc:'Flush gutters & downspouts; optional brightening treatment.', unit:'lin ft', rate:0.50},
-  {name:'Commercial Property', desc:'Storefront, walkways, building exterior.', unit:'sq ft', rate:0.20},
+  {name:'Car Wash Bay', desc:'High-pressure cleaning of car wash bay surfaces, walls & floors.', unit:'sq ft', rate:0.20},
+  {name:'Concrete Storefront', desc:'Pressure cleaning of commercial storefront concrete & walkways.', unit:'sq ft', rate:0.18},
+  {name:'Gas Station Concrete', desc:'Degreasing & pressure cleaning of gas station concrete pads.', unit:'sq ft', rate:0.22},
+  {name:'Residential Window Washing', desc:'Interior & exterior window cleaning for residential properties.', unit:'unit', rate:8.00},
+  {name:'Commercial Window Washing', desc:'Interior & exterior window cleaning for commercial properties.', unit:'unit', rate:12.00},
+  {name:'Commercial Property', desc:'Storefront, walkways, building exterior pressure washing.', unit:'sq ft', rate:0.20},
+  {name:'HOA / Community', desc:'Full exterior cleaning for HOA common areas and community spaces.', unit:'sq ft', rate:0.15},
+  {name:'Listing-Ready Package', desc:'Full exterior package designed to maximize curb appeal for property listings.', unit:'unit', rate:350.00},
+  {name:'Curb Appeal Package', desc:'House wash + driveway + walkway — complete curb appeal treatment.', unit:'unit', rate:299.00},
+  {name:'Full Exterior Package', desc:'Complete exterior cleaning — house, driveway, walkways, patio & more.', unit:'unit', rate:450.00},
 ];
 
 let calcRows=[];
