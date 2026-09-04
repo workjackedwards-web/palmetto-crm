@@ -10,16 +10,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root {
-  --teal-900:#04342C;--teal-700:#085041;--teal-600:#0F6E56;--teal-500:#1D9E75;--teal-50:#E1F5EE;
+  --teal-900:#3a5560;--teal-700:#446270;--teal-600:#577C87;--teal-500:#6990A0;--teal-50:#eef4f6;
   --amber-600:#BA7517;--amber-light:#FAEEDA;--red-600:#A32D2D;--red-light:#FCEBEB;
   --green-600:#3B6D11;--green-light:#EAF3DE;--blue-600:#185FA5;--blue-light:#E6F1FB;
   --ink:#1a1a18;--ink-2:#444441;--ink-3:#888780;--border:rgba(0,0,0,0.09);--border-md:rgba(0,0,0,0.14);
-  --surface:#ffffff;--bg:#f5f4f0;--sidebar-bg:#0F6E56;--r:10px;--r-sm:6px;
+  --surface:#ffffff;--bg:#f5f4f0;--sidebar-bg:#577C87;--r:10px;--r-sm:6px;
   --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}html,body{height:100%;}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;}
-#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--teal-600);background-image:radial-gradient(circle at 20% 80%,rgba(29,158,117,.3) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(4,52,44,.4) 0%,transparent 55%);}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--teal-600);background-image:radial-gradient(circle at 20% 80%,rgba(87,124,135,.3) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(58,85,96,.4) 0%,transparent 55%);}
 .auth-card{background:var(--surface);border-radius:16px;padding:40px;width:380px;max-width:92vw;box-shadow:0 24px 60px rgba(0,0,0,.25);}
 .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
 .auth-logo-mark{width:40px;height:40px;background:var(--teal-600);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;}
@@ -30,7 +30,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14p
 .auth-field{margin-bottom:14px;}
 .auth-field label{font-size:12px;font-weight:500;color:var(--ink-2);display:block;margin-bottom:5px;}
 .auth-field input{width:100%;padding:10px 12px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:14px;font-family:var(--font);}
-.auth-field input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(29,158,117,.15);}
+.auth-field input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(87,124,135,.15);}
 .auth-btn{width:100%;padding:11px;background:var(--teal-600);color:#fff;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:6px;}
 .auth-btn:hover{background:var(--teal-700);}
 .auth-btn:disabled{opacity:.6;cursor:not-allowed;}
@@ -102,7 +102,7 @@ tbody tr:hover td{background:#faf9f6;}
 .field.span2{grid-column:1/-1;}
 .field label{font-size:12px;font-weight:500;color:var(--ink-2);}
 .field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface);color:var(--ink);}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(87,124,135,.12);}
 .field textarea{resize:vertical;min-height:72px;}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:2000;align-items:center;justify-content:center;padding:16px;}
 .overlay.open{display:flex;}
@@ -183,7 +183,7 @@ tbody tr:hover td{background:#faf9f6;}
 .cal-week-cell:nth-child(7n+1) { border-right:none; }
 .addr-wrap{position:relative;width:100%;}
 .addr-wrap input{padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface);color:var(--ink);width:100%;}
-.addr-wrap input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+.addr-wrap input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(87,124,135,.12);}
 .addr-suggestions{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--border-md);border-radius:var(--r-sm);box-shadow:0 4px 16px rgba(0,0,0,0.13);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
 .addr-suggestion{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.4;}
 .addr-suggestion:last-child{border-bottom:none;}
@@ -224,7 +224,7 @@ tbody tr:hover td{background:#faf9f6;}
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-mark"><i class="ti ti-droplet"></i></div>
+      <img src="data:image/jpeg;base64,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" style="width:56px;height:56px;border-radius:12px;object-fit:cover;" alt="Palmetto Pressure Pros">
       <div class="auth-logo-text"><strong>Palmetto Pressure Pros</strong><span>Business CRM</span></div>
     </div>
     <h2 id="auth-title">Sign in</h2>
@@ -327,6 +327,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div id="pg-recurring" class="page-content" style="display:none;">
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
           <button class="btn btn-primary" onclick="openAddRecurring()"><i class="ti ti-plus"></i> New recurring contract</button>
+          <button class="btn" onclick="openImportRecurring()" style="background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-300);"><i class="ti ti-download"></i> Import from leads/customers</button>
           <div style="flex:1;"></div>
           <input type="text" id="recurring-search" placeholder="Search name, address, service..." oninput="renderRecurring()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
           <select id="recurring-filter-status" onchange="renderRecurring()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
@@ -622,7 +623,7 @@ tbody tr:hover td{background:#faf9f6;}
             <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Show on map</div>
             <label class="map-filter-label"><input type="checkbox" id="mf-lead" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#185FA5;display:inline-block;"></span> Leads</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-quoted" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#BA7517;display:inline-block;"></span> Quoted</label>
-            <label class="map-filter-label"><input type="checkbox" id="mf-booked" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#0F6E56;display:inline-block;"></span> Booked</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-booked" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#577C87;display:inline-block;"></span> Booked</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-completed" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#3B6D11;display:inline-block;"></span> Completed</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-lost" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#A32D2D;display:inline-block;"></span> Lost</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-door" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#6b21a8;display:inline-block;"></span> Door-to-door</label>
@@ -634,7 +635,7 @@ tbody tr:hover td{background:#faf9f6;}
             <div class="map-legend-title">Map legend</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#185FA5;"></div> Lead</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#BA7517;"></div> Quoted</div>
-            <div class="map-legend-item"><div class="map-legend-dot" style="background:#0F6E56;"></div> Booked</div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:#577C87;"></div> Booked</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#3B6D11;"></div> Completed</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#A32D2D;"></div> Lost</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#6b21a8;"></div> Door-to-door</div>
@@ -1053,6 +1054,19 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('log-visit')">Cancel</button>
       <button class="btn btn-primary" onclick="saveVisitLog()"><i class="ti ti-check"></i> Log visit</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT TO RECURRING MODAL -->
+<div class="overlay" id="modal-import-recurring">
+  <div class="modal" style="width:580px;">
+    <div class="modal-head"><h2>Import from leads / customers</h2><button class="btn btn-sm" onclick="closeModal('import-recurring')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Search for an existing lead or customer to pre-fill their info. You'll still need to set the service, frequency, and rate.</p>
+    <input type="text" id="import-rec-search" placeholder="Search by name, phone, or address..." style="padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:12px;" oninput="searchImportRecurring()">
+    <div id="import-rec-results" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('import-recurring')">Cancel</button>
     </div>
   </div>
 </div>
@@ -1874,9 +1888,9 @@ function renderEmbed(){
 .ppf textarea{min-height:70px;resize:vertical}
 .ppf .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
 .ppf .svc-cb{display:flex;align-items:center;gap:7px;font-size:13px;color:#333;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e5e5;border-radius:7px;transition:all .15s;}
-.ppf .svc-cb:hover{border-color:#0F6E56;background:#f0faf6;}
-.ppf .svc-cb input{width:15px;height:15px;accent-color:#0F6E56;flex-shrink:0;margin:0;}
-.ppf .svc-cb.checked{border-color:#0F6E56;background:#f0faf6;}
+.ppf .svc-cb:hover{border-color:#577C87;background:#f0faf6;}
+.ppf .svc-cb input{width:15px;height:15px;accent-color:#577C87;flex-shrink:0;margin:0;}
+.ppf .svc-cb.checked{border-color:#577C87;background:#f0faf6;}
 .ppf .water-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
 .ppf .water-opt{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;}
 .ppf .water-opt:hover{border-color:#577C87;}
@@ -2005,7 +2019,7 @@ function ppPreviewPhotos(input){
       preview.appendChild(img);
     } else {
       const div=document.createElement('div');
-      div.style.cssText='width:60px;height:60px;background:#f0f5f7;border:1px solid #577C87;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#0F6E56;text-align:center;padding:4px;';
+      div.style.cssText='width:60px;height:60px;background:#f0f5f7;border:1px solid #577C87;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#577C87;text-align:center;padding:4px;';
       div.textContent='📹 '+f.name.slice(0,10);
       preview.appendChild(div);
     }
@@ -2275,7 +2289,7 @@ function printQuote(){
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'DM Sans',sans-serif;font-size:13px;color:#1a1a18;background:#fff;padding:32px 40px;}
   .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
-  .company-name{font-size:20px;font-weight:700;color:#0F6E56;letter-spacing:.02em;}
+  .company-name{font-size:20px;font-weight:700;color:#577C87;letter-spacing:.02em;}
   .company-sub{font-size:11px;color:#888;margin-top:2px;}
   .company-info{font-size:12px;color:#555;margin-top:8px;line-height:1.9;}
   .quote-label{font-size:32px;font-weight:700;color:#ccc;letter-spacing:.05em;text-align:right;}
@@ -2284,14 +2298,14 @@ function printQuote(){
   .quote-meta td{padding:3px 0 3px 16px;font-size:12px;color:#555;}
   .quote-meta td:first-child{color:#999;text-align:right;white-space:nowrap;}
   .quote-meta td:last-child{font-weight:500;color:#1a1a18;}
-  .divider{height:3px;background:#0F6E56;border-radius:2px;margin:14px 0;}
+  .divider{height:3px;background:#577C87;border-radius:2px;margin:14px 0;}
   .customer-box{background:#faf9f6;border-radius:8px;padding:14px 16px;margin-bottom:16px;}
   .section-label{font-size:10px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
   .customer-grid{display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;}
   .field-label{font-size:10px;color:#999;margin-bottom:2px;text-transform:uppercase;}
   .field-value{font-size:13px;font-weight:500;}
   table.services{width:100%;border-collapse:collapse;margin-bottom:16px;}
-  table.services thead tr{background:#0F6E56;color:#fff;}
+  table.services thead tr{background:#577C87;color:#fff;}
   table.services thead th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;}
   table.services thead th:last-child{text-align:right;}
   table.services tbody tr{border-bottom:1px solid #e8e6e0;}
@@ -2301,13 +2315,13 @@ function printQuote(){
   .totals-wrap{display:flex;justify-content:flex-end;margin-bottom:16px;}
   .totals{width:260px;}
   .totals-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e8e6e0;font-size:13px;}
-  .totals-row.grand{background:#0F6E56;color:#fff;padding:10px 12px;border-radius:6px;margin-top:4px;font-size:15px;font-weight:700;border-bottom:none;}
+  .totals-row.grand{background:#577C87;color:#fff;padding:10px 12px;border-radius:6px;margin-top:4px;font-size:15px;font-weight:700;border-bottom:none;}
   .notes-box{background:#faf9f6;border-radius:8px;padding:14px 16px;margin-bottom:20px;}
   .notes-text{font-size:13px;color:#444;line-height:1.6;}
   .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
   .sig-line{border-bottom:1px solid #ccc;height:32px;margin-bottom:6px;}
   .sig-label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;}
-  .footer{border-top:2px solid #0F6E56;padding-top:10px;text-align:center;font-size:11px;color:#888;line-height:1.7;}
+  .footer{border-top:2px solid #577C87;padding-top:10px;text-align:center;font-size:11px;color:#888;line-height:1.7;}
   @media print{body{padding:16px 24px;}}
 </style>
 </head>
@@ -2442,18 +2456,18 @@ async function saveQuoteToCRM(){
   // Generate the same clean HTML as printQuote
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote ${quoteNum}</title>
   <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;padding:32px 40px;}
-  .header{display:flex;justify-content:space-between;margin-bottom:12px;}.company-name{font-size:18px;font-weight:700;color:#0F6E56;}
+  .header{display:flex;justify-content:space-between;margin-bottom:12px;}.company-name{font-size:18px;font-weight:700;color:#577C87;}
   .company-info{font-size:12px;color:#555;margin-top:8px;line-height:1.8;}.quote-label{font-size:28px;font-weight:700;color:#ccc;text-align:right;}
-  .meta-table td{padding:3px 0 3px 16px;font-size:12px;}.divider{height:3px;background:#0F6E56;margin:14px 0;}
+  .meta-table td{padding:3px 0 3px 16px;font-size:12px;}.divider{height:3px;background:#577C87;margin:14px 0;}
   .cust-box{background:#faf9f6;padding:14px;margin-bottom:16px;border-radius:6px;}
   .section-label{font-size:10px;font-weight:bold;color:#999;text-transform:uppercase;margin-bottom:8px;}
   table{width:100%;border-collapse:collapse;margin-bottom:16px;}
-  thead tr{background:#0F6E56;color:#fff;}th{padding:9px 12px;text-align:left;font-size:11px;}
+  thead tr{background:#577C87;color:#fff;}th{padding:9px 12px;text-align:left;font-size:11px;}
   td{padding:9px 12px;border-bottom:1px solid #e8e6e0;font-size:12px;}
   .totals{width:260px;margin-left:auto;margin-bottom:20px;}
   .total-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e0e0e0;font-size:13px;}
-  .grand{background:#0F6E56;color:#fff;padding:10px 12px;border-radius:6px;font-size:14px;font-weight:bold;display:flex;justify-content:space-between;margin-top:4px;}
-  .footer{border-top:2px solid #0F6E56;padding-top:10px;text-align:center;font-size:11px;color:#888;}
+  .grand{background:#577C87;color:#fff;padding:10px 12px;border-radius:6px;font-size:14px;font-weight:bold;display:flex;justify-content:space-between;margin-top:4px;}
+  .footer{border-top:2px solid #577C87;padding-top:10px;text-align:center;font-size:11px;color:#888;}
   </style></head><body>
   <div class="header"><div><div class="company-name">PALMETTO PRESSURE PROS</div><div style="font-size:11px;color:#888;">Exterior Cleaning Specialists · Charleston, SC</div>
   <div class="company-info">(843) 608-0529<br>info.palmettopressurepros@gmail.com<br>palmettopressureprosllc.com</div></div>
@@ -2583,7 +2597,7 @@ function printInvoice(){
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'DM Sans',sans-serif;font-size:13px;color:#1a1a18;background:#fff;padding:32px 40px;}
   .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
-  .company-name{font-size:20px;font-weight:700;color:#0F6E56;}
+  .company-name{font-size:20px;font-weight:700;color:#577C87;}
   .company-sub{font-size:11px;color:#888;margin-top:2px;}
   .company-info{font-size:12px;color:#555;margin-top:8px;line-height:1.9;}
   .inv-label{font-size:32px;font-weight:700;color:#ccc;letter-spacing:.05em;}
@@ -2592,16 +2606,16 @@ function printInvoice(){
   .inv-meta td{padding:3px 0 3px 16px;font-size:12px;}
   .inv-meta td:first-child{color:#999;text-align:right;}
   .inv-meta td:last-child{font-weight:500;}
-  .divider{height:3px;background:#0F6E56;border-radius:2px;margin:14px 0;}
+  .divider{height:3px;background:#577C87;border-radius:2px;margin:14px 0;}
   .bill-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
   .bill-box{padding:14px;border-radius:8px;}
   .bill-box.left{background:#faf9f6;}
-  .bill-box.right{background:#E1F5EE;}
+  .bill-box.right{background:#eef4f6;}
   .box-label{font-size:10px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
   .bill-name{font-size:15px;font-weight:600;margin-bottom:6px;}
   .bill-info{font-size:12px;color:#555;line-height:1.9;}
   table.services{width:100%;border-collapse:collapse;margin-bottom:16px;}
-  table.services thead tr{background:#0F6E56;color:#fff;}
+  table.services thead tr{background:#577C87;color:#fff;}
   table.services thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;}
   table.services thead th.right{text-align:right;}
   table.services tbody tr{border-bottom:1px solid #e8e6e0;}
@@ -2609,10 +2623,10 @@ function printInvoice(){
   table.services tbody td.right{text-align:right;font-weight:500;}
   .totals-wrap{display:flex;justify-content:flex-end;margin-bottom:20px;}
   .totals{width:260px;}
-  .grand-row{display:flex;justify-content:space-between;background:#0F6E56;color:#fff;padding:12px;border-radius:6px;font-size:15px;font-weight:700;}
+  .grand-row{display:flex;justify-content:space-between;background:#577C87;color:#fff;padding:12px;border-radius:6px;font-size:15px;font-weight:700;}
   .notes-box{background:#faf9f6;border-radius:8px;padding:14px;margin-bottom:20px;}
   .notes-label{font-size:10px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-  .footer{border-top:2px solid #0F6E56;padding-top:10px;text-align:center;font-size:11px;color:#888;line-height:1.7;}
+  .footer{border-top:2px solid #577C87;padding-top:10px;text-align:center;font-size:11px;color:#888;line-height:1.7;}
   @media print{body{padding:16px 24px;}}
 </style>
 </head>
@@ -3279,7 +3293,7 @@ let mapMarkers=[];
 let geocodeCache={};
 
 const STATUS_COLORS={
-  'Lead':'#185FA5','Quoted':'#BA7517','Booked':'#0F6E56',
+  'Lead':'#185FA5','Quoted':'#BA7517','Booked':'#577C87',
   'Completed':'#3B6D11','Lost':'#A32D2D','Door-to-door':'#6b21a8'
 };
 
@@ -3362,7 +3376,7 @@ async function renderMap(){
   const statsEl=document.getElementById('map-stats');
   if(statsEl) statsEl.innerHTML=`
     <div class="map-stat"><div class="map-stat-val" style="color:#185FA5;">${counts['Lead']||0}</div><div class="map-stat-lbl">Leads</div></div>
-    <div class="map-stat"><div class="map-stat-val" style="color:#0F6E56;">${counts['Booked']||0}</div><div class="map-stat-lbl">Booked</div></div>
+    <div class="map-stat"><div class="map-stat-val" style="color:#577C87;">${counts['Booked']||0}</div><div class="map-stat-lbl">Booked</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#3B6D11;">${counts['Completed']||0}</div><div class="map-stat-lbl">Done</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#A32D2D;">${counts['Lost']||0}</div><div class="map-stat-lbl">Lost</div></div>
     <div class="map-stat"><div class="map-stat-val" style="color:#6b21a8;">${counts['Door-to-door']||0}</div><div class="map-stat-lbl">D2D</div></div>
@@ -3832,6 +3846,79 @@ async function saveVisitLog(){
     renderRecurring();
     renderDashboard();
   }catch(e){alert('Failed to log visit: '+e.message);}
+}
+
+// ── Import to Recurring ────────────────────────────────────────────────────
+function openImportRecurring(){
+  document.getElementById('import-rec-search').value='';
+  searchImportRecurring();
+  openModal('import-recurring');
+}
+
+function searchImportRecurring(){
+  const q=(document.getElementById('import-rec-search').value||'').toLowerCase();
+  const container=document.getElementById('import-rec-results');
+
+  // Combine leads and customer profiles
+  const results=[];
+
+  // From customers (completed jobs grouped by phone)
+  const profiles=getCustomerProfiles();
+  profiles.forEach(c=>{
+    const t=`${c.first_name} ${c.last_name} ${c.phone||''} ${c.address||''}`.toLowerCase();
+    if(!q||t.includes(q)) results.push({
+      type:'customer', label:'Customer',
+      first_name:c.first_name, last_name:c.last_name,
+      phone:c.phone, email:c.email, address:c.address,
+      subtitle:`${c.jobs.length} completed job${c.jobs.length!==1?'s':''} · ${c.address}`
+    });
+  });
+
+  // From active leads
+  allLeads.filter(l=>l.status!=='Completed').forEach(l=>{
+    const t=`${l.first_name} ${l.last_name} ${l.phone||''} ${l.address||''}`.toLowerCase();
+    if(!q||t.includes(q)) results.push({
+      type:'lead', label:l.status,
+      first_name:l.first_name, last_name:l.last_name,
+      phone:l.phone, email:l.email, address:l.address,
+      service:l.service,
+      subtitle:`${l.status} · ${l.address}`
+    });
+  });
+
+  if(!results.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">No matches found.</div>';
+    return;
+  }
+
+  container.innerHTML=results.slice(0,20).map((r,i)=>`
+    <div onclick="selectImportRecurring(${i})" data-idx="${i}" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .1s;" onmouseover="this.style.background='var(--teal-50)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-weight:500;font-size:13px;">${r.first_name} ${r.last_name}</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${r.subtitle}</div>
+      </div>
+      <span class="badge badge-${r.type==='customer'?'completed':'lead'}" style="flex-shrink:0;">${r.label}</span>
+    </div>
+  `).join('');
+
+  // Store results for selection
+  container._results=results;
+}
+
+function selectImportRecurring(idx){
+  const container=document.getElementById('import-rec-results');
+  const results=container._results;
+  if(!results||!results[idx]) return;
+  const r=results[idx];
+  closeModal('import-recurring');
+  openAddRecurring();
+  // Pre-fill the form
+  document.getElementById('rec-first').value=r.first_name||'';
+  document.getElementById('rec-last').value=r.last_name||'';
+  document.getElementById('rec-phone').value=r.phone||'';
+  document.getElementById('rec-email').value=r.email||'';
+  document.getElementById('rec-addr').value=r.address||'';
+  if(r.service) document.getElementById('rec-service').value=r.service;
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
