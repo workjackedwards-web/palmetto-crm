@@ -1863,13 +1863,13 @@ function renderEmbed(){
   document.getElementById('embed-box').textContent=`<!-- Palmetto Pressure Pros Lead Form -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>
 <style>
-.ppf{font-family:Helvetica,Arial,sans-serif;max-width:560px;padding:20px}
-.ppf h2{font-size:20px;margin-bottom:4px;color:#577C87;font-weight:700;font-family:Helvetica,Arial,sans-serif;}
-.ppf .ppf-sub{font-size:13px;color:#888;margin-bottom:18px;font-family:Helvetica,Arial,sans-serif;}
+.ppf{font-family:Helvetica;max-width:560px;padding:20px}
+.ppf h2{font-size:20px;margin-bottom:4px;color:#577C87;font-weight:700;font-family:Helvetica;}
+.ppf .ppf-sub{font-size:13px;color:#888;margin-bottom:18px;font-family:Helvetica;}
 .ppf .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .ppf .full{grid-column:1/-1}
-.ppf label{font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;font-family:Helvetica,Arial,sans-serif;}
-.ppf input,.ppf select,.ppf textarea{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:Helvetica,Arial,sans-serif;box-sizing:border-box;}
+.ppf label{font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;font-family:Helvetica;}
+.ppf input,.ppf select,.ppf textarea{width:100%;padding:10px 12px;border:1.5px solid #577C87;border-radius:8px;font-size:14px;font-family:Helvetica;box-sizing:border-box;}
 .ppf input:focus,.ppf select:focus,.ppf textarea:focus{outline:none;border-color:#577C87;box-shadow:0 0 0 3px rgba(87,124,135,.1);}
 .ppf textarea{min-height:70px;resize:vertical}
 .ppf .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
@@ -1881,18 +1881,18 @@ function renderEmbed(){
 .ppf .water-opt{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;}
 .ppf .water-opt:hover{border-color:#577C87;}
 .ppf .water-opt.selected{border-color:#577C87;background:#f0f5f7;color:#577C87;}
-.ppf .photo-area{border:2px dashed #ccc;border-radius:8px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .15s;}
+.ppf .photo-area{border:2px dashed #577C87;border-radius:8px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .15s;}
 .ppf .photo-area:hover{border-color:#577C87;background:#f0f5f7;}
 .ppf .photo-area input{display:none;}
 .ppf .photo-area p{font-size:13px;color:#666;margin:4px 0 0;}
 .ppf .photo-area .pa-icon{font-size:28px;margin-bottom:4px;}
 .ppf .photo-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .ppf .photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #ddd;}
-.ppf button{background:#577C87;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;width:100%;margin-top:6px;cursor:pointer;letter-spacing:.02em;font-family:Helvetica,Arial,sans-serif;}
+.ppf button{background:#577C87;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;width:100%;margin-top:6px;cursor:pointer;letter-spacing:.02em;font-family:Helvetica;}
 .ppf button:hover{background:#446270;}
-.ppf .ok{color:#577C87;font-weight:600;margin-top:14px;display:none;padding:12px;background:#f0f5f7;border-radius:8px;text-align:center;font-family:Helvetica,Arial,sans-serif;}
+.ppf .ok{color:#577C87;font-weight:600;margin-top:14px;display:none;padding:12px;background:#f0f5f7;border-radius:8px;text-align:center;font-family:Helvetica;}
 .ppf .req{color:#c00;}
-.pp-svc-opt{padding:9px 14px;font-size:14px;font-family:Helvetica,Arial,sans-serif;cursor:pointer;transition:background .1s;}
+.pp-svc-opt{padding:9px 14px;font-size:14px;font-family:Helvetica;cursor:pointer;transition:background .1s;}
 .pp-svc-opt:hover{background:#f0f5f7;}
 .pp-svc-opt.selected{background:#f0f5f7;color:#577C87;font-weight:600;}
 .pp-svc-opt.selected::before{content:"✓ ";font-weight:700;}
@@ -1915,7 +1915,7 @@ function renderEmbed(){
 
 <label style="margin-bottom:6px;display:block;">Services needed <span class="req">*</span></label>
 <div style="position:relative;margin-bottom:12px;">
-  <div id="pp-sv-toggle" onclick="toggleSvcDropdown()" style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:Helvetica,Arial,sans-serif;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+  <div id="pp-sv-toggle" onclick="toggleSvcDropdown()" style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:Helvetica;box-sizing:border-box;cursor:pointer;background:#fff;display:flex;justify-content:space-between;align-items:center;user-select:none;">
     <span id="pp-sv-label" style="color:#999;">Please select one of the following</span>
     <span style="color:#999;font-size:12px;">▼</span>
   </div>
@@ -3311,7 +3311,7 @@ function addMapMarker(lead,lat,lng){
   const jlng=lng+(Math.random()-0.5)*0.0003;
   const marker=L.circleMarker([jlat,jlng],{radius:r,fillColor:color,color:'#fff',weight:2,opacity:1,fillOpacity:0.9});
   marker.bindTooltip(
-    `<div style="font-family:-apple-system,sans-serif;min-width:160px;padding:2px;">
+    `<div style="font-family:Helvetica;min-width:160px;padding:2px;">
       <div style="font-weight:600;font-size:13px;">${lead.first_name} ${lead.last_name}</div>
       <div style="font-size:11px;color:#666;margin-top:2px;">${lead.service||'—'}</div>
       <div style="margin-top:4px;"><span style="background:${color};color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;">${lead.status}</span></div>
