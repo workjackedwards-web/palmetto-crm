@@ -1027,15 +1027,17 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="modal-tabs">
       <div class="modal-tab active" onclick="switchRecTab('overview',this)">Overview</div>
       <div class="modal-tab" onclick="switchRecTab('schedule',this)">Schedule</div>
-      <div class="modal-tab" onclick="switchRecTab('history',this)">Visit history</div>
-      <div class="modal-tab" onclick="switchRecTab('contract',this)">Contract PDF</div>
+      <div class="modal-tab" onclick="switchRecTab('quote',this)">Quote</div>
+      <div class="modal-tab" onclick="switchRecTab('contract',this)">Contract</div>
       <div class="modal-tab" onclick="switchRecTab('comms',this)">Communications</div>
+      <div class="modal-tab" onclick="switchRecTab('joblog',this)">Job Log</div>
     </div>
     <div id="rec-tab-overview"></div>
     <div id="rec-tab-schedule" style="display:none;"></div>
-    <div id="rec-tab-history" style="display:none;"></div>
+    <div id="rec-tab-quote" style="display:none;"></div>
     <div id="rec-tab-contract" style="display:none;"></div>
     <div id="rec-tab-comms" style="display:none;"></div>
+    <div id="rec-tab-joblog" style="display:none;"></div>
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="rec-del-btn"><i class="ti ti-trash"></i> Delete contract</button>
       <button class="btn btn-sm" id="rec-edit-btn"><i class="ti ti-edit"></i> Edit</button>
@@ -3573,7 +3575,7 @@ function viewRecurring(id){
   viewingRecId=id;
   document.getElementById('view-rec-title').textContent=`${rec.first_name} ${rec.last_name}`;
   document.querySelectorAll('#modal-view-recurring .modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
-  ['overview','schedule','history','contract','comms'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t==='overview'?'block':'none';});
+  ['overview','schedule','quote','contract','comms','joblog'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t==='overview'?'block':'none';});
   renderRecOverview(rec);
   document.getElementById('rec-edit-btn').onclick=()=>editRecurringModal(rec);
   document.getElementById('rec-del-btn').onclick=()=>deleteRecurring(rec.id);
@@ -3583,12 +3585,13 @@ function viewRecurring(id){
 function switchRecTab(tab,el){
   document.querySelectorAll('#modal-view-recurring .modal-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  ['overview','schedule','history','contract','comms'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t===tab?'block':'none';});
+  ['overview','schedule','quote','contract','comms','joblog'].forEach(t=>{document.getElementById('rec-tab-'+t).style.display=t===tab?'block':'none';});
   const rec=allRecurring.find(r=>r.id===viewingRecId);
   if(tab==='schedule') renderRecSchedule(rec);
-  if(tab==='history') renderRecHistory(rec);
+  if(tab==='quote') renderRecQuote(rec);
   if(tab==='contract') renderRecContract(rec);
   if(tab==='comms') renderRecComms(rec);
+  if(tab==='joblog') renderRecJobLog(rec);
 }
 
 function renderRecOverview(rec){
@@ -3665,23 +3668,126 @@ function renderRecSchedule(rec){
   `;
 }
 
-function renderRecHistory(rec){
+async function renderRecQuote(rec){
+  const container=document.getElementById('rec-tab-quote');
+  container.innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;font-weight:600;">Quote document</div>
+    <div class="photo-upload-area" onclick="document.getElementById('upload-rec-quote').click()">
+      <i class="ti ti-file-upload"></i><p>Upload quote PDF or HTML</p>
+      <input type="file" id="upload-rec-quote" accept="application/pdf,text/html" onchange="uploadRecQuoteFile(this,'${rec.id}')">
+    </div>
+    <div id="rec-quote-list" style="margin-top:14px;"></div>
+  `;
+  await renderRecQuoteFiles(rec.id);
+}
+
+async function renderRecQuoteFiles(contractId){
+  const{data:files,error}=await sb.storage.from('job-photos').list(`rec-quotes/${contractId}`);
+  const container=document.getElementById('rec-quote-list');
+  if(!container) return;
+  if(error||!files||!files.length){container.innerHTML='<div style="font-size:13px;color:var(--ink-3);padding:8px 0;">No quote uploaded yet.</div>';return;}
+  container.innerHTML=files.map(f=>{
+    const{data}=sb.storage.from('job-photos').getPublicUrl(`rec-quotes/${contractId}/${f.name}`);
+    const isHtml=f.name.endsWith('.html');
+    return`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:8px;">
+      <i class="ti ti-file-description" style="font-size:24px;color:var(--teal-600);flex-shrink:0;"></i>
+      <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${f.name}</div></div>
+      ${isHtml?`<button class="btn btn-sm btn-primary" onclick="viewQuoteInModal('${data.publicUrl}','${f.name}')"><i class="ti ti-eye"></i> View</button>`:`<a href="${data.publicUrl}" target="_blank" class="btn btn-sm btn-primary" style="text-decoration:none;"><i class="ti ti-eye"></i> View</a>`}
+      <button class="btn btn-sm btn-danger" onclick="deleteRecQuoteFile('${contractId}','${f.name}')"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+async function uploadRecQuoteFile(input,contractId){
+  const file=input.files[0]; if(!file) return;
+  const area=input.parentElement;
+  area.innerHTML='<i class="ti ti-loader" style="font-size:24px;color:var(--teal-500);animation:spin .7s linear infinite;"></i><p style="font-size:13px;color:var(--ink-3);margin-top:8px;">Uploading...</p>';
+  const filename=`quote_${Date.now()}.${file.name.split('.').pop()}`;
+  await sb.storage.from('job-photos').upload(`rec-quotes/${contractId}/${filename}`,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+  const rec=allRecurring.find(r=>r.id===contractId);
+  if(rec) await renderRecQuote(rec);
+}
+
+async function deleteRecQuoteFile(contractId,filename){
+  if(!confirm('Delete this quote?')) return;
+  await sb.storage.from('job-photos').remove([`rec-quotes/${contractId}/${filename}`]);
+  await renderRecQuoteFiles(contractId);
+}
+
+async function renderRecJobLog(rec){
   const completed=allVisits.filter(v=>v.contract_id===rec.id&&v.status==='Completed').sort((a,b)=>b.visit_date.localeCompare(a.visit_date));
-  const totalRev=completed.reduce((s,v)=>s+(parseFloat(v.revenue)||0),0);
-  document.getElementById('rec-tab-history').innerHTML=`
+  const container=document.getElementById('rec-tab-joblog');
+  container.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;">${completed.length} completed visits · Total: ${$m(totalRev)}</div>
+      <div style="font-size:13px;font-weight:600;">${completed.length} completed visit${completed.length!==1?'s':''}</div>
     </div>
     ${completed.length?completed.map(v=>`
-      <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div><div style="font-weight:500;">${v.visit_date}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${v.completed_by||'—'}${v.duration?' · '+v.duration:''}</div></div>
-          <div style="font-weight:600;color:var(--green-600);">${$m(v.revenue)}</div>
+      <div style="border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:12px;overflow:hidden;">
+        <div style="background:var(--teal-50);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${v.visit_date}</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${v.completed_by||'—'}${v.duration?' · '+v.duration:''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:600;color:var(--green-600);">${$m(v.revenue)}</div>
+            ${v.chemicals?`<div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${v.chemicals}</div>`:''}
+          </div>
         </div>
-        ${v.chemicals?`<div style="font-size:12px;color:var(--ink-3);margin-top:6px;">Chemicals: ${v.chemicals}</div>`:''}
-        ${v.notes?`<div style="font-size:12px;color:var(--ink-2);margin-top:4px;">${v.notes}</div>`:''}
-      </div>`).join(''):'<div class="empty">No completed visits yet.</div>'}
+        ${v.notes?`<div style="padding:8px 14px;font-size:12px;color:var(--ink-2);border-bottom:1px solid var(--border);">${v.notes}</div>`:''}
+        <div style="padding:12px 14px;" id="rec-visit-photos-${v.id}">
+          <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Photos & Videos</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="photo-upload-area" style="padding:10px 14px;flex:none;" onclick="document.getElementById('rec-upload-before-${v.id}').click()">
+              <i class="ti ti-camera-plus" style="font-size:18px;"></i><p style="font-size:11px;margin-top:2px;">Before</p>
+              <input type="file" id="rec-upload-before-${v.id}" multiple accept="image/*,video/*" onchange="uploadRecVisitPhotos(this,'${v.id}','before')">
+            </div>
+            <div class="photo-upload-area" style="padding:10px 14px;flex:none;" onclick="document.getElementById('rec-upload-after-${v.id}').click()">
+              <i class="ti ti-camera-plus" style="font-size:18px;"></i><p style="font-size:11px;margin-top:2px;">After</p>
+              <input type="file" id="rec-upload-after-${v.id}" multiple accept="image/*,video/*" onchange="uploadRecVisitPhotos(this,'${v.id}','after')">
+            </div>
+            <div id="rec-photos-grid-${v.id}" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
+          </div>
+        </div>
+      </div>`).join(''):'<div class="empty">No completed visits yet. Log a visit from the Schedule tab.</div>'}
   `;
+  // Load photos for each visit
+  for(const v of completed){
+    await loadRecVisitPhotos(v.id);
+  }
+}
+
+async function loadRecVisitPhotos(visitId){
+  const grid=document.getElementById('rec-photos-grid-'+visitId);
+  if(!grid) return;
+  grid.innerHTML='';
+  for(const type of['before','after']){
+    const{data:files}=await sb.storage.from('job-photos').list(`rec-visits/${visitId}/${type}`);
+    if(!files||!files.length) continue;
+    files.forEach(f=>{
+      const{data}=sb.storage.from('job-photos').getPublicUrl(`rec-visits/${visitId}/${type}/${f.name}`);
+      const isVideo=f.name.match(/\.(mp4|mov|avi|webm|mkv|m4v)$/i);
+      const el=document.createElement('div');
+      el.style.cssText='position:relative;width:70px;height:70px;border-radius:6px;overflow:hidden;flex-shrink:0;';
+      el.innerHTML=isVideo
+        ?`<video src="${data.publicUrl}" style="width:100%;height:100%;object-fit:cover;" muted></video><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:9px;text-align:center;padding:2px;">${type}</div>`
+        :`<img src="${data.publicUrl}" style="width:100%;height:100%;object-fit:cover;"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:9px;text-align:center;padding:2px;">${type}</div>`;
+      grid.appendChild(el);
+    });
+  }
+}
+
+async function uploadRecVisitPhotos(input,visitId,type){
+  const files=Array.from(input.files); if(!files.length) return;
+  const area=input.parentElement;
+  const origHtml=area.innerHTML;
+  area.innerHTML='<i class="ti ti-loader" style="font-size:18px;color:var(--teal-500);animation:spin .7s linear infinite;"></i>';
+  for(const file of files){
+    const ext=file.name.split('.').pop();
+    const path=`rec-visits/${visitId}/${type}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    await sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||'application/octet-stream'});
+  }
+  area.innerHTML=origHtml;
+  await loadRecVisitPhotos(visitId);
 }
 
 async function renderRecContract(rec){
@@ -3855,7 +3961,7 @@ async function saveVisitLog(){
 
     closeModal('log-visit');
     const updatedRec=allRecurring.find(r=>r.id===contractId);
-    if(updatedRec){renderRecSchedule(updatedRec);renderRecHistory(updatedRec);renderRecOverview(updatedRec);}
+    if(updatedRec){renderRecSchedule(updatedRec);renderRecOverview(updatedRec);}
     renderRecurring();
     renderDashboard();
   }catch(e){alert('Failed to log visit: '+e.message);}
