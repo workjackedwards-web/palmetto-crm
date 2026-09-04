@@ -1863,41 +1863,160 @@ function renderEmbed(){
   document.getElementById('embed-box').textContent=`<!-- Palmetto Pressure Pros Lead Form -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>
 <style>
-.ppf{font-family:-apple-system,sans-serif;max-width:520px;padding:20px}
-.ppf h2{font-size:18px;margin-bottom:16px;color:#0F6E56}
-.ppf .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ppf{font-family:-apple-system,sans-serif;max-width:560px;padding:20px}
+.ppf h2{font-size:20px;margin-bottom:4px;color:#0F6E56;font-weight:700}
+.ppf .ppf-sub{font-size:13px;color:#888;margin-bottom:18px}
+.ppf .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .ppf .full{grid-column:1/-1}
-.ppf label{font-size:12px;color:#666;display:block;margin-bottom:4px}
-.ppf input,.ppf select,.ppf textarea{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.ppf label{font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.ppf input,.ppf select,.ppf textarea{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:-apple-system,sans-serif;box-sizing:border-box;}
+.ppf input:focus,.ppf select:focus,.ppf textarea:focus{outline:none;border-color:#0F6E56;box-shadow:0 0 0 3px rgba(15,110,86,.1);}
 .ppf textarea{min-height:70px;resize:vertical}
-.ppf button{background:#0F6E56;color:#fff;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:600;width:100%;margin-top:8px;cursor:pointer}
-.ppf .ok{color:#0F6E56;font-weight:600;margin-top:12px;display:none}
+.ppf .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.ppf .svc-cb{display:flex;align-items:center;gap:7px;font-size:13px;color:#333;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e5e5;border-radius:7px;transition:all .15s;}
+.ppf .svc-cb:hover{border-color:#0F6E56;background:#f0faf6;}
+.ppf .svc-cb input{width:15px;height:15px;accent-color:#0F6E56;flex-shrink:0;margin:0;}
+.ppf .svc-cb.checked{border-color:#0F6E56;background:#f0faf6;}
+.ppf .water-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.ppf .water-opt{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;}
+.ppf .water-opt:hover{border-color:#0F6E56;}
+.ppf .water-opt.selected{border-color:#0F6E56;background:#f0faf6;color:#0F6E56;}
+.ppf .photo-area{border:2px dashed #ccc;border-radius:8px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .15s;}
+.ppf .photo-area:hover{border-color:#0F6E56;background:#f0faf6;}
+.ppf .photo-area input{display:none;}
+.ppf .photo-area p{font-size:13px;color:#666;margin:4px 0 0;}
+.ppf .photo-area .pa-icon{font-size:28px;margin-bottom:4px;}
+.ppf .photo-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.ppf .photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #ddd;}
+.ppf button{background:#0F6E56;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;width:100%;margin-top:6px;cursor:pointer;letter-spacing:.02em;}
+.ppf button:hover{background:#085041;}
+.ppf .ok{color:#0F6E56;font-weight:600;margin-top:14px;display:none;padding:12px;background:#f0faf6;border-radius:8px;text-align:center;}
+.ppf .req{color:#c00;}
 </style>
 <div class="ppf">
 <h2>Get a Free Quote</h2>
-<div class="row"><div><label>First name *</label><input id="pp-fn" placeholder="John"></div><div><label>Last name</label><input id="pp-ln" placeholder="Smith"></div></div>
-<div class="row"><div><label>Phone *</label><input id="pp-ph" placeholder="(843) 555-0100"></div><div><label>Email</label><input id="pp-em" placeholder="john@email.com"></div></div>
-<div class="row"><div class="full"><label>Property address *</label><input id="pp-ad" placeholder="123 King St, Charleston SC"></div></div>
+<p class="ppf-sub">Tell us about your property and we'll get back to you within 24 hours.</p>
+
 <div class="row">
-  <div><label>Service *</label><select id="pp-sv"><option value="">Select...</option><option>House Washing (Soft Wash)</option><option>Driveway / Walkway</option><option>Pool Deck</option><option>Roof Cleaning</option><option>Curb Appeal Package</option><option>Listing-Ready Package</option><option>Commercial Property</option><option>Other</option></select></div>
-  <div><label>How did you find us?</label><select id="pp-sr"><option>Google</option><option>Referral</option><option>Realtor</option><option>Social Media</option><option>HOA</option><option>Other</option></select></div>
+  <div><label>First name <span class="req">*</span></label><input id="pp-fn" placeholder="John"></div>
+  <div><label>Last name</label><input id="pp-ln" placeholder="Smith"></div>
 </div>
-<div class="row"><div class="full"><label>Notes</label><textarea id="pp-nt" placeholder="Property size, access info..."></textarea></div></div>
-<button onclick="ppSubmit()">Request Free Quote →</button>
-<div class="ok" id="pp-ok">✓ Thanks! We'll be in touch within 24 hours.</div>
+<div class="row">
+  <div><label>Phone <span class="req">*</span></label><input id="pp-ph" placeholder="(843) 555-0100"></div>
+  <div><label>Email</label><input id="pp-em" placeholder="john@email.com"></div>
+</div>
+<div class="row">
+  <div class="full"><label>Property address <span class="req">*</span></label><input id="pp-ad" placeholder="123 King St, Charleston SC"></div>
+</div>
+
+<label style="margin-bottom:8px;display:block;">Services needed <span class="req">*</span></label>
+<div class="svc-grid">
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="House Washing (Soft Wash)"> House Washing</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Driveway / Walkway"> Driveway / Walkway</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Pool Deck"> Pool Deck</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Wood Deck"> Wood Deck</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Patio"> Patio</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Roof Cleaning"> Roof Cleaning</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Fence Cleaning"> Fence Cleaning</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Gutter Cleaning"> Gutter Cleaning</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Residential Window Washing"> Window Washing</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Curb Appeal Package"> Curb Appeal Package</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Listing-Ready Package"> Listing-Ready Package</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Full Exterior Package"> Full Exterior Package</label>
+  <label class="svc-cb" onclick="this.classList.toggle('checked')"><input type="checkbox" value="Other"> Other / Not Sure</label>
+</div>
+
+<label style="margin-bottom:8px;display:block;">Water source <span class="req">*</span></label>
+<div class="water-row">
+  <div class="water-opt" id="pp-city" onclick="selectWater('city')">🏙️ City Water</div>
+  <div class="water-opt" id="pp-well" onclick="selectWater('well')">🪣 Well Water</div>
+</div>
+<input type="hidden" id="pp-water">
+
+<label style="margin-bottom:8px;display:block;">How did you find us?</label>
+<div class="row" style="margin-bottom:12px;">
+  <div class="full"><select id="pp-sr"><option>Google</option><option>Referral</option><option>Realtor</option><option>Social Media</option><option>HOA</option><option>Door-to-door</option><option>Other</option></select></div>
+</div>
+
+<label style="margin-bottom:6px;display:block;">📸 Photos / Videos <span style="font-weight:400;color:#888;text-transform:none;font-size:11px;letter-spacing:0;">(optional — helps us give you a faster, more accurate quote!)</span></label>
+<div class="photo-area" onclick="document.getElementById('pp-photos').click()">
+  <div class="pa-icon">📷</div>
+  <p>Tap to upload photos or videos of your property</p>
+  <p style="font-size:11px;color:#aaa;">JPG, PNG, MP4, MOV accepted</p>
+  <input type="file" id="pp-photos" multiple accept="image/*,video/*" onchange="ppPreviewPhotos(this)">
+</div>
+<div class="photo-preview" id="pp-photo-preview"></div>
+
+<div class="row"><div class="full"><label>Additional notes</label><textarea id="pp-nt" placeholder="Tell us anything else about your property — square footage, special access, specific areas of concern..."></textarea></div></div>
+
+<button onclick="ppSubmit()">Request My Free Quote →</button>
+<div class="ok" id="pp-ok">✓ Thanks! We received your request and will be in touch within 24 hours.</div>
 </div>
 <script>
 const _sb=supabase.createClient('https://ddfseexcltwrryoouhjo.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0');
+
+function selectWater(type){
+  document.getElementById('pp-city').classList.toggle('selected', type==='city');
+  document.getElementById('pp-well').classList.toggle('selected', type==='well');
+  document.getElementById('pp-water').value=type;
+}
+
+function ppPreviewPhotos(input){
+  const preview=document.getElementById('pp-photo-preview');
+  preview.innerHTML='';
+  Array.from(input.files).forEach(f=>{
+    if(f.type.startsWith('image/')){
+      const img=document.createElement('img');
+      img.className='photo-thumb';
+      img.src=URL.createObjectURL(f);
+      preview.appendChild(img);
+    } else {
+      const div=document.createElement('div');
+      div.style.cssText='width:60px;height:60px;background:#f0faf6;border:1px solid #0F6E56;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#0F6E56;text-align:center;padding:4px;';
+      div.textContent='📹 '+f.name.slice(0,10);
+      preview.appendChild(div);
+    }
+  });
+}
+
 async function ppSubmit(){
-  const fn=document.getElementById('pp-fn').value.trim();const ph=document.getElementById('pp-ph').value.trim();const ad=document.getElementById('pp-ad').value.trim();const sv=document.getElementById('pp-sv').value;
-  if(!fn||!ph||!ad||!sv){alert('Please fill in required fields.');return;}
-  const{error}=await _sb.from('leads').insert([{id:crypto.randomUUID(),first_name:fn,last_name:document.getElementById('pp-ln').value,phone:ph,email:document.getElementById('pp-em').value,address:ad,service:sv,source:'Website Form - '+document.getElementById('pp-sr').value,status:'Lead',notes:document.getElementById('pp-nt').value,job_date:new Date().toISOString().split('T')[0],created_at:new Date().toISOString()}]);
-  if(error){alert('Submission failed. Please call us directly.');return;}
+  const fn=document.getElementById('pp-fn').value.trim();
+  const ph=document.getElementById('pp-ph').value.trim();
+  const ad=document.getElementById('pp-ad').value.trim();
+  const water=document.getElementById('pp-water').value;
+  const checked=Array.from(document.querySelectorAll('.svc-cb input:checked')).map(c=>c.value);
+  if(!fn||!ph||!ad){alert('Please fill in your name, phone, and address.');return;}
+  if(!checked.length){alert('Please select at least one service.');return;}
+  if(!water){alert('Please select your water source (city or well water).');return;}
+  const leadId=crypto.randomUUID();
+  const notes=[document.getElementById('pp-nt').value,'Water source: '+(water==='city'?'City water':'Well water')].filter(Boolean).join(' | ');
+  const{error}=await _sb.from('leads').insert([{
+    id:leadId,first_name:fn,last_name:document.getElementById('pp-ln').value,
+    phone:ph,email:document.getElementById('pp-em').value,address:ad,
+    service:checked.join(', '),
+    source:'Website Form - '+document.getElementById('pp-sr').value,
+    status:'Lead',notes,
+    job_date:new Date().toISOString().split('T')[0],
+    created_at:new Date().toISOString()
+  }]);
+  if(error){alert('Submission failed. Please call us at (843) 608-0529.');return;}
+  // Upload any photos/videos
+  const files=document.getElementById('pp-photos').files;
+  if(files.length>0){
+    for(const file of Array.from(files)){
+      const ext=file.name.split('.').pop();
+      const path=leadId+'/before/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+      await _sb.storage.from('job-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+    }
+  }
   document.getElementById('pp-ok').style.display='block';
+  document.querySelectorAll('.svc-cb').forEach(l=>{l.classList.remove('checked');l.querySelector('input').checked=false;});
+  selectWater('');document.getElementById('pp-water').value='';
   ['pp-fn','pp-ln','pp-ph','pp-em','pp-ad','pp-nt'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pp-photo-preview').innerHTML='';
 }
-<\/script>`;
-}
+<\/script>`;}
+
 // ── Page titles update ─────────────────────────────────────────────────────
 Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs'});
 
