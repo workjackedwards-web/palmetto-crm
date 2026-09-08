@@ -261,6 +261,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-section">Reports</div>
       <div class="nav-item" data-page="analytics" onclick="nav(this)"><i class="ti ti-chart-bar"></i><span>Analytics</span></div>
       <div class="nav-item" data-page="map" onclick="nav(this)"><i class="ti ti-map-2"></i><span>Territory Map</span></div>
+      <div class="nav-item" data-page="research" onclick="nav(this)"><i class="ti ti-clipboard-list"></i><span>Research</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="quotes" onclick="nav(this)"><i class="ti ti-file-dollar"></i><span>Quote Builder</span></div>
       <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
@@ -307,7 +308,7 @@ tbody tr:hover td{background:#faf9f6;}
           </select>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Lead</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
+          <table><thead><tr><th>Lead</th><th>Type</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
           <tbody id="leads-body"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
         </div>
       </div>
@@ -627,6 +628,7 @@ tbody tr:hover td{background:#faf9f6;}
             <label class="map-filter-label"><input type="checkbox" id="mf-completed" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#3B6D11;display:inline-block;"></span> Completed</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-lost" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#A32D2D;display:inline-block;"></span> Lost</label>
             <label class="map-filter-label"><input type="checkbox" id="mf-door" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#6b21a8;display:inline-block;"></span> Door-to-door</label>
+            <label class="map-filter-label"><input type="checkbox" id="mf-recurring" checked onchange="renderMap()"> <span style="width:10px;height:10px;border-radius:50%;background:#f97316;display:inline-block;"></span> Recurring</label>
           </div>
           <div class="map-container">
             <div id="territory-map"></div>
@@ -639,6 +641,67 @@ tbody tr:hover td{background:#faf9f6;}
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#3B6D11;"></div> Completed</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#A32D2D;"></div> Lost</div>
             <div class="map-legend-item"><div class="map-legend-dot" style="background:#6b21a8;"></div> Door-to-door</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:#f97316;"></div> Recurring</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESEARCH -->
+      <div id="pg-research" class="page-content" style="display:none;">
+        <!-- List selector view -->
+        <div id="research-home" style="display:block;">
+          <div style="text-align:center;padding:40px 20px 24px;">
+            <div style="font-size:28px;font-weight:700;color:var(--teal-600);margin-bottom:6px;">What's Next?</div>
+            <div style="font-size:14px;color:var(--ink-3);margin-bottom:24px;">Select a research list to open or create a new one</div>
+            <div style="max-width:400px;margin:0 auto;display:flex;flex-direction:column;gap:10px;">
+              <select id="research-list-select" onchange="openResearchList()" style="padding:12px 14px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-size:15px;font-family:var(--font);background:var(--surface);">
+                <option value="">— Select a list —</option>
+              </select>
+              <button class="btn btn-primary" onclick="openCreateList()" style="padding:12px;font-size:14px;"><i class="ti ti-plus"></i> Create new list</button>
+            </div>
+          </div>
+          <div id="research-list-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;max-width:900px;margin:0 auto;padding:0 8px 24px;"></div>
+        </div>
+
+        <!-- Active list view -->
+        <div id="research-active" style="display:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="closeResearchList()"><i class="ti ti-arrow-left"></i> All lists</button>
+            <div>
+              <div style="font-size:17px;font-weight:700;" id="research-active-title"></div>
+              <div style="font-size:12px;color:var(--ink-3);" id="research-active-desc"></div>
+            </div>
+            <div style="flex:1;"></div>
+            <input type="text" id="research-biz-search" placeholder="Search businesses..." oninput="renderResearchList()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:200px;">
+            <button class="btn btn-primary" onclick="openAddBusiness()"><i class="ti ti-plus"></i> Add business</button>
+          </div>
+
+          <!-- Bulk action bar (shows when items checked) -->
+          <div id="research-bulk-bar" style="display:none;background:var(--teal-50);border:1px solid var(--teal-300);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="research-bulk-count" style="font-size:13px;font-weight:600;color:var(--teal-700);"></span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm" onclick="bulkAction('visited')" style="background:#fef9c3;color:#854d0e;border-color:#fde047;">Mark Visited</button>
+              <button class="btn btn-sm" onclick="bulkAction('nogo')" style="background:var(--red-light);color:var(--red-600);border-color:#f7c1c1;">No Good</button>
+              <button class="btn btn-sm btn-primary" onclick="bulkAction('lead')"><i class="ti ti-user-plus"></i> Convert to Lead</button>
+              <button class="btn btn-sm" onclick="bulkAction('recurring')" style="background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-300);"><i class="ti ti-repeat"></i> Add to Recurring</button>
+              <button class="btn btn-sm" onclick="bulkAction('route')" style="background:var(--blue-light);color:var(--blue-600);border-color:#bfdbfe;"><i class="ti ti-route"></i> Send to Route</button>
+              <button class="btn btn-sm" onclick="bulkAction('addtolist')" style="background:#faf9f6;"><i class="ti ti-playlist-add"></i> Add to List</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:36px;"><input type="checkbox" id="research-check-all" onchange="toggleAllResearch(this)" style="accent-color:var(--teal-600);"></th>
+                <th>Business name</th>
+                <th>Address</th>
+                <th>Point of contact</th>
+                <th>Status</th>
+                <th>Date added</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="research-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -669,6 +732,17 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field"><label>Phone</label><input id="f-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="john@email.com"></div>
       <div class="field span2"><label>Property address *</label><div class="addr-wrap"><input id="f-addr" placeholder="123 King St, Charleston SC 29401" oninput="addrAutocomplete(this,'f-addr-suggestions')" onkeydown="addrKeydown(event,'f-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="f-addr-suggestions"></div></div></div>
+      <div class="field">
+        <label>Property type *</label>
+        <select id="f-property-type" onchange="toggleCommercialFields()">
+          <option value="Residential">Residential</option>
+          <option value="Commercial">Commercial</option>
+        </select>
+      </div>
+      <div class="field" id="f-business-name-wrap" style="display:none;">
+        <label>Business name</label>
+        <input id="f-business-name" placeholder="e.g. Shell Gas Station, Publix...">
+      </div>
       <div class="field">
         <label>Services *</label>
         <div id="f-svc-wrap" style="border:1px solid var(--border-md);border-radius:var(--r-sm);padding:8px 10px;background:var(--surface);max-height:200px;overflow-y:auto;">
@@ -748,6 +822,14 @@ tbody tr:hover td{background:#faf9f6;}
       </div>
       <div class="profit-preview" id="profit-preview"></div>
     </div>
+    <div id="f-contacts-section" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:600;">Additional contacts</div>
+        <button type="button" class="btn btn-sm" onclick="addLeadContact()"><i class="ti ti-plus"></i> Add contact</button>
+      </div>
+      <div id="f-contacts-list"></div>
+    </div>
+
     <div class="job-log-section">
       <div class="jl-title">Job log</div>
       <div class="form-grid">
@@ -820,7 +902,8 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field"><label>First name *</label><input id="c-first" placeholder="Sarah"></div>
       <div class="field"><label>Last name *</label><input id="c-last" placeholder="Johnson"></div>
       <div class="field"><label>Company</label><input id="c-company" placeholder="Compass Real Estate"></div>
-      <div class="field"><label>Contact type</label><select id="c-type"><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select></div>
+      <div class="field"><label>Contact type</label><select id="c-type" onchange="toggleCustomContactType(this)"><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option><option value="__custom__">✏️ Custom type...</option></select></div>
+      <div class="field" id="c-type-custom-wrap" style="display:none;"><label>Custom type</label><input id="c-type-custom" placeholder="e.g. Landscape Company, Pool Company..."></div>
       <div class="field"><label>Phone</label><input id="c-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="c-email" placeholder="sarah@compass.com"></div>
       <div class="field"><label>Referral partner?</label><select id="c-referral"><option value="no">No</option><option value="yes">Yes — enrolled in referral program</option></select></div>
@@ -1086,6 +1169,60 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- CREATE LIST MODAL -->
+<div class="overlay" id="modal-create-list">
+  <div class="modal" style="width:540px;">
+    <div class="modal-head"><h2 id="modal-list-title">Create new list</h2><button class="btn btn-sm" onclick="closeModal('create-list')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="list-edit-id">
+    <div class="form-grid">
+      <div class="field span2"><label>List name *</label><input id="list-name" placeholder="e.g. Gas Stations — North Charleston"></div>
+      <div class="field span2"><label>Description</label><textarea id="list-desc" placeholder="What's this list for? Target area, business type, campaign..."></textarea></div>
+    </div>
+    <div id="list-import-section" style="margin-top:14px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Import businesses from another list (optional)</div>
+      <select id="list-import-source" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;">
+        <option value="">— Select a list to import from —</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('create-list')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveList()"><i class="ti ti-check"></i> Save list</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD BUSINESS MODAL -->
+<div class="overlay" id="modal-add-business">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2 id="modal-biz-title">Add business</h2><button class="btn btn-sm" onclick="closeModal('add-business')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="biz-edit-id">
+    <div class="form-grid">
+      <div class="field span2"><label>Business name *</label><input id="biz-name" placeholder="e.g. Shell Gas Station"></div>
+      <div class="field span2"><label>Address *</label><div class="addr-wrap"><input id="biz-addr" placeholder="123 Main St, Charleston SC" oninput="addrAutocomplete(this,'biz-addr-suggestions')" onkeydown="addrKeydown(event,'biz-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="biz-addr-suggestions"></div></div></div>
+      <div class="field"><label>Point of contact</label><input id="biz-contact" placeholder="Manager name, owner..."></div>
+      <div class="field"><label>Phone</label><input id="biz-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
+      <div class="field span2"><label>Notes</label><textarea id="biz-notes" placeholder="Anything useful — best time to visit, who to ask for..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('add-business')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBusiness()"><i class="ti ti-check"></i> Add business</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TO LIST MODAL -->
+<div class="overlay" id="modal-add-to-list">
+  <div class="modal" style="width:460px;">
+    <div class="modal-head"><h2>Add to another list</h2><button class="btn btn-sm" onclick="closeModal('add-to-list')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Select one or more lists to copy the selected businesses to.</p>
+    <div id="add-to-list-options" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('add-to-list')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeAddToList()"><i class="ti ti-check"></i> Add to selected lists</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -1093,7 +1230,7 @@ const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], authMode='login', viewingLeadId=null;
+let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], authMode='login', viewingLeadId=null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function toggleAuthMode(){
@@ -1143,6 +1280,7 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     await loadEvents();
     await loadRecurring();
     await loadVisits();
+    await loadResearch();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
@@ -1155,6 +1293,10 @@ async function loadComms(){try{const{data,error}=await sb.from('communications')
 async function loadEvents(){try{const{data,error}=await sb.from('events').select('*').order('event_date',{ascending:true});if(error)console.error('events error:',error);else allEvents=data||[];}catch(e){console.error('loadEvents failed:',e);}}
 async function loadRecurring(){try{const{data,error}=await sb.from('recurring_contracts').select('*').order('created_at',{ascending:false});if(error)console.error('recurring error:',error);else allRecurring=data||[];}catch(e){console.error('loadRecurring failed:',e);}}
 async function loadVisits(){try{const{data,error}=await sb.from('recurring_visits').select('*').order('visit_date',{ascending:true});if(error)console.error('visits error:',error);else allVisits=data||[];}catch(e){console.error('loadVisits failed:',e);}}
+async function loadResearch(){
+  try{const{data,error}=await sb.from('research_lists').select('*').order('created_at',{ascending:false});if(error)console.error('research_lists error:',error);else allResearchLists=data||[];}catch(e){console.error('loadResearch failed:',e);}
+  try{const{data,error}=await sb.from('research_businesses').select('*').order('created_at',{ascending:false});if(error)console.error('research_biz error:',error);else allResearchBiz=data||[];}catch(e){console.error('loadResearchBiz failed:',e);}
+}
 async function upsertRecurring(rec){const{data,error}=await sb.from('recurring_contracts').upsert([rec],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertVisit(v){const{data,error}=await sb.from('recurring_visits').upsert([v],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertEvent(ev){const{data,error}=await sb.from('events').upsert([ev],{onConflict:'id'}).select();if(error)throw error;return data[0];}
@@ -1163,7 +1305,7 @@ async function upsertConnection(conn){const{data,error}=await sb.from('connectio
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',embed:'Website Form'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
 function nav(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
@@ -1181,7 +1323,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
-  if(page==='map'){renderMap();}
+  if(page==='map'){renderMap();}  if(page==='research')initResearch();
   if(page==='embed')renderEmbed();
 }
 function refreshAll(){
@@ -1210,7 +1352,7 @@ function openAddLead(){
   document.getElementById('edit-id').value='';
   ['f-first','f-last','f-phone','f-email','f-addr','f-quote','f-notes','f-rev','f-mat','f-lab','f-oth','f-chemicals'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   setSelectedServices('');
-  document.getElementById('f-src').value='Website Form';document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
+  document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
   document.getElementById('f-duration').value='';document.getElementById('f-completed-by').value='';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('fin-section').style.display='none';
@@ -1218,6 +1360,13 @@ function openAddLead(){
   document.getElementById('profit-preview').style.display='none';
   document.getElementById('referral-link-field').style.display='none';
   ['f-sched-date','f-sched-time','f-sched-notes'].forEach(id=>document.getElementById(id).value='');
+  // Reset commercial fields
+  const ptEl=document.getElementById('f-property-type');if(ptEl)ptEl.value='Residential';
+  const bnEl=document.getElementById('f-business-name');if(bnEl)bnEl.value='';
+  const bnWrap=document.getElementById('f-business-name-wrap');if(bnWrap)bnWrap.style.display='none';
+  const cSection=document.getElementById('f-contacts-section');if(cSection)cSection.style.display='none';
+  const cList=document.getElementById('f-contacts-list');if(cList)cList.innerHTML='';
+  leadContactCount=0;
   document.getElementById('f-sched-partner').value='';
   document.getElementById('f-sched-duration').value='';
   populateReferrerDropdown('');
@@ -1250,6 +1399,11 @@ function editLeadModal(lead){
   populateReferrerDropdown(lead.referrer_id||'');
   const showRef=['Referral','Realtor','HOA','Property Manager'].includes(lead.source);
   document.getElementById('referral-link-field').style.display=showRef?'block':'none';
+  // Commercial fields
+  const ptEl=document.getElementById('f-property-type');
+  if(ptEl){ptEl.value=lead.property_type||'Residential';toggleCommercialFields();}
+  const bnEl=document.getElementById('f-business-name');if(bnEl)bnEl.value=lead.business_name||'';
+  try{const contacts=lead.contacts?JSON.parse(lead.contacts):[];setLeadContacts(contacts);}catch(e){setLeadContacts([]);}
   calcProfit();openModal('lead');
 }
 
@@ -1389,7 +1543,26 @@ async function saveLead(){
   if(!first||!addr||!svc){alert('Required: First name, Address, and at least one Service');return;}
   const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('edit-id').value||uid();
-  const lead={id,first_name:first,last_name:document.getElementById('f-last').value,phone:fmtPhoneNum(document.getElementById('f-phone').value),email:document.getElementById('f-email').value,address:addr,service:svc,source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,materials:document.getElementById('f-mat').value||null,labor:document.getElementById('f-lab').value||null,other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,completed_by:document.getElementById('f-completed-by').value||null,chemicals:document.getElementById('f-chemicals').value||null,referrer_id:document.getElementById('f-referrer-id').value||null,sched_date:document.getElementById('f-sched-date').value||null,sched_time:document.getElementById('f-sched-time').value||null,sched_partner:document.getElementById('f-sched-partner').value||null,sched_duration:document.getElementById('f-sched-duration').value||null,sched_notes:document.getElementById('f-sched-notes').value||null,added_by:currentUser?.email,updated_at:new Date().toISOString()};
+  const lead={id,first_name:first,last_name:document.getElementById('f-last').value,
+    phone:fmtPhoneNum(document.getElementById('f-phone').value),
+    email:document.getElementById('f-email').value,address:addr,service:svc,
+    source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,
+    property_type:document.getElementById('f-property-type')?.value||'Residential',
+    business_name:document.getElementById('f-business-name')?.value||null,
+    contacts:JSON.stringify(getLeadContacts()),
+    quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,
+    notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,
+    materials:document.getElementById('f-mat').value||null,labor:document.getElementById('f-lab').value||null,
+    other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,
+    completed_by:document.getElementById('f-completed-by').value||null,
+    chemicals:document.getElementById('f-chemicals').value||null,
+    referrer_id:document.getElementById('f-referrer-id').value||null,
+    sched_date:document.getElementById('f-sched-date').value||null,
+    sched_time:document.getElementById('f-sched-time').value||null,
+    sched_partner:document.getElementById('f-sched-partner').value||null,
+    sched_duration:document.getElementById('f-sched-duration').value||null,
+    sched_notes:document.getElementById('f-sched-notes').value||null,
+    added_by:currentUser?.email,updated_at:new Date().toISOString()};
   try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);closeModal('lead');refreshAll();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save lead';
@@ -1424,6 +1597,9 @@ function viewLead(id){
     <div class="record-section"><div class="record-section-title">Contact</div><div class="record-grid">
       <div class="record-field"><div class="lbl">Status</div>${badge(l.status)}</div>
       <div class="record-field"><div class="lbl">Source</div><div class="val">${l.source||'—'}</div></div>
+      <div class="record-field"><div class="lbl">Property type</div><div class="val"><span style="font-size:12px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':l.property_type==='Residential'?'var(--blue-light)':'var(--border)'};color:${l.property_type==='Commercial'?'#92400e':l.property_type==='Residential'?'var(--blue-600)':'var(--ink-3)'};">${l.property_type||'Residential'}</span></div></div>
+      ${l.business_name?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Business name</div><div class="val" style="font-weight:500;">${l.business_name}</div></div>`:''}
+      ${l.contacts&&l.contacts!=='[]'?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Additional contacts</div><div class="val">${(()=>{try{return JSON.parse(l.contacts).map(c=>`<div style="display:flex;gap:16px;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-weight:500;">${c.name}</span>${c.title?`<span style="color:var(--ink-3);">${c.title}</span>`:''}${c.phone?`<span>${c.phone}</span>`:''}</div>`).join('');}catch(e){return '';}})()}</div></div>`:''}
       <div class="record-field"><div class="lbl">Phone</div><div class="val">${l.phone||'—'}</div></div>
       <div class="record-field"><div class="lbl">Email</div><div class="val">${l.email||'—'}</div></div>
       <div class="record-field" style="grid-column:1/-1;"><div class="lbl">Address</div><div class="val">${l.address}</div></div>
@@ -1735,14 +1911,15 @@ function renderLeads(){
     return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc);
   });
   document.getElementById('leads-body').innerHTML=data.length?data.map(l=>`<tr>
-    <td><div style="font-weight:500;">${l.first_name} ${l.last_name}</div><div class="td-muted">${l.phone||''}</div></td>
-    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td>
-    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">${l.service}</td>
+    <td><div style="font-weight:500;">${l.first_name} ${l.last_name}</div>${l.business_name?`<div class="td-muted">${l.business_name}</div>`:''}<div class="td-muted">${l.phone||''}</div></td>
+    <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':l.property_type==='Residential'?'var(--blue-light)':'var(--border)'};color:${l.property_type==='Commercial'?'#92400e':l.property_type==='Residential'?'var(--blue-600)':'var(--ink-3)'};">${l.property_type||'—'}</span></td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td>
+    <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">${l.service}</td>
     <td>${badge(l.status)}</td>
     <td>${l.source||'—'}</td>
     <td>${l.job_date||'—'}</td>
     <td><button class="btn btn-sm" onclick="viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td>
-  </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads. Click "New lead" to add one.</td></tr>';
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads. Click "New lead" to add one.</td></tr>';
 }
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
@@ -1766,12 +1943,14 @@ function openAddConnection(){
   document.getElementById('modal-conn-title').textContent='Add contact';document.getElementById('conn-edit-id').value='';
   ['c-first','c-last','c-company','c-phone','c-email','c-notes','c-paid'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('c-type').value='Realtor';document.getElementById('c-referral').value='no';
+  const cw=document.getElementById('c-type-custom-wrap');if(cw)cw.style.display='none';
+  const cc=document.getElementById('c-type-custom');if(cc)cc.value='';
   openModal('connection');
 }
 function editConnectionModal(conn){
   closeModal('view-conn');document.getElementById('modal-conn-title').textContent='Edit contact';document.getElementById('conn-edit-id').value=conn.id;
   document.getElementById('c-first').value=conn.first_name||'';document.getElementById('c-last').value=conn.last_name||'';
-  document.getElementById('c-company').value=conn.company||'';document.getElementById('c-type').value=conn.contact_type||'Realtor';
+  document.getElementById('c-company').value=conn.company||'';setContactType(conn.contact_type||'Realtor');
   document.getElementById('c-phone').value=conn.phone||'';document.getElementById('c-email').value=conn.email||'';
   document.getElementById('c-referral').value=conn.is_referral_partner?'yes':'no';document.getElementById('c-paid').value=conn.bonuses_paid||'';
   document.getElementById('c-notes').value=conn.notes||'';openModal('connection');
@@ -1780,7 +1959,7 @@ async function saveConnection(){
   const first=document.getElementById('c-first').value.trim();if(!first){alert('First name is required.');return;}
   const btn=document.getElementById('conn-save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('conn-edit-id').value||uid();
-  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:document.getElementById('c-type').value,phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
+  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:getContactType(),phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
   try{const saved=await upsertConnection(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);closeModal('connection');renderConnections();renderReferrals();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save contact';
@@ -2080,7 +2259,7 @@ async function ppSubmit(){
 <\/script>`;}
 
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs',research:'Research'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -4038,6 +4217,605 @@ function selectImportRecurring(idx){
   document.getElementById('rec-email').value=r.email||'';
   document.getElementById('rec-addr').value=r.address||'';
   if(r.service) document.getElementById('rec-service').value=r.service;
+}
+
+// ── Recurring on map ───────────────────────────────────────────────────────
+// Add recurring contracts to map (orange color)
+const _origRenderMap=renderMap;
+async function renderMap(){
+  await _origRenderMap();
+  // Plot active recurring contracts
+  const filterEl=document.getElementById('mf-recurring');
+  if(filterEl&&!filterEl.checked) return;
+  for(const rec of allRecurring.filter(r=>r.status==='Active'&&r.address)){
+    let coords=null;
+    if(rec.lat&&rec.lng) coords={lat:rec.lat,lng:rec.lng};
+    else coords=await geocodeAddress(rec.address);
+    if(!coords) continue;
+    const jlat=coords.lat+(Math.random()-0.5)*0.0003;
+    const jlng=coords.lng+(Math.random()-0.5)*0.0003;
+    const marker=L.circleMarker([jlat,jlng],{radius:10,fillColor:'#f97316',color:'#fff',weight:2,opacity:1,fillOpacity:0.95});
+    marker.bindTooltip(`<div style="font-family:-apple-system,sans-serif;min-width:160px;">
+      <div style="font-weight:600;font-size:13px;">${rec.first_name} ${rec.last_name}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">${rec.service||'—'} · ${rec.frequency}</div>
+      <div style="font-size:11px;margin-top:3px;"><span style="background:#f97316;color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;">Recurring</span></div>
+      <div style="font-size:10px;color:#aaa;margin-top:2px;">${rec.address}</div>
+    </div>`,{sticky:false,offset:[0,-4]});
+    marker.on('click',()=>viewRecurring(rec.id));
+    marker.addTo(leafletMap);
+    mapMarkers.push(marker);
+  }
+}
+
+// ── Research ───────────────────────────────────────────────────────────────
+let activeListId=null;
+let selectedBizIds=new Set();
+
+async function upsertResearchList(list){const{data,error}=await sb.from('research_lists').upsert([list],{onConflict:'id'}).select();if(error)throw error;return data[0];}
+async function upsertResearchBiz(biz){const{data,error}=await sb.from('research_businesses').upsert([biz],{onConflict:'id'}).select();if(error)throw error;return data[0];}
+
+function initResearch(){
+  activeListId=null;
+  selectedBizIds=new Set();
+  document.getElementById('research-home').style.display='block';
+  document.getElementById('research-active').style.display='none';
+  renderResearchHome();
+}
+
+function renderResearchHome(){
+  const sel=document.getElementById('research-list-select');
+  sel.innerHTML='<option value="">— Select a list —</option>'+
+    allResearchLists.map(l=>`<option value="${l.id}">${l.name} (${allResearchBiz.filter(b=>b.list_ids?.includes(l.id)).length} businesses)</option>`).join('');
+
+  // Render list cards
+  const cards=document.getElementById('research-list-cards');
+  cards.innerHTML=allResearchLists.length?allResearchLists.map(l=>{
+    const count=allResearchBiz.filter(b=>b.list_ids?.includes(l.id)).length;
+    return`<div onclick="openResearchListById('${l.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--teal-500)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-weight:600;font-size:15px;margin-bottom:4px;">${l.name}</div>
+      ${l.description?`<div style="font-size:12px;color:var(--ink-3);margin-bottom:8px;">${l.description}</div>`:''}
+      <div style="font-size:12px;color:var(--teal-600);font-weight:500;">${count} business${count!==1?'es':''}</div>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">Created ${new Date(l.created_at).toLocaleDateString()}</div>
+    </div>`;
+  }).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--ink-3);font-size:13px;padding:20px;">No lists yet. Create your first research list above.</div>';
+}
+
+function openResearchList(){
+  const id=document.getElementById('research-list-select').value;
+  if(id) openResearchListById(id);
+}
+
+function openResearchListById(id){
+  const list=allResearchLists.find(l=>l.id===id); if(!list) return;
+  activeListId=id;
+  selectedBizIds=new Set();
+  document.getElementById('research-home').style.display='none';
+  document.getElementById('research-active').style.display='block';
+  document.getElementById('research-active-title').textContent=list.name;
+  document.getElementById('research-active-desc').textContent=list.description||'';
+  renderResearchList();
+}
+
+function closeResearchList(){
+  activeListId=null;
+  selectedBizIds=new Set();
+  document.getElementById('research-home').style.display='block';
+  document.getElementById('research-active').style.display='none';
+  renderResearchHome();
+}
+
+function getStatusBadge(status){
+  const map={
+    'No Contact':'background:#dbeafe;color:#1e40af;',
+    'Visited':'background:#fef9c3;color:#854d0e;',
+    'No Good':'background:var(--red-light);color:var(--red-600);',
+    'Converted':'background:var(--green-light);color:var(--green-600);'
+  };
+  return`<span style="font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;${map[status]||map['No Contact']}">${status||'No Contact'}</span>`;
+}
+
+function renderResearchList(){
+  if(!activeListId) return;
+  const search=(document.getElementById('research-biz-search')?.value||'').toLowerCase();
+  const businesses=allResearchBiz.filter(b=>{
+    if(!b.list_ids?.includes(activeListId)) return false;
+    const t=`${b.name||''} ${b.address||''} ${b.contact||''}`.toLowerCase();
+    return !search||t.includes(search);
+  });
+
+  // Check if any business is a lead
+  const leadsMap={};
+  allLeads.forEach(l=>{const key=(l.first_name+' '+l.last_name).toLowerCase();leadsMap[key]=true;});
+
+  document.getElementById('research-tbody').innerHTML=businesses.length?businesses.map(b=>{
+    const isConverted=b.status==='Converted'||allLeads.some(l=>l.address===b.address||l.email===b.email);
+    const displayStatus=isConverted?'Converted':b.status||'No Contact';
+    const checked=selectedBizIds.has(b.id);
+    return`<tr style="${checked?'background:var(--teal-50);':''}">
+      <td><input type="checkbox" ${checked?'checked':''} onchange="toggleBizCheck('${b.id}',this)" style="accent-color:var(--teal-600);"></td>
+      <td><div style="font-weight:500;">${b.name}</div>${b.notes?`<div class="td-muted">${b.notes.slice(0,50)}${b.notes.length>50?'…':''}</div>`:''}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.address||'—'}</td>
+      <td style="font-size:12px;">${b.contact||'—'}${b.phone?`<div class="td-muted">${b.phone}</div>`:''}</td>
+      <td>${getStatusBadge(displayStatus)}</td>
+      <td style="font-size:12px;color:var(--ink-3);">${b.created_at?new Date(b.created_at).toLocaleDateString():'—'}</td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-sm" onclick="editBusiness('${b.id}')"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteBusiness('${b.id}')"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:30px;">No businesses yet. Click "Add business" to start building your list.</td></tr>';
+
+  updateBulkBar();
+}
+
+function toggleBizCheck(id,cb){
+  if(cb.checked) selectedBizIds.add(id); else selectedBizIds.delete(id);
+  updateBulkBar();
+  renderResearchList();
+}
+
+function toggleAllResearch(cb){
+  const businesses=allResearchBiz.filter(b=>b.list_ids?.includes(activeListId));
+  if(cb.checked) businesses.forEach(b=>selectedBizIds.add(b.id));
+  else selectedBizIds=new Set();
+  updateBulkBar();
+  renderResearchList();
+}
+
+function updateBulkBar(){
+  const bar=document.getElementById('research-bulk-bar');
+  const count=document.getElementById('research-bulk-count');
+  if(selectedBizIds.size>0){
+    bar.style.display='flex';
+    count.textContent=`${selectedBizIds.size} selected`;
+  } else {
+    bar.style.display='none';
+  }
+}
+
+async function bulkAction(action){
+  const selected=allResearchBiz.filter(b=>selectedBizIds.has(b.id));
+  if(!selected.length) return;
+
+  if(action==='visited'||action==='nogo'){
+    const status=action==='visited'?'Visited':'No Good';
+    for(const biz of selected){
+      const updated={...biz,status,updated_at:new Date().toISOString()};
+      await upsertResearchBiz(updated);
+      const idx=allResearchBiz.findIndex(b=>b.id===biz.id);
+      if(idx>-1) allResearchBiz[idx]=updated;
+    }
+    selectedBizIds=new Set();
+    renderResearchList();
+  }
+
+  else if(action==='lead'){
+    for(const biz of selected){
+      const leadId=uid();
+      const lead={id:leadId,first_name:biz.name,last_name:'',phone:biz.phone||'',email:'',
+        address:biz.address||'',service:'Commercial Property',source:'Direct Outreach',
+        status:'Lead',notes:biz.notes||'',job_date:new Date().toISOString().split('T')[0],
+        added_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+      const saved=await upsertLead(lead);
+      allLeads.unshift(saved);
+      // Mark as converted
+      const updated={...biz,status:'Converted',updated_at:new Date().toISOString()};
+      await upsertResearchBiz(updated);
+      const idx=allResearchBiz.findIndex(b=>b.id===biz.id);
+      if(idx>-1) allResearchBiz[idx]=updated;
+    }
+    selectedBizIds=new Set();
+    renderResearchList();
+    alert(`${selected.length} business${selected.length!==1?'es':''} added to Leads.`);
+  }
+
+  else if(action==='recurring'){
+    closeModal('add-to-list');
+    for(const biz of selected){
+      openAddRecurring();
+      document.getElementById('rec-first').value=biz.name||'';
+      document.getElementById('rec-addr').value=biz.address||'';
+      document.getElementById('rec-phone').value=biz.phone||'';
+      document.getElementById('rec-source').value='Direct Outreach';
+      break; // open one at a time
+    }
+    selectedBizIds=new Set();
+  }
+
+  else if(action==='route'){
+    // Send to route optimizer
+    const navEl=document.querySelector('[data-page="route"]');
+    if(navEl) nav(navEl);
+    setTimeout(()=>{
+      const startEl=document.getElementById('route-start');
+      if(startEl) startEl.focus();
+      // Pre-fill addresses in route
+      alert(`${selected.length} address${selected.length!==1?'es':''} ready. Enter your starting address and click Optimize Route.\n\nAddresses:\n${selected.map(b=>b.address).filter(Boolean).join('\n')}`);
+    },300);
+    selectedBizIds=new Set();
+  }
+
+  else if(action==='addtolist'){
+    // Show add to list modal
+    const otherLists=allResearchLists.filter(l=>l.id!==activeListId);
+    const container=document.getElementById('add-to-list-options');
+    container.innerHTML=otherLists.length?otherLists.map(l=>`
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;">
+        <input type="checkbox" value="${l.id}" style="accent-color:var(--teal-600);">
+        <div><div style="font-weight:500;font-size:13px;">${l.name}</div>${l.description?`<div style="font-size:12px;color:var(--ink-3);">${l.description}</div>`:''}</div>
+      </label>`).join(''):'<div style="padding:20px;text-align:center;color:var(--ink-3);">No other lists yet.</div>';
+    openModal('add-to-list');
+  }
+}
+
+async function executeAddToList(){
+  const selected=allResearchBiz.filter(b=>selectedBizIds.has(b.id));
+  const checked=Array.from(document.querySelectorAll('#add-to-list-options input:checked')).map(c=>c.value);
+  if(!checked.length){alert('Please select at least one list.');return;}
+  for(const biz of selected){
+    const newListIds=[...new Set([...(biz.list_ids||[]),...checked])];
+    const updated={...biz,list_ids:newListIds,updated_at:new Date().toISOString()};
+    await upsertResearchBiz(updated);
+    const idx=allResearchBiz.findIndex(b=>b.id===biz.id);
+    if(idx>-1) allResearchBiz[idx]=updated;
+  }
+  closeModal('add-to-list');
+  selectedBizIds=new Set();
+  renderResearchList();
+  alert(`Added to ${checked.length} list${checked.length!==1?'s':''}.`);
+}
+
+function openCreateList(){
+  document.getElementById('modal-list-title').textContent='Create new list';
+  document.getElementById('list-edit-id').value='';
+  document.getElementById('list-name').value='';
+  document.getElementById('list-desc').value='';
+  const src=document.getElementById('list-import-source');
+  src.innerHTML='<option value="">— Select a list to import from —</option>'+
+    allResearchLists.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  openModal('create-list');
+}
+
+async function saveList(){
+  const name=document.getElementById('list-name').value.trim();
+  if(!name){alert('Please enter a list name.');return;}
+  const id=document.getElementById('list-edit-id').value||uid();
+  const list={id,name,description:document.getElementById('list-desc').value,
+    created_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  try{
+    const saved=await upsertResearchList(list);
+    const idx=allResearchLists.findIndex(l=>l.id===id);
+    if(idx>-1) allResearchLists[idx]=saved; else allResearchLists.unshift(saved);
+
+    // Import businesses from another list if selected
+    const importSrc=document.getElementById('list-import-source').value;
+    if(importSrc){
+      const toImport=allResearchBiz.filter(b=>b.list_ids?.includes(importSrc));
+      for(const biz of toImport){
+        const newIds=[...new Set([...(biz.list_ids||[]),id])];
+        const updated={...biz,list_ids:newIds,updated_at:new Date().toISOString()};
+        await upsertResearchBiz(updated);
+        const bidx=allResearchBiz.findIndex(b=>b.id===biz.id);
+        if(bidx>-1) allResearchBiz[bidx]=updated;
+      }
+    }
+    closeModal('create-list');
+    openResearchListById(id);
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+function openAddBusiness(){
+  document.getElementById('modal-biz-title').textContent='Add business';
+  document.getElementById('biz-edit-id').value='';
+  ['biz-name','biz-addr','biz-contact','biz-phone','biz-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  openModal('add-business');
+}
+
+function editBusiness(id){
+  const biz=allResearchBiz.find(b=>b.id===id); if(!biz) return;
+  document.getElementById('modal-biz-title').textContent='Edit business';
+  document.getElementById('biz-edit-id').value=id;
+  document.getElementById('biz-name').value=biz.name||'';
+  document.getElementById('biz-addr').value=biz.address||'';
+  document.getElementById('biz-contact').value=biz.contact||'';
+  document.getElementById('biz-phone').value=biz.phone||'';
+  document.getElementById('biz-notes').value=biz.notes||'';
+  openModal('add-business');
+}
+
+async function saveBusiness(){
+  const name=document.getElementById('biz-name').value.trim();
+  const addr=document.getElementById('biz-addr').value.trim();
+  if(!name||!addr){alert('Business name and address are required.');return;}
+  const id=document.getElementById('biz-edit-id').value||uid();
+  const existingBiz=allResearchBiz.find(b=>b.id===id);
+  const listIds=existingBiz?.list_ids||[activeListId];
+  if(!listIds.includes(activeListId)) listIds.push(activeListId);
+  const biz={id,name,address:addr,contact:document.getElementById('biz-contact').value,
+    phone:fmtPhoneNum(document.getElementById('biz-phone').value),
+    notes:document.getElementById('biz-notes').value,
+    status:existingBiz?.status||'No Contact',
+    list_ids:listIds,
+    created_by:currentUser?.email,
+    created_at:existingBiz?.created_at||new Date().toISOString(),
+    updated_at:new Date().toISOString()};
+  try{
+    const saved=await upsertResearchBiz(biz);
+    const idx=allResearchBiz.findIndex(b=>b.id===id);
+    if(idx>-1) allResearchBiz[idx]=saved; else allResearchBiz.push(saved);
+    closeModal('add-business');
+    renderResearchList();
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+async function deleteBusiness(id){
+  if(!confirm('Remove this business from the database entirely?')) return;
+  await sb.from('research_businesses').delete().eq('id',id);
+  allResearchBiz=allResearchBiz.filter(b=>b.id!==id);
+  selectedBizIds.delete(id);
+  renderResearchList();
+}
+
+// ── Commercial lead fields ─────────────────────────────────────────────────
+let leadContactCount=0;
+
+function toggleCommercialFields(){
+  const type=document.getElementById('f-property-type')?.value;
+  const isCommercial=type==='Commercial';
+  const bizWrap=document.getElementById('f-business-name-wrap');
+  const contactsSection=document.getElementById('f-contacts-section');
+  if(bizWrap) bizWrap.style.display=isCommercial?'block':'none';
+  if(contactsSection) contactsSection.style.display=isCommercial?'block':'none';
+}
+
+function addLeadContact(contact){
+  leadContactCount++;
+  const id=leadContactCount;
+  const div=document.createElement('div');
+  div.id='lead-contact-'+id;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;';
+  div.innerHTML=`
+    <input placeholder="Contact name" value="${contact?.name||''}" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);" oninput="syncLeadContacts()">
+    <input placeholder="Title / Role" value="${contact?.title||''}" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);" oninput="syncLeadContacts()">
+    <input placeholder="Phone" value="${contact?.phone||''}" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);" oninput="syncLeadContacts()">
+    <button type="button" onclick="document.getElementById('lead-contact-${id}').remove();syncLeadContacts();" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>
+  `;
+  document.getElementById('f-contacts-list').appendChild(div);
+}
+
+function syncLeadContacts(){
+  // Contacts stored as JSON in a hidden field — built on save
+}
+
+function getLeadContacts(){
+  const rows=document.querySelectorAll('#f-contacts-list > div');
+  const contacts=[];
+  rows.forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    if(inputs[0]?.value.trim()){
+      contacts.push({name:inputs[0].value.trim(),title:inputs[1]?.value.trim()||'',phone:inputs[2]?.value.trim()||''});
+    }
+  });
+  return contacts;
+}
+
+function setLeadContacts(contacts){
+  document.getElementById('f-contacts-list').innerHTML='';
+  leadContactCount=0;
+  (contacts||[]).forEach(c=>addLeadContact(c));
+}
+
+// ── Connections: custom contact type ──────────────────────────────────────
+function toggleCustomContactType(sel){
+  const wrap=document.getElementById('c-type-custom-wrap');
+  if(!wrap) return;
+  wrap.style.display=sel.value==='__custom__'?'block':'none';
+}
+
+function getContactType(){
+  const sel=document.getElementById('c-type');
+  if(sel.value==='__custom__'){
+    return document.getElementById('c-type-custom').value.trim()||'Other';
+  }
+  return sel.value;
+}
+
+function setContactType(val){
+  const sel=document.getElementById('c-type');
+  const opts=Array.from(sel.options).map(o=>o.value);
+  if(opts.includes(val)){
+    sel.value=val;
+    document.getElementById('c-type-custom-wrap').style.display='none';
+  } else if(val){
+    sel.value='__custom__';
+    document.getElementById('c-type-custom-wrap').style.display='block';
+    document.getElementById('c-type-custom').value=val;
+  }
+}
+
+// ── Research: filter by status ─────────────────────────────────────────────
+// Override renderResearchList to support status filter
+const _origRenderResearchList=renderResearchList;
+function renderResearchList(){
+  // Inject filter bar if not present
+  const active=document.getElementById('research-active');
+  if(active&&!document.getElementById('research-status-filter')){
+    const filterBar=document.createElement('div');
+    filterBar.style.cssText='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;';
+    filterBar.innerHTML=`
+      <select id="research-status-filter" onchange="renderResearchList()" style="padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+        <option value="">All statuses</option>
+        <option value="No Contact">No Contact</option>
+        <option value="Visited">Visited</option>
+        <option value="No Good">No Good</option>
+        <option value="Converted">Converted</option>
+      </select>
+      <button class="btn btn-sm" onclick="exportResearchCSV()" style="margin-left:auto;"><i class="ti ti-download"></i> Export CSV</button>
+    `;
+    const table=active.querySelector('.table-wrap');
+    if(table) active.insertBefore(filterBar,table);
+  }
+  if(!activeListId) return;
+  const search=(document.getElementById('research-biz-search')?.value||'').toLowerCase();
+  const statusFilter=document.getElementById('research-status-filter')?.value||'';
+  const businesses=allResearchBiz.filter(b=>{
+    if(!b.list_ids?.includes(activeListId)) return false;
+    const isConverted=b.status==='Converted'||allLeads.some(l=>l.address===b.address);
+    const displayStatus=isConverted?'Converted':b.status||'No Contact';
+    const t=`${b.name||''} ${b.address||''} ${b.contact||''}`.toLowerCase();
+    return (!search||t.includes(search))&&(!statusFilter||displayStatus===statusFilter);
+  });
+
+  const counts={};
+  allResearchBiz.filter(b=>b.list_ids?.includes(activeListId)).forEach(b=>{
+    const s=b.status||'No Contact';counts[s]=(counts[s]||0)+1;
+  });
+
+  document.getElementById('research-tbody').innerHTML=businesses.length?businesses.map(b=>{
+    const isConverted=b.status==='Converted'||allLeads.some(l=>l.address===b.address);
+    const displayStatus=isConverted?'Converted':b.status||'No Contact';
+    const lastUpdated=b.updated_at&&b.updated_at!==b.created_at?new Date(b.updated_at).toLocaleDateString():'—';
+    const checked=selectedBizIds.has(b.id);
+    return`<tr style="${checked?'background:var(--teal-50);':''}">
+      <td><input type="checkbox" ${checked?'checked':''} onchange="toggleBizCheck('${b.id}',this)" style="accent-color:var(--teal-600);"></td>
+      <td>
+        <div style="font-weight:500;">${b.name}</div>
+        ${b.notes?`<div class="td-muted" title="${b.notes}">${b.notes.slice(0,40)}${b.notes.length>40?'…':''}</div>`:''}
+      </td>
+      <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.address||'—'}</td>
+      <td style="font-size:12px;">${b.contact||'—'}${b.phone?`<div class="td-muted">${b.phone}</div>`:''}</td>
+      <td>${getStatusBadge(displayStatus)}</td>
+      <td style="font-size:12px;color:var(--ink-3);">${new Date(b.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-sm" onclick="editBusiness('${b.id}')"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteBusiness('${b.id}')"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:30px;">No businesses match this filter.</td></tr>';
+
+  updateBulkBar();
+}
+
+// ── Research: export CSV ───────────────────────────────────────────────────
+function exportResearchCSV(){
+  if(!activeListId) return;
+  const businesses=allResearchBiz.filter(b=>b.list_ids?.includes(activeListId));
+  const list=allResearchLists.find(l=>l.id===activeListId);
+  const cols=['Business Name','Address','Point of Contact','Phone','Status','Notes','Date Added'];
+  const rows=[cols.join(','),...businesses.map(b=>[
+    JSON.stringify(b.name||''),JSON.stringify(b.address||''),
+    JSON.stringify(b.contact||''),JSON.stringify(b.phone||''),
+    JSON.stringify(b.status||'No Contact'),JSON.stringify(b.notes||''),
+    JSON.stringify(b.created_at?new Date(b.created_at).toLocaleDateString():'')
+  ].join(','))];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${list?.name||'research'}_export.csv`;
+  a.click();
+}
+
+// ── Research: list cards with status breakdown ─────────────────────────────
+const _origRenderResearchHome=renderResearchHome;
+function renderResearchHome(){
+  const sel=document.getElementById('research-list-select');
+  sel.innerHTML='<option value="">— Select a list —</option>'+
+    allResearchLists.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+
+  const cards=document.getElementById('research-list-cards');
+  cards.innerHTML=allResearchLists.length?allResearchLists.map(l=>{
+    const bizsOnList=allResearchBiz.filter(b=>b.list_ids?.includes(l.id));
+    const total=bizsOnList.length;
+    const visited=bizsOnList.filter(b=>b.status==='Visited').length;
+    const nogo=bizsOnList.filter(b=>b.status==='No Good').length;
+    const converted=bizsOnList.filter(b=>b.status==='Converted'||allLeads.some(l2=>l2.address===b.address)).length;
+    const noContact=total-visited-nogo-converted;
+    return`<div onclick="openResearchListById('${l.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--teal-500)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="font-weight:600;font-size:15px;">${l.name}</div>
+        <span style="font-size:12px;color:var(--ink-3);">${total} total</span>
+      </div>
+      ${l.description?`<div style="font-size:12px;color:var(--ink-3);margin-bottom:10px;">${l.description}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${noContact?`<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:#dbeafe;color:#1e40af;">${noContact} No Contact</span>`:''}
+        ${visited?`<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:#fef9c3;color:#854d0e;">${visited} Visited</span>`:''}
+        ${converted?`<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--green-light);color:var(--green-600);">${converted} Converted</span>`:''}
+        ${nogo?`<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--red-light);color:var(--red-600);">${nogo} No Good</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:8px;">Created ${new Date(l.created_at).toLocaleDateString()}</div>
+    </div>`;
+  }).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--ink-3);font-size:13px;padding:20px;">No lists yet. Create your first research list above.</div>';
+}
+
+// ── Research: route fix — actually send to route tab ──────────────────────
+// Override bulkAction for route
+const _origBulkAction=bulkAction;
+async function bulkAction(action){
+  if(action!=='route'){await _origBulkAction(action);return;}
+  const selected=allResearchBiz.filter(b=>selectedBizIds.has(b.id)&&b.address);
+  if(!selected.length){alert('No addresses to send to route.');return;}
+  // Navigate to route tab
+  const routeNav=document.querySelector('[data-page="route"]');
+  if(routeNav) nav(routeNav);
+  setTimeout(()=>{
+    // Set date to today and inject addresses into route display
+    const dateEl=document.getElementById('route-date');
+    if(dateEl) dateEl.value=new Date().toISOString().split('T')[0];
+    // Show research addresses in route jobs list
+    const jobsEl=document.getElementById('route-jobs-list');
+    if(jobsEl){
+      jobsEl.innerHTML=`<div style="font-size:13px;font-weight:500;margin-bottom:8px;">Research businesses (${selected.length})</div>`+
+        selected.map((b,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:6px;">
+          <div style="width:24px;height:24px;background:var(--teal-600);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">${i+1}</div>
+          <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${b.name}</div><div style="font-size:12px;color:var(--ink-3);">${b.address}</div></div>
+        </div>`).join('');
+      // Store for route optimization
+      window._researchRouteAddresses=selected.map(b=>({name:b.name,address:b.address}));
+    }
+    // Override optimize button for this session
+    const optimizeBtn=document.querySelector('[onclick="optimizeRoute()"]');
+    if(optimizeBtn) optimizeBtn.onclick=()=>optimizeResearchRoute(selected);
+  },400);
+  selectedBizIds=new Set();
+}
+
+function optimizeResearchRoute(businesses){
+  const start=document.getElementById('route-start').value.trim();
+  const addresses=[start?start:'Charleston SC',...businesses.map(b=>b.address).filter(Boolean)];
+  const mapsUrl='https://www.google.com/maps/dir/'+addresses.map(a=>encodeURIComponent(a)).join('/');
+  document.getElementById('route-result').style.display='block';
+  document.getElementById('route-stops').innerHTML=`
+    ${start?`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#faf9f6;border-radius:var(--r-sm);margin-bottom:6px;"><div style="width:28px;height:28px;background:var(--ink-3);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">S</div><div><div style="font-weight:500;font-size:13px;">Start: ${start}</div></div></div>`:''} 
+    ${businesses.map((b,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--teal-50);border-radius:var(--r-sm);margin-bottom:6px;">
+      <div style="width:28px;height:28px;background:var(--teal-600);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${i+1}</div>
+      <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${b.name}</div><div style="font-size:12px;color:var(--ink-3);">${b.address}</div></div>
+    </div>`).join('')}
+  `;
+  document.getElementById('route-maps-link').href=mapsUrl;
+}
+
+// ── Map: research businesses as distinct markers ───────────────────────────
+// Patch renderMap to also show research businesses
+const _origRenderMapFull=renderMap;
+async function renderMap(){
+  await _origRenderMapFull();
+  // Plot research businesses (if any)
+  for(const biz of allResearchBiz.filter(b=>b.address&&b.status!=='No Good')){
+    let coords=await geocodeAddress(biz.address);
+    if(!coords) continue;
+    const color=biz.status==='Visited'?'#d97706':biz.status==='Converted'?'#16a34a':'#94a3b8';
+    const jlat=coords.lat+(Math.random()-0.5)*0.0003;
+    const jlng=coords.lng+(Math.random()-0.5)*0.0003;
+    const marker=L.circleMarker([jlat,jlng],{radius:6,fillColor:color,color:'#fff',weight:1.5,opacity:1,fillOpacity:0.85,dashArray:biz.status==='No Contact'?'4,2':null});
+    marker.bindTooltip(`<div style="font-family:-apple-system,sans-serif;min-width:140px;">
+      <div style="font-weight:600;font-size:12px;">${biz.name}</div>
+      <div style="font-size:11px;color:#666;">${biz.address}</div>
+      <div style="font-size:10px;margin-top:3px;"><span style="background:${color};color:#fff;padding:1px 6px;border-radius:10px;">Research · ${biz.status||'No Contact'}</span></div>
+    </div>`,{sticky:false});
+    marker.addTo(leafletMap);
+    mapMarkers.push(marker);
+    await new Promise(r=>setTimeout(r,200));
+  }
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
