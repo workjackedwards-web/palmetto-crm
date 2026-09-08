@@ -108,7 +108,7 @@ tbody tr:hover td{background:#faf9f6;}
 .field textarea{resize:vertical;min-height:72px;}
 .overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;min-height:100%;background:rgba(10,10,10,.7);z-index:9999;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
 .overlay.open{display:flex;}
-.modal{background:#fff;border-radius:12px;padding:24px;width:600px;max-width:calc(100vw - 32px);box-shadow:0 24px 80px rgba(0,0,0,.4);margin:auto;position:relative;z-index:10000;}
+.modal{background:#fff;border-radius:12px;padding:24px;width:480px;max-width:calc(100vw - 32px);box-shadow:0 24px 80px rgba(0,0,0,.4);margin:auto;position:relative;z-index:10000;}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
 .modal-head h2{font-size:16px;font-weight:600;}
 .modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);}
@@ -765,7 +765,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- ADD/EDIT LEAD MODAL -->
 <div class="overlay" id="modal-lead">
-  <div class="modal" style="width:720px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="modal-lead-title">Add new lead</h2><button class="btn btn-sm" onclick="closeModal('lead')"><i class="ti ti-x"></i></button></div>
     <input type="hidden" id="edit-id">
     <div class="form-grid">
@@ -889,7 +889,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- VIEW LEAD MODAL -->
 <div class="overlay" id="modal-view">
-  <div class="modal" style="width:700px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="view-title">Customer record</h2><button class="btn btn-sm" onclick="closeModal('view')"><i class="ti ti-x"></i></button></div>
     <div class="modal-tabs">
       <div class="modal-tab active" onclick="switchViewTab('info',this)">Customer info</div>
@@ -1013,7 +1013,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- EXISTING CUSTOMER MODAL -->
 <div class="overlay" id="modal-existing-customer">
-  <div class="modal" style="width:560px;">
+  <div class="modal">
     <div class="modal-head"><h2>Add job for existing customer</h2><button class="btn btn-sm" onclick="closeModal('existing-customer')"><i class="ti ti-x"></i></button></div>
     <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Search for the customer and select them to pre-fill their info.</p>
     <input type="text" id="existing-cust-search" placeholder="Search by name, phone, or address..." style="padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:12px;" oninput="searchExistingCustomers()">
@@ -1026,7 +1026,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- VIEW CUSTOMER MODAL -->
 <div class="overlay" id="modal-view-customer">
-  <div class="modal" style="width:700px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="view-cust-title">Customer profile</h2><button class="btn btn-sm" onclick="closeModal('view-customer')"><i class="ti ti-x"></i></button></div>
     <div class="modal-tabs">
       <div class="modal-tab active" onclick="switchCustTab('info',this)">Info</div>
@@ -1066,7 +1066,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- QUOTE VIEWER MODAL -->
 <div class="overlay" id="modal-quote-viewer">
-  <div class="modal" style="width:900px;max-width:95vw;max-height:95vh;padding:0;overflow:hidden;">
+  <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);">
       <div style="font-size:15px;font-weight:600;" id="quote-viewer-title">Quote</div>
       <div style="display:flex;gap:8px;">
@@ -1080,7 +1080,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- ADD/EDIT RECURRING CONTRACT MODAL -->
 <div class="overlay" id="modal-recurring">
-  <div class="modal" style="width:680px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="modal-recurring-title">New recurring contract</h2><button class="btn btn-sm" onclick="closeModal('recurring')"><i class="ti ti-x"></i></button></div>
     <input type="hidden" id="rec-edit-id">
     <div class="form-grid">
@@ -1147,7 +1147,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- VIEW RECURRING PROFILE MODAL -->
 <div class="overlay" id="modal-view-recurring">
-  <div class="modal" style="width:740px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="view-rec-title">Recurring contract</h2><button class="btn btn-sm" onclick="closeModal('view-recurring')"><i class="ti ti-x"></i></button></div>
     <div class="modal-tabs">
       <div class="modal-tab active" onclick="switchRecTab('overview',this)">Overview</div>
@@ -1173,7 +1173,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- LOG VISIT MODAL -->
 <div class="overlay" id="modal-log-visit">
-  <div class="modal" style="width:560px;">
+  <div class="modal">
     <div class="modal-head"><h2>Log completed visit</h2><button class="btn btn-sm" onclick="closeModal('log-visit')"><i class="ti ti-x"></i></button></div>
     <input type="hidden" id="lv-contract-id">
     <input type="hidden" id="lv-visit-id">
@@ -1200,7 +1200,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- IMPORT TO RECURRING MODAL -->
 <div class="overlay" id="modal-import-recurring">
-  <div class="modal" style="width:580px;">
+  <div class="modal">
     <div class="modal-head"><h2>Import from leads / customers</h2><button class="btn btn-sm" onclick="closeModal('import-recurring')"><i class="ti ti-x"></i></button></div>
     <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Search for an existing lead or customer to pre-fill their info. You'll still need to set the service, frequency, and rate.</p>
     <input type="text" id="import-rec-search" placeholder="Search by name, phone, or address..." style="padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:12px;" oninput="searchImportRecurring()">
@@ -1213,7 +1213,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- CREATE LIST MODAL -->
 <div class="overlay" id="modal-create-list">
-  <div class="modal" style="width:540px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="modal-list-title">Create new list</h2><button class="btn btn-sm" onclick="closeModal('create-list')"><i class="ti ti-x"></i></button></div>
     <input type="hidden" id="list-edit-id">
     <div class="form-grid">
@@ -1235,7 +1235,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- ADD BUSINESS MODAL -->
 <div class="overlay" id="modal-add-business">
-  <div class="modal" style="width:560px;">
+  <div class="modal">
     <div class="modal-head"><h2 id="modal-biz-title">Add business</h2><button class="btn btn-sm" onclick="closeModal('add-business')"><i class="ti ti-x"></i></button></div>
     <input type="hidden" id="biz-edit-id">
     <div class="form-grid">
@@ -1254,7 +1254,7 @@ tbody tr:hover td{background:#faf9f6;}
 
 <!-- ADD TO LIST MODAL -->
 <div class="overlay" id="modal-add-to-list">
-  <div class="modal" style="width:460px;">
+  <div class="modal">
     <div class="modal-head"><h2>Add to another list</h2><button class="btn btn-sm" onclick="closeModal('add-to-list')"><i class="ti ti-x"></i></button></div>
     <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;">Select one or more lists to copy the selected businesses to.</p>
     <div id="add-to-list-options" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
@@ -4074,7 +4074,7 @@ function renderRecComms(rec){
 function openAddVisit(contractId){
   const modal=document.createElement('div');
   modal.innerHTML=`<div class="overlay open" id="modal-add-visit" style="z-index:2100;">
-    <div class="modal" style="width:400px;">
+    <div class="modal">
       <div class="modal-head"><h2>Add visit date</h2><button class="btn btn-sm" onclick="document.getElementById('modal-add-visit').remove()"><i class="ti ti-x"></i></button></div>
       <div class="field"><label>Visit date *</label><input id="av-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
       <div class="modal-foot" style="margin-top:16px;">
