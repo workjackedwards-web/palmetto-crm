@@ -294,6 +294,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="leads" onclick="nav(this)"><i class="ti ti-user-plus"></i><span>Leads</span></div>
       <div class="nav-item" data-page="recurring" onclick="nav(this)"><i class="ti ti-repeat"></i><span>Recurring Jobs</span></div>
       <div class="nav-item" data-page="customers" onclick="nav(this)"><i class="ti ti-users"></i><span>Customers</span></div>
+      <div class="nav-item" data-page="accounts" onclick="nav(this)"><i class="ti ti-building"></i><span>Accounts</span></div>
       <div class="nav-item" data-page="connections" onclick="nav(this)"><i class="ti ti-address-book"></i><span>Connections</span></div>
       <div class="nav-item" data-page="jobs" onclick="nav(this)"><i class="ti ti-briefcase"></i><span>Jobs & Revenue</span></div>
       <div class="nav-item" data-page="calendar" onclick="nav(this)"><i class="ti ti-calendar"></i><span>Calendar</span></div>
@@ -388,6 +389,17 @@ tbody tr:hover td{background:#faf9f6;}
           <tbody id="recurring-body"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- ACCOUNTS -->
+      <div id="pg-accounts" class="page-content" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="openAddAccount()"><i class="ti ti-plus"></i> New account</button>
+          <div style="flex:1;"></div>
+          <input type="text" id="accounts-search" placeholder="Search accounts..." oninput="renderAccounts()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:200px;">
+        </div>
+        <div class="metrics" id="accounts-metrics"></div>
+        <div id="accounts-list" style="margin-top:16px;display:grid;gap:12px;"></div>
       </div>
 
       <!-- PIPELINE -->
@@ -785,6 +797,16 @@ tbody tr:hover td{background:#faf9f6;}
         <label>Business name</label>
         <input id="f-business-name" placeholder="e.g. Shell Gas Station, Publix...">
       </div>
+      <div class="field" id="f-industry-wrap" style="display:none;">
+        <label>Industry / Sector</label>
+        <select id="f-industry">
+          <option value="">Select...</option>
+          <option>Gas Station</option><option>Car Wash</option><option>Restaurant / Food Service</option>
+          <option>Retail</option><option>HOA / Community</option><option>Property Management</option>
+          <option>Healthcare</option><option>Office / Commercial Real Estate</option>
+          <option>Industrial / Warehouse</option><option>Hospitality / Hotel</option><option>Other</option>
+        </select>
+      </div>
       <div class="field">
         <label>Services *</label>
         <div id="f-svc-wrap" style="border:1px solid var(--border-md);border-radius:var(--r-sm);padding:8px 10px;background:var(--surface);max-height:200px;overflow-y:auto;">
@@ -1089,6 +1111,22 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field"><label>Phone</label><input id="rec-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="rec-email" type="email" placeholder="john@email.com"></div>
       <div class="field span2"><label>Property address *</label><div class="addr-wrap"><input id="rec-addr" placeholder="123 King St, Charleston SC 29401" oninput="addrAutocomplete(this,'rec-addr-suggestions')" onkeydown="addrKeydown(event,'rec-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="rec-addr-suggestions"></div></div></div>
+      <div class="field"><label>Property type</label>
+        <select id="rec-property-type">
+          <option value="Residential">Residential</option>
+          <option value="Commercial">Commercial</option>
+        </select>
+      </div>
+      <div class="field"><label>Business name</label><input id="rec-business-name" placeholder="e.g. Exxon - Rivers Ave"></div>
+      <div class="field"><label>Industry / Sector</label>
+        <select id="rec-industry">
+          <option value="">Select...</option>
+          <option>Gas Station</option><option>Car Wash</option><option>Restaurant / Food Service</option>
+          <option>Retail</option><option>HOA / Community</option><option>Property Management</option>
+          <option>Healthcare</option><option>Office / Commercial Real Estate</option>
+          <option>Industrial / Warehouse</option><option>Hospitality / Hotel</option><option>Other</option>
+        </select>
+      </div>
       <div class="field"><label>Service *</label>
         <select id="rec-service">
           <option value="">Select service...</option>
@@ -1137,6 +1175,14 @@ tbody tr:hover td{background:#faf9f6;}
         <select id="rec-source"><option>Referral</option><option>Realtor</option><option>HOA</option><option>Property Manager</option><option>Website Form</option><option>Direct Outreach</option><option>Door-to-door</option><option>Neighbor of Client</option><option>Other</option></select>
       </div>
       <div class="field span2"><label>Notes / Contract details</label><textarea id="rec-notes" placeholder="Property access info, special instructions, what's included in the contract..."></textarea></div>
+      <div class="field span2">
+        <label>Contacts</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;color:var(--ink-3);">Add contacts for this location</span>
+          <button type="button" class="btn btn-sm" onclick="addRecContact()"><i class="ti ti-plus"></i> Add contact</button>
+        </div>
+        <div id="rec-contacts-list"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('recurring')">Cancel</button>
@@ -1265,6 +1311,73 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- ADD/EDIT ACCOUNT MODAL -->
+<div class="overlay" id="modal-account">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modal-account-title">New account</h2><button class="btn btn-sm" onclick="closeModal('account')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="acct-edit-id">
+    <div class="form-grid">
+      <div class="field"><label>Business name *</label><input id="acct-name" placeholder="e.g. Exxon, Publix, Camden Properties"></div>
+      <div class="field"><label>Industry / Sector</label>
+        <select id="acct-industry">
+          <option value="">Select...</option>
+          <option>Gas Station</option><option>Car Wash</option><option>Restaurant / Food Service</option>
+          <option>Retail</option><option>HOA / Community</option><option>Property Management</option>
+          <option>Healthcare</option><option>Office / Commercial Real Estate</option>
+          <option>Industrial / Warehouse</option><option>Hospitality / Hotel</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Primary contact</label><input id="acct-contact" placeholder="Main decision maker name"></div>
+      <div class="field"><label>Phone</label><input id="acct-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
+      <div class="field"><label>Email</label><input id="acct-email" placeholder="contact@business.com"></div>
+      <div class="field"><label>Website</label><input id="acct-website" placeholder="www.business.com"></div>
+      <div class="field"><label>Notes</label><textarea id="acct-notes" placeholder="Key info about this account..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('account')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAccount()"><i class="ti ti-check"></i> Save account</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW ACCOUNT MODAL -->
+<div class="overlay" id="modal-view-account">
+  <div class="modal" style="width:680px;">
+    <div class="modal-head"><h2 id="view-acct-name">Account</h2><button class="btn btn-sm" onclick="closeModal('view-account')"><i class="ti ti-x"></i></button></div>
+    <div id="view-acct-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="acct-del-btn"><i class="ti ti-trash"></i> Delete account</button>
+      <button class="btn btn-sm" id="acct-edit-btn"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn" onclick="closeModal('view-account')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESEARCH EXPORT STEP 1: CONFIRM -->
+<div class="overlay" id="modal-research-export">
+  <div class="modal">
+    <div class="modal-head"><h2 id="rex-title">Export to...</h2><button class="btn btn-sm" onclick="closeModal('research-export')"><i class="ti ti-x"></i></button></div>
+    <div id="rex-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('research-export')">Cancel</button>
+      <button class="btn btn-primary" id="rex-confirm-btn">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESEARCH EXPORT STEP 2: FILL FIELDS -->
+<div class="overlay" id="modal-research-fill">
+  <div class="modal">
+    <div class="modal-head"><h2 id="rfill-title">Complete profile</h2><button class="btn btn-sm" onclick="closeModal('research-fill')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px;" id="rfill-subtitle">Fill in any missing details before saving.</p>
+    <div id="rfill-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('research-fill')">Cancel</button>
+      <button class="btn btn-primary" id="rfill-save-btn"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -1272,7 +1385,7 @@ const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], authMode='login', viewingLeadId=null;
+let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], allAccounts=[], authMode='login', viewingLeadId=null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function toggleAuthMode(){
@@ -1323,6 +1436,7 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     await loadRecurring();
     await loadVisits();
     await loadResearch();
+    await loadAccounts();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
@@ -1347,7 +1461,7 @@ async function upsertConnection(conn){const{data,error}=await sb.from('connectio
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
 function nav(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
@@ -1356,7 +1470,7 @@ function nav(el){
   document.getElementById('pg-'+page).style.display='block';
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
-  if(page==='customers')renderCustomers();
+  if(page==='customers')renderCustomers();if(page==='accounts')renderAccounts();
   if(page==='recurring')renderRecurring();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
@@ -1591,6 +1705,7 @@ async function saveLead(){
     source:document.getElementById('f-src').value,status:document.getElementById('f-stat').value,
     property_type:document.getElementById('f-property-type')?.value||'Residential',
     business_name:document.getElementById('f-business-name')?.value||null,
+    industry:document.getElementById('f-industry')?.value||null,
     contacts:JSON.stringify(getLeadContacts()),
     quote:document.getElementById('f-quote').value||null,job_date:document.getElementById('f-date').value||null,
     notes:document.getElementById('f-notes').value,revenue:document.getElementById('f-rev').value||null,
@@ -2301,7 +2416,7 @@ async function ppSubmit(){
 <\/script>`;}
 
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs',research:'Research'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs',research:'Research',accounts:'Accounts'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -3724,6 +3839,11 @@ function openAddRecurring(){
   document.getElementById('rec-source').value='Referral';
   document.getElementById('rec-start').value=new Date().toISOString().split('T')[0];
   document.getElementById('rec-end').value='';
+  const rpt=document.getElementById('rec-property-type');if(rpt)rpt.value='Residential';
+  const rbn=document.getElementById('rec-business-name');if(rbn)rbn.value='';
+  const ri=document.getElementById('rec-industry');if(ri)ri.value='';
+  const rcl=document.getElementById('rec-contacts-list');if(rcl)rcl.innerHTML='';
+  recContactCount=0;
   openModal('recurring');
 }
 
@@ -3745,6 +3865,10 @@ function editRecurringModal(rec){
   document.getElementById('rec-start').value=rec.start_date||'';
   document.getElementById('rec-end').value=rec.end_date||'';
   document.getElementById('rec-notes').value=rec.notes||'';
+  const rpt=document.getElementById('rec-property-type');if(rpt)rpt.value=rec.property_type||'Residential';
+  const rbn=document.getElementById('rec-business-name');if(rbn)rbn.value=rec.business_name||'';
+  const ri=document.getElementById('rec-industry');if(ri)ri.value=rec.industry||'';
+  try{setRecContacts(rec.contacts?JSON.parse(rec.contacts):[]);}catch(e){setRecContacts([]);}
   openModal('recurring');
 }
 
@@ -3765,6 +3889,10 @@ async function saveRecurring(){
     assigned_partner:document.getElementById('rec-partner').value,
     status:document.getElementById('rec-status').value,
     source:document.getElementById('rec-source').value,
+    property_type:document.getElementById('rec-property-type')?.value||'Residential',
+    business_name:document.getElementById('rec-business-name')?.value||null,
+    industry:document.getElementById('rec-industry')?.value||null,
+    contacts:JSON.stringify(getRecContacts()),
     start_date:document.getElementById('rec-start').value||null,
     end_date:document.getElementById('rec-end').value||null,
     notes:document.getElementById('rec-notes').value,
@@ -4432,26 +4560,35 @@ async function bulkAction(action){
   }
 
   else if(action==='lead'){
-    for(const biz of selected){
-      const leadId=uid();
-      const lead={id:leadId,first_name:biz.name,last_name:'',phone:biz.phone||'',email:'',
-        address:biz.address||'',service:'Commercial Property',source:'Direct Outreach',
-        status:'Lead',notes:biz.notes||'',job_date:new Date().toISOString().split('T')[0],
-        added_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-      const saved=await upsertLead(lead);
-      allLeads.unshift(saved);
-      // Mark as converted
-      const updated={...biz,status:'Converted',updated_at:new Date().toISOString()};
-      await upsertResearchBiz(updated);
-      const idx=allResearchBiz.findIndex(b=>b.id===biz.id);
-      if(idx>-1) allResearchBiz[idx]=updated;
+    if(selected.length===1){
+      startResearchExport(selected[0],'lead');
+      selectedBizIds=new Set();
+    } else {
+      for(const biz of selected){
+        const leadId=uid();
+        const lead={id:leadId,first_name:biz.name,last_name:'',phone:biz.phone||'',email:'',
+          address:biz.address||'',service:'Commercial Property',source:'Direct Outreach',
+          status:'Lead',notes:biz.notes||'',property_type:'Commercial',business_name:biz.name,
+          job_date:new Date().toISOString().split('T')[0],
+          added_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const saved=await upsertLead(lead);
+        allLeads.unshift(saved);
+        const updated={...biz,status:'Converted',updated_at:new Date().toISOString()};
+        await upsertResearchBiz(updated);
+        const idx=allResearchBiz.findIndex(b=>b.id===biz.id);
+        if(idx>-1)allResearchBiz[idx]=updated;
+      }
+      selectedBizIds=new Set();renderResearchList();
+      alert(`${selected.length} businesses added to Leads.`);
     }
-    selectedBizIds=new Set();
-    renderResearchList();
-    alert(`${selected.length} business${selected.length!==1?'es':''} added to Leads.`);
   }
 
   else if(action==='recurring'){
+    if(selected.length===1){
+      startResearchExport(selected[0],'recurring');
+      selectedBizIds=new Set();
+      return;
+    }
     closeModal('add-to-list');
     for(const biz of selected){
       openAddRecurring();
@@ -4858,6 +4995,420 @@ async function renderMap(){
     mapMarkers.push(marker);
     await new Promise(r=>setTimeout(r,200));
   }
+}
+
+// ── Accounts ───────────────────────────────────────────────────────────────
+
+async function loadAccounts(){
+  try{const{data,error}=await sb.from('accounts').select('*').order('name',{ascending:true});
+  if(error)console.error('accounts error:',error);else allAccounts=data||[];}
+  catch(e){console.error('loadAccounts failed:',e);}
+}
+
+async function upsertAccount(acct){
+  const{data,error}=await sb.from('accounts').upsert([acct],{onConflict:'id'}).select();
+  if(error)throw error;return data[0];
+}
+
+function renderAccounts(){
+  const q=(document.getElementById('accounts-search')?.value||'').toLowerCase();
+  const filtered=allAccounts.filter(a=>`${a.name} ${a.industry||''}`.toLowerCase().includes(q));
+
+  // Metrics
+  const totalRevenue=allAccounts.reduce((sum,a)=>{
+    const aLeads=allLeads.filter(l=>l.account_id===a.id&&l.status==='Completed');
+    const aRec=allRecurring.filter(r=>r.account_id===a.id);
+    const leadRev=aLeads.reduce((s,l)=>s+(parseFloat(l.revenue)||0),0);
+    const recRev=aRec.reduce((s,r)=>s+(parseFloat(r.rate_per_visit)||0)*(allVisits.filter(v=>v.contract_id===r.id&&v.status==='Completed').length),0);
+    return sum+leadRev+recRev;
+  },0);
+  document.getElementById('accounts-metrics').innerHTML=`
+    <div class="metric teal"><div class="metric-label">Total accounts</div><div class="metric-value">${allAccounts.length}</div></div>
+    <div class="metric green"><div class="metric-label">Total locations</div><div class="metric-value">${allLeads.filter(l=>l.account_id).length+allRecurring.filter(r=>r.account_id).length}</div></div>
+    <div class="metric amber"><div class="metric-label">Combined revenue</div><div class="metric-value">${$m(totalRevenue)}</div></div>
+  `;
+
+  document.getElementById('accounts-list').innerHTML=filtered.length?filtered.map(a=>{
+    const aLeads=allLeads.filter(l=>l.account_id===a.id);
+    const aRec=allRecurring.filter(r=>r.account_id===a.id);
+    const completedLeads=aLeads.filter(l=>l.status==='Completed');
+    const activeLeads=aLeads.filter(l=>l.status!=='Completed');
+    const leadRev=completedLeads.reduce((s,l)=>s+(parseFloat(l.revenue)||0),0);
+    const recRev=aRec.reduce((s,r)=>s+(parseFloat(r.rate_per_visit)||0)*(allVisits.filter(v=>v.contract_id===r.id&&v.status==='Completed').length),0);
+    const totalRev=leadRev+recRev;
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;cursor:pointer;" onclick="viewAccount('${a.id}')" onmouseover="this.style.borderColor='var(--teal-500)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;">${a.name}</div>
+          ${a.industry?`<div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${a.industry}</div>`:''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px;font-weight:700;color:var(--green-600);">${$m(totalRev)}</div>
+          <div style="font-size:11px;color:var(--ink-3);">combined revenue</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${activeLeads.length?`<span style="font-size:12px;padding:3px 10px;border-radius:20px;background:var(--blue-light);color:var(--blue-600);font-weight:500;">${activeLeads.length} active lead${activeLeads.length!==1?'s':''}</span>`:''}
+        ${completedLeads.length?`<span style="font-size:12px;padding:3px 10px;border-radius:20px;background:var(--green-light);color:var(--green-600);font-weight:500;">${completedLeads.length} completed job${completedLeads.length!==1?'s':''}</span>`:''}
+        ${aRec.filter(r=>r.status==='Active').length?`<span style="font-size:12px;padding:3px 10px;border-radius:20px;background:#fff7ed;color:#ea580c;font-weight:500;">${aRec.filter(r=>r.status==='Active').length} recurring</span>`:''}
+        ${!aLeads.length&&!aRec.length?`<span style="font-size:12px;color:var(--ink-3);">No locations yet</span>`:''}
+      </div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;color:var(--ink-3);padding:40px;font-size:14px;">No accounts yet. Create one or export a research business.</div>';
+}
+
+function openAddAccount(prefill){
+  document.getElementById('modal-account-title').textContent='New account';
+  document.getElementById('acct-edit-id').value='';
+  document.getElementById('acct-name').value=prefill?.name||'';
+  document.getElementById('acct-industry').value=prefill?.industry||'';
+  document.getElementById('acct-contact').value='';
+  document.getElementById('acct-phone').value='';
+  document.getElementById('acct-email').value='';
+  document.getElementById('acct-website').value='';
+  document.getElementById('acct-notes').value='';
+  openModal('account');
+}
+
+async function saveAccount(){
+  const name=document.getElementById('acct-name').value.trim();
+  if(!name){alert('Account name is required.');return;}
+  const id=document.getElementById('acct-edit-id').value||uid();
+  const acct={id,name,industry:document.getElementById('acct-industry').value,
+    contact:document.getElementById('acct-contact').value,
+    phone:fmtPhoneNum(document.getElementById('acct-phone').value),
+    email:document.getElementById('acct-email').value,
+    website:document.getElementById('acct-website').value,
+    notes:document.getElementById('acct-notes').value,
+    created_by:currentUser?.email,
+    created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  try{
+    const saved=await upsertAccount(acct);
+    const idx=allAccounts.findIndex(a=>a.id===id);
+    if(idx>-1)allAccounts[idx]=saved;else allAccounts.push(saved);
+    closeModal('account');
+    renderAccounts();
+    return saved;
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+function viewAccount(id){
+  const acct=allAccounts.find(a=>a.id===id);if(!acct)return;
+  document.getElementById('view-acct-name').textContent=acct.name;
+  const aLeads=allLeads.filter(l=>l.account_id===id);
+  const aRec=allRecurring.filter(r=>r.account_id===id);
+  const completedLeads=aLeads.filter(l=>l.status==='Completed');
+  const leadRev=completedLeads.reduce((s,l)=>s+(parseFloat(l.revenue)||0),0);
+  const recRev=aRec.reduce((s,r)=>s+(parseFloat(r.rate_per_visit)||0)*(allVisits.filter(v=>v.contract_id===r.id&&v.status==='Completed').length),0);
+
+  document.getElementById('view-acct-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      <div style="background:var(--teal-50);padding:12px;border-radius:var(--r-sm);text-align:center;">
+        <div style="font-size:20px;font-weight:700;color:var(--teal-600);">${aLeads.length+aRec.length}</div>
+        <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;">Total locations</div>
+      </div>
+      <div style="background:var(--green-light);padding:12px;border-radius:var(--r-sm);text-align:center;">
+        <div style="font-size:20px;font-weight:700;color:var(--green-600);">${$m(leadRev+recRev)}</div>
+        <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;">Combined revenue</div>
+      </div>
+      <div style="background:#fff7ed;padding:12px;border-radius:var(--r-sm);text-align:center;">
+        <div style="font-size:20px;font-weight:700;color:#ea580c;">${aRec.filter(r=>r.status==='Active').length}</div>
+        <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;">Active recurring</div>
+      </div>
+    </div>
+    ${acct.industry||acct.contact||acct.phone?`<div style="margin-bottom:14px;font-size:13px;color:var(--ink-2);">${[acct.industry,acct.contact,acct.phone,acct.email].filter(Boolean).join(' · ')}</div>`:''}
+    ${acct.notes?`<div style="margin-bottom:14px;font-size:13px;color:var(--ink-2);">${acct.notes}</div>`:''}
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Locations</div>
+    ${aLeads.length||aRec.length?[
+      ...aLeads.map(l=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;cursor:pointer;" onclick="closeModal('view-account');viewLead('${l.id}')">
+        <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${l.address||l.first_name+' '+l.last_name}</div><div style="font-size:12px;color:var(--ink-3);">${l.service||'—'}</div></div>
+        <div style="text-align:right;">${badge(l.status)}${l.revenue?`<div style="font-size:12px;font-weight:500;color:var(--green-600);margin-top:3px;">${$m(l.revenue)}</div>`:''}</div>
+      </div>`),
+      ...aRec.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;cursor:pointer;" onclick="closeModal('view-account');viewRecurring('${r.id}')">
+        <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${r.address||r.first_name+' '+r.last_name}</div><div style="font-size:12px;color:var(--ink-3);">${r.service||'—'} · ${r.frequency}</div></div>
+        <div style="text-align:right;"><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:#fff7ed;color:#ea580c;font-weight:500;">Recurring</span><div style="font-size:12px;font-weight:500;color:#ea580c;margin-top:3px;">${$m(r.rate_per_visit)}/visit</div></div>
+      </div>`)
+    ].join(''):'<div style="color:var(--ink-3);font-size:13px;padding:12px 0;">No locations assigned yet.</div>'}
+    <div style="margin-top:12px;">
+      <button class="btn btn-sm" onclick="openAssignLocation('${id}')"><i class="ti ti-plus"></i> Assign existing lead or recurring</button>
+    </div>
+  `;
+  document.getElementById('acct-edit-btn').onclick=()=>{
+    closeModal('view-account');
+    document.getElementById('acct-edit-id').value=id;
+    document.getElementById('modal-account-title').textContent='Edit account';
+    document.getElementById('acct-name').value=acct.name;
+    document.getElementById('acct-industry').value=acct.industry||'';
+    document.getElementById('acct-contact').value=acct.contact||'';
+    document.getElementById('acct-phone').value=acct.phone||'';
+    document.getElementById('acct-email').value=acct.email||'';
+    document.getElementById('acct-website').value=acct.website||'';
+    document.getElementById('acct-notes').value=acct.notes||'';
+    openModal('account');
+  };
+  document.getElementById('acct-del-btn').onclick=async()=>{
+    if(!confirm('Delete this account? Locations will remain but be unlinked.'))return;
+    await sb.from('accounts').delete().eq('id',id);
+    allAccounts=allAccounts.filter(a=>a.id!==id);
+    closeModal('view-account');renderAccounts();
+  };
+  openModal('view-account');
+}
+
+async function openAssignLocation(accountId){
+  const modal=document.createElement('div');
+  const options=[
+    ...allLeads.filter(l=>!l.account_id).map(l=>({type:'lead',id:l.id,label:`${l.first_name} ${l.last_name}`,sub:l.address||'',status:l.status})),
+    ...allRecurring.filter(r=>!r.account_id).map(r=>({type:'rec',id:r.id,label:`${r.first_name} ${r.last_name}`,sub:r.address||'',status:'Recurring'}))
+  ];
+  modal.innerHTML=`<div class="overlay open" id="modal-assign-loc" style="z-index:10001;">
+    <div class="modal">
+      <div class="modal-head"><h2>Assign location</h2><button class="btn btn-sm" onclick="document.getElementById('modal-assign-loc').remove()"><i class="ti ti-x"></i></button></div>
+      <p style="font-size:13px;color:var(--ink-3);margin-bottom:12px;">Select a lead or recurring contract to add to this account.</p>
+      <input type="text" placeholder="Search..." oninput="filterAssignList(this)" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:10px;">
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);">
+        ${options.length?options.map(o=>`<div class="assign-loc-opt" onclick="assignLocationToAccount('${accountId}','${o.id}','${o.type}')" style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.background='var(--teal-50)'" onmouseout="this.style.background=''">
+          <div style="font-weight:500;font-size:13px;">${o.label}</div>
+          <div style="font-size:12px;color:var(--ink-3);">${o.sub} · ${o.status}</div>
+        </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--ink-3);">All leads and contracts are already assigned to accounts.</div>'}
+      </div>
+      <div class="modal-foot"><button class="btn" onclick="document.getElementById('modal-assign-loc').remove()">Cancel</button></div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal.firstElementChild);
+}
+
+async function assignLocationToAccount(accountId,locationId,type){
+  try{
+    if(type==='lead'){
+      await sb.from('leads').update({account_id:accountId}).eq('id',locationId);
+      const l=allLeads.find(l=>l.id===locationId);if(l)l.account_id=accountId;
+    } else {
+      await sb.from('recurring_contracts').update({account_id:accountId}).eq('id',locationId);
+      const r=allRecurring.find(r=>r.id===locationId);if(r)r.account_id=accountId;
+    }
+    document.getElementById('modal-assign-loc')?.remove();
+    viewAccount(accountId);
+    renderAccounts();
+  }catch(e){alert('Failed: '+e.message);}
+}
+
+// ── Recurring contacts ─────────────────────────────────────────────────────
+let recContactCount=0;
+
+function addRecContact(contact){
+  recContactCount++;
+  const id=recContactCount;
+  const div=document.createElement('div');
+  div.id='rec-contact-row-'+id;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;';
+  div.innerHTML=`
+    <input placeholder="Name" value="${contact?.name||''}" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+    <input placeholder="Title" value="${contact?.title||''}" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+    <input placeholder="Phone" value="${contact?.phone||''}" oninput="formatPhone(this)" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+    <button type="button" onclick="document.getElementById('rec-contact-row-${id}').remove();" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>
+  `;
+  document.getElementById('rec-contacts-list').appendChild(div);
+}
+
+function getRecContacts(){
+  return Array.from(document.querySelectorAll('#rec-contacts-list > div')).map(row=>{
+    const inputs=row.querySelectorAll('input');
+    return{name:inputs[0]?.value.trim()||'',title:inputs[1]?.value.trim()||'',phone:inputs[2]?.value.trim()||''};
+  }).filter(c=>c.name);
+}
+
+function setRecContacts(contacts){
+  document.getElementById('rec-contacts-list').innerHTML='';
+  recContactCount=0;
+  (contacts||[]).forEach(c=>addRecContact(c));
+}
+
+// ── Update toggleCommercialFields to include industry ─────────────────────
+function toggleCommercialFields(){
+  const type=document.getElementById('f-property-type')?.value;
+  const isCommercial=type==='Commercial';
+  const bizWrap=document.getElementById('f-business-name-wrap');
+  const indWrap=document.getElementById('f-industry-wrap');
+  const contactsSection=document.getElementById('f-contacts-section');
+  if(bizWrap)bizWrap.style.display=isCommercial?'block':'none';
+  if(indWrap)indWrap.style.display=isCommercial?'block':'none';
+  if(contactsSection)contactsSection.style.display=isCommercial?'block':'none';
+}
+
+// ── Research export two-step flow ─────────────────────────────────────────
+let _rexBiz=null, _rexTarget=null, _rexAccountId=null;
+
+function startResearchExport(biz, target){
+  _rexBiz=biz; _rexTarget=target; _rexAccountId=null;
+  const title=document.getElementById('rex-title');
+  title.textContent=`Export "${biz.name}" to ${target==='lead'?'Leads':'Recurring Jobs'}`;
+
+  // Check for matching accounts
+  const matchingAccounts=allAccounts.filter(a=>a.name.toLowerCase()===biz.name.split(' ')[0].toLowerCase()||biz.name.toLowerCase().includes(a.name.toLowerCase()));
+
+  document.getElementById('rex-body').innerHTML=`
+    <div style="background:var(--teal-50);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+      <div style="font-weight:600;font-size:14px;">${biz.name}</div>
+      <div style="font-size:13px;color:var(--ink-2);margin-top:3px;">${biz.address||'No address'}</div>
+      ${biz.contact?`<div style="font-size:12px;color:var(--ink-3);margin-top:2px;">Contact: ${biz.contact}</div>`:''}
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Assign to an account? (optional)</div>
+    ${matchingAccounts.length?`<div style="margin-bottom:8px;padding:10px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--r-sm);">
+      <div style="font-size:12px;font-weight:600;color:#166534;margin-bottom:6px;">⚡ Suggested match</div>
+      ${matchingAccounts.map(a=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:4px;">
+        <input type="radio" name="rex-acct" value="${a.id}" onchange="_rexAccountId='${a.id}'" style="accent-color:var(--teal-600);">
+        ${a.name} ${a.industry?`<span style="color:var(--ink-3);">(${a.industry})</span>`:''}
+      </label>`).join('')}
+    </div>`:''}
+    <select id="rex-acct-select" onchange="_rexAccountId=this.value" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:8px;">
+      <option value="">— No account / skip —</option>
+      ${allAccounts.map(a=>`<option value="${a.id}">${a.name}${a.industry?' ('+a.industry+')':''}</option>`).join('')}
+    </select>
+    <button class="btn btn-sm" onclick="createAccountFromExport()"><i class="ti ti-plus"></i> Create new account</button>
+  `;
+
+  document.getElementById('rex-confirm-btn').onclick=()=>showExportFillForm();
+  openModal('research-export');
+}
+
+async function createAccountFromExport(){
+  closeModal('research-export');
+  openAddAccount({name:_rexBiz.name.split(' ')[0]});
+  // After saving, re-open export
+  const origSave=window.saveAccount;
+  window.saveAccount=async function(){
+    const saved=await origSave();
+    window.saveAccount=origSave;
+    if(saved){_rexAccountId=saved.id;startResearchExport(_rexBiz,_rexTarget);}
+  };
+}
+
+function showExportFillForm(){
+  const acctSel=document.getElementById('rex-acct-select');
+  if(acctSel&&acctSel.value) _rexAccountId=acctSel.value;
+  closeModal('research-export');
+
+  const isLead=_rexTarget==='lead';
+  document.getElementById('rfill-title').textContent=isLead?'New lead — complete profile':'New recurring contract — complete profile';
+  document.getElementById('rfill-subtitle').textContent=`Pre-filled from "${_rexBiz.name}". Add any missing details.`;
+
+  document.getElementById('rfill-body').innerHTML=`
+    <div class="form-grid">
+      <div class="field"><label>${isLead?'First name *':'Contact name'}</label><input id="rfill-first" value="${_rexBiz.contact?.split(' ')[0]||_rexBiz.name||''}"></div>
+      <div class="field"><label>${isLead?'Last name':'—'}</label><input id="rfill-last" value="${_rexBiz.contact?.split(' ').slice(1).join(' ')||''}"></div>
+      <div class="field"><label>Phone</label><input id="rfill-phone" value="${_rexBiz.phone||''}" oninput="formatPhone(this)"></div>
+      <div class="field"><label>Email</label><input id="rfill-email" type="email" placeholder="email@business.com"></div>
+      <div class="field"><label>Property address *</label><div class="addr-wrap"><input id="rfill-addr" value="${_rexBiz.address||''}" oninput="addrAutocomplete(this,'rfill-addr-sugg')" onkeydown="addrKeydown(event,'rfill-addr-sugg')" autocomplete="off"><div class="addr-suggestions" id="rfill-addr-sugg"></div></div></div>
+      <div class="field"><label>Business name</label><input id="rfill-bizname" value="${_rexBiz.name||''}"></div>
+      <div class="field"><label>Industry</label><select id="rfill-industry">
+        <option value="">Select...</option>
+        <option>Gas Station</option><option>Car Wash</option><option>Restaurant / Food Service</option>
+        <option>Retail</option><option>HOA / Community</option><option>Property Management</option>
+        <option>Healthcare</option><option>Office / Commercial Real Estate</option>
+        <option>Industrial / Warehouse</option><option>Hospitality / Hotel</option><option>Other</option>
+      </select></div>
+      <div class="field"><label>Service</label><select id="rfill-service">
+        <option value="">Select...</option>
+        <option>House Washing (Soft Wash)</option><option>Driveway / Walkway</option><option>Pool Deck</option>
+        <option>Wood Deck</option><option>Patio</option><option>Roof Cleaning</option>
+        <option>Fence Cleaning</option><option>Gutter Cleaning</option><option>Car Wash Bay</option>
+        <option>Concrete Storefront</option><option>Gas Station Concrete</option>
+        <option>Residential Window Washing</option><option>Commercial Window Washing</option>
+        <option>Commercial Property</option><option>HOA / Community</option>
+        <option>Full Exterior Package</option>
+      </select></div>
+      <div class="field"><label>Source</label><select id="rfill-source">
+        <option>Direct Outreach</option><option>Referral</option><option>Realtor</option>
+        <option>HOA</option><option>Property Manager</option><option>Website Form</option><option>Other</option>
+      </select></div>
+      ${isLead?`
+      <div class="field"><label>Status</label><select id="rfill-status">
+        <option>Lead</option><option>Quoted</option><option>Booked</option>
+      </select></div>
+      <div class="field"><label>Quote ($)</label><input id="rfill-quote" type="number" placeholder="0.00"></div>
+      `:`
+      <div class="field"><label>Frequency *</label><select id="rfill-freq">
+        <option value="">Select...</option>
+        <option>Weekly</option><option>Biweekly</option><option>Monthly</option>
+        <option>Bimonthly</option><option>Quarterly</option><option>Semi-annual</option><option>Annual</option>
+      </select></div>
+      <div class="field"><label>Rate per visit ($) *</label><input id="rfill-rate" type="number" placeholder="0.00"></div>
+      <div class="field"><label>Assigned partner</label><select id="rfill-partner">
+        <option value="">TBD</option><option>Jack</option><option>Charlie</option><option>Tanner</option>
+        <option>Jack + Charlie</option><option>Jack + Tanner</option><option>Charlie + Tanner</option><option>All three</option>
+      </select></div>
+      `}
+      <div class="field"><label>Notes</label><textarea id="rfill-notes">${_rexBiz.notes||''}</textarea></div>
+    </div>
+  `;
+
+  document.getElementById('rfill-save-btn').onclick=()=>saveExportedProfile();
+  openModal('research-fill');
+}
+
+async function saveExportedProfile(){
+  const isLead=_rexTarget==='lead';
+  const addr=document.getElementById('rfill-addr').value.trim();
+  const first=document.getElementById('rfill-first').value.trim();
+  if(!first||!addr){alert('Name and address are required.');return;}
+
+  try{
+    if(isLead){
+      const leadId=uid();
+      const lead={id:leadId,first_name:first,last_name:document.getElementById('rfill-last').value,
+        phone:fmtPhoneNum(document.getElementById('rfill-phone').value),
+        email:document.getElementById('rfill-email').value,address:addr,
+        service:document.getElementById('rfill-service').value,
+        source:document.getElementById('rfill-source').value,
+        status:document.getElementById('rfill-status').value,
+        property_type:'Commercial',
+        business_name:document.getElementById('rfill-bizname').value,
+        industry:document.getElementById('rfill-industry').value,
+        quote:document.getElementById('rfill-quote').value||null,
+        notes:document.getElementById('rfill-notes').value,
+        account_id:_rexAccountId||null,
+        job_date:new Date().toISOString().split('T')[0],
+        added_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+      const saved=await upsertLead(lead);
+      allLeads.unshift(saved);
+    } else {
+      const recId=uid();
+      const rate=parseFloat(document.getElementById('rfill-rate').value)||0;
+      const freq=document.getElementById('rfill-freq').value;
+      if(!freq||!rate){alert('Frequency and rate are required for recurring contracts.');return;}
+      const rec={id:recId,first_name:first,last_name:document.getElementById('rfill-last').value,
+        phone:fmtPhoneNum(document.getElementById('rfill-phone').value),
+        email:document.getElementById('rfill-email').value,address:addr,
+        service:document.getElementById('rfill-service').value,
+        frequency:freq,rate_per_visit:rate,
+        assigned_partner:document.getElementById('rfill-partner').value,
+        property_type:'Commercial',
+        business_name:document.getElementById('rfill-bizname').value,
+        industry:document.getElementById('rfill-industry').value,
+        source:document.getElementById('rfill-source').value,
+        status:'Active',notes:document.getElementById('rfill-notes').value,
+        account_id:_rexAccountId||null,
+        start_date:new Date().toISOString().split('T')[0],
+        created_by:currentUser?.email,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+      const saved=await upsertRecurring(rec);
+      allRecurring.unshift(saved);
+    }
+
+    // Mark research biz as converted
+    if(_rexBiz){
+      const updated={..._rexBiz,status:'Converted',updated_at:new Date().toISOString()};
+      await upsertResearchBiz(updated);
+      const idx=allResearchBiz.findIndex(b=>b.id===_rexBiz.id);
+      if(idx>-1)allResearchBiz[idx]=updated;
+    }
+
+    closeModal('research-fill');
+    renderAccounts();
+    if(isLead)renderLeads();else renderRecurring();
+    alert(`✓ ${_rexBiz?.name||'Business'} exported successfully${_rexAccountId?' and added to account':''}.`);
+    _rexBiz=null;_rexTarget=null;_rexAccountId=null;
+  }catch(e){alert('Export failed: '+e.message);}
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
