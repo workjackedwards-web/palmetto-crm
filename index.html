@@ -1331,7 +1331,12 @@ tbody tr:hover td{background:#faf9f6;}
           <option>Industrial / Warehouse</option><option>Hospitality / Hotel</option><option>Other</option>
         </select>
       </div>
-      <div class="field"><label>Primary contact</label><input id="acct-contact" placeholder="Main decision maker name"></div>
+      <div class="field"><label>Primary contact</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="acct-contact" placeholder="Name of main decision maker" style="flex:1;">
+          <button type="button" class="btn btn-sm" onclick="openContactPicker()" style="flex-shrink:0;white-space:nowrap;"><i class="ti ti-search"></i> Find in CRM</button>
+        </div>
+      </div>
       <div class="field"><label>Phone</label><input id="acct-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="acct-email" placeholder="contact@business.com"></div>
       <div class="field"><label>Website</label><input id="acct-website" placeholder="www.business.com"></div>
@@ -1399,6 +1404,18 @@ tbody tr:hover td{background:#faf9f6;}
     <div id="import-acct-results" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('import-account')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT PICKER MODAL -->
+<div class="overlay" id="modal-contact-picker">
+  <div class="modal">
+    <div class="modal-head"><h2>Find contact in CRM</h2><button class="btn btn-sm" onclick="closeModal('contact-picker')"><i class="ti ti-x"></i></button></div>
+    <input type="text" id="contact-picker-search" placeholder="Search by name, phone, company..." oninput="renderContactPicker()" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:10px;">
+    <div id="contact-picker-results" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('contact-picker')">Cancel</button>
     </div>
   </div>
 </div>
@@ -5568,6 +5585,97 @@ function selectImportAccount(idx){
   closeModal('import-account');
   // Open new account form pre-filled
   openAddAccount(r.prefill);
+}
+
+// ── Contact picker ────────────────────────────────────────────────────────
+function openContactPicker(){
+  document.getElementById('contact-picker-search').value='';
+  renderContactPicker();
+  openModal('contact-picker');
+}
+
+function renderContactPicker(){
+  const q=(document.getElementById('contact-picker-search')?.value||'').toLowerCase();
+  const results=[];
+  const matchQ=str=>!q||str.toLowerCase().includes(q);
+
+  // Connections (most relevant for primary contacts)
+  allConnections.forEach(c=>{
+    const name=`${c.first_name} ${c.last_name}`;
+    if(matchQ(name)||matchQ(c.company||'')||matchQ(c.phone||'')){
+      results.push({label:name,sub:(c.company?c.company+' · ':'')+c.contact_type,phone:c.phone||'',email:c.email||'',source:'Connection',color:'#7c3aed',bg:'#f5f3ff'});
+    }
+  });
+
+  // Leads
+  allLeads.forEach(l=>{
+    const name=`${l.first_name} ${l.last_name}`;
+    if(matchQ(name)||matchQ(l.business_name||'')||matchQ(l.phone||'')){
+      results.push({label:name,sub:(l.business_name?l.business_name+' · ':'')+l.status,phone:l.phone||'',email:l.email||'',source:'Lead',color:'var(--blue-600)',bg:'var(--blue-light)'});
+    }
+  });
+
+  // Customers
+  getCustomerProfiles().forEach(c=>{
+    const name=`${c.first_name} ${c.last_name}`;
+    if(matchQ(name)||matchQ(c.phone||'')){
+      results.push({label:name,sub:`Customer · ${c.phone||''}`,phone:c.phone||'',email:c.email||'',source:'Customer',color:'var(--green-600)',bg:'var(--green-light)'});
+    }
+  });
+
+  // Recurring contacts
+  allRecurring.forEach(r=>{
+    const name=`${r.first_name} ${r.last_name}`;
+    if(matchQ(name)||matchQ(r.business_name||'')||matchQ(r.phone||'')){
+      results.push({label:name,sub:(r.business_name?r.business_name+' · ':'')+'Recurring',phone:r.phone||'',email:r.email||'',source:'Recurring',color:'#ea580c',bg:'#fff7ed'});
+    }
+    // Also show sub-contacts within recurring
+    try{
+      const contacts=r.contacts?JSON.parse(r.contacts):[];
+      contacts.forEach(sc=>{
+        if(sc.name&&(matchQ(sc.name)||matchQ(sc.phone||''))){
+          results.push({label:sc.name,sub:`${sc.title||''} · ${r.business_name||r.first_name+' '+r.last_name}`,phone:sc.phone||'',email:'',source:'Recurring',color:'#ea580c',bg:'#fff7ed'});
+        }
+      });
+    }catch(e){}
+  });
+
+  const container=document.getElementById('contact-picker-results');
+  if(!results.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">No contacts found.</div>';
+    return;
+  }
+
+  // Deduplicate by name+phone
+  const seen=new Set();
+  const deduped=results.filter(r=>{
+    const key=r.label+r.phone;
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+
+  container.innerHTML=deduped.slice(0,40).map((r,i)=>`
+    <div class="import-acct-row" onclick="selectContact(${i})">
+      <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:${r.bg};color:${r.color};flex-shrink:0;">${r.source}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;font-size:13px;">${r.label}</div>
+        <div style="font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.sub}</div>
+      </div>
+      ${r.phone?`<div style="font-size:12px;color:var(--ink-3);flex-shrink:0;">${r.phone}</div>`:''}
+    </div>
+  `).join('');
+
+  container._results=deduped;
+}
+
+function selectContact(idx){
+  const container=document.getElementById('contact-picker-results');
+  const r=container._results?.[idx]; if(!r) return;
+  // Fill in the account form fields
+  document.getElementById('acct-contact').value=r.label;
+  if(r.phone&&!document.getElementById('acct-phone').value) document.getElementById('acct-phone').value=r.phone;
+  if(r.email&&!document.getElementById('acct-email').value) document.getElementById('acct-email').value=r.email;
+  closeModal('contact-picker');
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
