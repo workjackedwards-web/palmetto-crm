@@ -183,7 +183,10 @@ tbody tr:hover td{background:#faf9f6;}
 .cal-week-time { font-size:10px; color:var(--ink-3); text-align:right; padding:0 8px 0 0; height:50px; display:flex; align-items:flex-start; padding-top:4px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
 .cal-week-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); height:50px; position:relative; padding:2px; }
 .cal-week-cell:nth-child(7n+1) { border-right:none; }
-.addr-wrap{position:relative;width:100%;}
+.import-acct-tab.active{background:var(--teal-600);color:#fff;border-color:var(--teal-600);}
+.import-acct-row{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;}
+.import-acct-row:hover{background:var(--teal-50);}
+.import-acct-row:last-child{border-bottom:none;}
 .addr-wrap input{padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface);color:var(--ink);width:100%;}
 .addr-wrap input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(87,124,135,.12);}
 .addr-suggestions{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--border-md);border-radius:var(--r-sm);box-shadow:0 4px 16px rgba(0,0,0,0.13);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
@@ -395,6 +398,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div id="pg-accounts" class="page-content" style="display:none;">
         <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="openAddAccount()"><i class="ti ti-plus"></i> New account</button>
+          <button class="btn" onclick="openImportAccount()" style="background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-300);"><i class="ti ti-download"></i> Import from CRM</button>
           <div style="flex:1;"></div>
           <input type="text" id="accounts-search" placeholder="Search accounts..." oninput="renderAccounts()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:200px;">
         </div>
@@ -1374,6 +1378,27 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('research-fill')">Cancel</button>
       <button class="btn btn-primary" id="rfill-save-btn"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT TO ACCOUNT MODAL -->
+<div class="overlay" id="modal-import-account">
+  <div class="modal">
+    <div class="modal-head"><h2>Import from CRM</h2><button class="btn btn-sm" onclick="closeModal('import-account')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:12px;">Search across all tabs to find a profile and create an account from it.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <button class="btn btn-sm import-acct-tab active" onclick="setImportTab('all',this)">All</button>
+      <button class="btn btn-sm import-acct-tab" onclick="setImportTab('leads',this)">Leads</button>
+      <button class="btn btn-sm import-acct-tab" onclick="setImportTab('recurring',this)">Recurring</button>
+      <button class="btn btn-sm import-acct-tab" onclick="setImportTab('customers',this)">Customers</button>
+      <button class="btn btn-sm import-acct-tab" onclick="setImportTab('research',this)">Research</button>
+      <button class="btn btn-sm import-acct-tab" onclick="setImportTab('connections',this)">Connections</button>
+    </div>
+    <input type="text" id="import-acct-search" placeholder="Search by name, business, address, phone..." oninput="renderImportAccountList()" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:10px;">
+    <div id="import-acct-results" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('import-account')">Cancel</button>
     </div>
   </div>
 </div>
@@ -5409,6 +5434,140 @@ async function saveExportedProfile(){
     alert(`✓ ${_rexBiz?.name||'Business'} exported successfully${_rexAccountId?' and added to account':''}.`);
     _rexBiz=null;_rexTarget=null;_rexAccountId=null;
   }catch(e){alert('Export failed: '+e.message);}
+}
+
+// ── Import to Account ─────────────────────────────────────────────────────
+let _importAcctTab='all';
+
+function openImportAccount(){
+  _importAcctTab='all';
+  document.querySelectorAll('.import-acct-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.getElementById('import-acct-search').value='';
+  renderImportAccountList();
+  openModal('import-account');
+}
+
+function setImportTab(tab,el){
+  _importAcctTab=tab;
+  document.querySelectorAll('.import-acct-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderImportAccountList();
+}
+
+function renderImportAccountList(){
+  const q=(document.getElementById('import-acct-search')?.value||'').toLowerCase();
+  const results=[];
+
+  const matchQ=(str)=>!q||str.toLowerCase().includes(q);
+
+  // Leads
+  if(_importAcctTab==='all'||_importAcctTab==='leads'){
+    allLeads.forEach(l=>{
+      const name=`${l.first_name} ${l.last_name}`;
+      const biz=l.business_name||'';
+      if(matchQ(name)||matchQ(biz)||matchQ(l.address||'')||matchQ(l.phone||'')){
+        results.push({
+          source:'Lead', color:'var(--blue-600)', bg:'var(--blue-light)',
+          name:biz||name, sub:`${name}${l.address?' · '+l.address:''}`,
+          phone:l.phone||'', email:l.email||'', address:l.address||'',
+          industry:l.industry||'', status:l.status,
+          prefill:{name:biz||name,industry:l.industry,phone:l.phone,email:l.email}
+        });
+      }
+    });
+  }
+
+  // Recurring
+  if(_importAcctTab==='all'||_importAcctTab==='recurring'){
+    allRecurring.forEach(r=>{
+      const name=`${r.first_name} ${r.last_name}`;
+      const biz=r.business_name||'';
+      if(matchQ(name)||matchQ(biz)||matchQ(r.address||'')||matchQ(r.phone||'')){
+        results.push({
+          source:'Recurring', color:'#ea580c', bg:'#fff7ed',
+          name:biz||name, sub:`${name}${r.address?' · '+r.address:''}`,
+          phone:r.phone||'', email:r.email||'', address:r.address||'',
+          industry:r.industry||'', status:r.status,
+          prefill:{name:biz||name,industry:r.industry,phone:r.phone,email:r.email}
+        });
+      }
+    });
+  }
+
+  // Customers
+  if(_importAcctTab==='all'||_importAcctTab==='customers'){
+    const profiles=getCustomerProfiles();
+    profiles.forEach(c=>{
+      if(matchQ(`${c.first_name} ${c.last_name}`)||matchQ(c.phone||'')||matchQ(c.address||'')){
+        results.push({
+          source:'Customer', color:'var(--green-600)', bg:'var(--green-light)',
+          name:`${c.first_name} ${c.last_name}`,
+          sub:`${c.jobs?.length||0} job${c.jobs?.length!==1?'s':''}${c.address?' · '+c.address:''}`,
+          phone:c.phone||'', email:c.email||'', address:c.address||'',
+          industry:'', status:'Customer',
+          prefill:{name:`${c.first_name} ${c.last_name}`,phone:c.phone,email:c.email}
+        });
+      }
+    });
+  }
+
+  // Research
+  if(_importAcctTab==='all'||_importAcctTab==='research'){
+    allResearchBiz.forEach(b=>{
+      if(matchQ(b.name||'')||matchQ(b.address||'')||matchQ(b.contact||'')){
+        results.push({
+          source:'Research', color:'var(--ink-3)', bg:'var(--border)',
+          name:b.name, sub:`${b.address||'No address'}${b.contact?' · '+b.contact:''}`,
+          phone:b.phone||'', email:'', address:b.address||'',
+          industry:'', status:b.status||'No Contact',
+          prefill:{name:b.name,phone:b.phone}
+        });
+      }
+    });
+  }
+
+  // Connections
+  if(_importAcctTab==='all'||_importAcctTab==='connections'){
+    allConnections.forEach(c=>{
+      const name=`${c.first_name} ${c.last_name}`;
+      if(matchQ(name)||matchQ(c.company||'')||matchQ(c.phone||'')){
+        results.push({
+          source:'Connection', color:'#7c3aed', bg:'#f5f3ff',
+          name:c.company||name, sub:`${name} · ${c.contact_type||''}`,
+          phone:c.phone||'', email:c.email||'', address:'',
+          industry:c.contact_type||'', status:c.contact_type||'Connection',
+          prefill:{name:c.company||name,phone:c.phone,email:c.email,industry:c.contact_type}
+        });
+      }
+    });
+  }
+
+  const container=document.getElementById('import-acct-results');
+  if(!results.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">No results found.</div>';
+    return;
+  }
+
+  container.innerHTML=results.slice(0,30).map((r,i)=>`
+    <div class="import-acct-row" onclick="selectImportAccount(${i})">
+      <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:${r.bg};color:${r.color};flex-shrink:0;">${r.source}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+        <div style="font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.sub}</div>
+      </div>
+      ${r.phone?`<div style="font-size:12px;color:var(--ink-3);flex-shrink:0;">${r.phone}</div>`:''}
+    </div>
+  `).join('');
+
+  container._results=results;
+}
+
+function selectImportAccount(idx){
+  const container=document.getElementById('import-acct-results');
+  const r=container._results?.[idx]; if(!r) return;
+  closeModal('import-account');
+  // Open new account form pre-filled
+  openAddAccount(r.prefill);
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
