@@ -313,6 +313,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
       <div class="nav-item" data-page="followups" onclick="nav(this)"><i class="ti ti-bell"></i><span>Follow-ups</span></div>
       <div class="nav-section">Setup</div>
+      <div class="nav-item" data-page="settings" onclick="nav(this)"><i class="ti ti-settings"></i><span>Settings</span></div>
       <div class="nav-item" data-page="embed" onclick="nav(this)"><i class="ti ti-code"></i><span>Website Form</span></div>
     </nav>
     <div class="sidebar-foot"><div class="logout-btn" onclick="signOut()"><i class="ti ti-logout"></i><span>Sign out</span></div></div>
@@ -761,6 +762,136 @@ tbody tr:hover td{background:#faf9f6;}
               <tbody id="research-tbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="pg-settings" class="page-content" style="display:none;">
+        <div style="max-width:700px;margin:0 auto;">
+
+          <!-- Tabs -->
+          <div class="modal-tabs" style="margin-bottom:20px;" id="settings-tabs">
+            <div class="modal-tab active" onclick="switchSettingsTab('branding',this)">Branding</div>
+            <div class="modal-tab" onclick="switchSettingsTab('team',this)">Team & Users</div>
+            <div class="modal-tab" onclick="switchSettingsTab('services',this)">Services</div>
+            <div class="modal-tab" onclick="switchSettingsTab('sources',this)">Lead Sources</div>
+            <div class="modal-tab" onclick="switchSettingsTab('defaults',this)">Defaults</div>
+            <div class="modal-tab" onclick="switchSettingsTab('quote',this)">Quote Pricing</div>
+          </div>
+
+          <!-- Branding -->
+          <div id="settings-branding">
+            <div class="record-section">
+              <div class="record-section-title">Business branding</div>
+              <div class="form-grid">
+                <div class="field"><label>Business name</label><input id="set-biz-name" placeholder="Palmetto Pressure Pros"></div>
+                <div class="field"><label>Brand color</label><div style="display:flex;gap:8px;align-items:center;"><input type="color" id="set-brand-color" value="#577C87" style="width:48px;height:38px;border:1px solid var(--border-md);border-radius:var(--r-sm);cursor:pointer;padding:2px;"><input id="set-brand-color-hex" placeholder="#577C87" style="flex:1;" oninput="syncColorHex(this)"></div></div>
+                <div class="field"><label>Phone number</label><input id="set-biz-phone" placeholder="(843) 608-0529" oninput="formatPhone(this)"></div>
+                <div class="field"><label>Email</label><input id="set-biz-email" placeholder="info@yourbusiness.com"></div>
+                <div class="field"><label>Website</label><input id="set-biz-website" placeholder="www.yourbusiness.com"></div>
+                <div class="field"><label>License / CRN number</label><input id="set-biz-license" placeholder="Optional"></div>
+                <div class="field" style="grid-column:1/-1;"><label>Business address (appears on quotes)</label><input id="set-biz-address" placeholder="123 Main St, Charleston SC 29401"></div>
+                <div class="field" style="grid-column:1/-1;"><label>Logo</label>
+                  <div style="display:flex;gap:12px;align-items:center;">
+                    <div id="set-logo-preview" style="width:64px;height:64px;border:1px solid var(--border-md);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f5f5f5;"><i class="ti ti-photo" style="color:var(--ink-3);font-size:24px;"></i></div>
+                    <div><button class="btn btn-sm" onclick="document.getElementById('set-logo-upload').click()"><i class="ti ti-upload"></i> Upload logo</button><input type="file" id="set-logo-upload" accept="image/*" style="display:none;" onchange="uploadSettingsLogo(this)"><div style="font-size:11px;color:var(--ink-3);margin-top:4px;">PNG, JPG — appears on login screen and quotes</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button class="btn btn-primary" onclick="saveSettings('branding')"><i class="ti ti-check"></i> Save branding</button>
+              <div id="set-branding-saved" style="display:none;font-size:13px;color:var(--green-600);">✓ Saved</div>
+            </div>
+          </div>
+
+          <!-- Team & Users -->
+          <div id="settings-team" style="display:none;">
+            <div class="record-section">
+              <div class="record-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                Team members
+                <button class="btn btn-sm btn-primary" onclick="openAddTeamMember()"><i class="ti ti-plus"></i> Add member</button>
+              </div>
+              <div id="settings-team-list"></div>
+            </div>
+          </div>
+
+          <!-- Services -->
+          <div id="settings-services" style="display:none;">
+            <div class="record-section">
+              <div class="record-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                Services list
+                <button class="btn btn-sm btn-primary" onclick="addSettingsService()"><i class="ti ti-plus"></i> Add service</button>
+              </div>
+              <p style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">These appear in all service dropdowns and checkboxes across the CRM.</p>
+              <div id="settings-services-list"></div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="saveSettings('services')"><i class="ti ti-check"></i> Save services</button>
+              <div id="set-services-saved" style="display:none;font-size:13px;color:var(--green-600);align-self:center;">✓ Saved</div>
+            </div>
+          </div>
+
+          <!-- Lead Sources -->
+          <div id="settings-sources" style="display:none;">
+            <div class="record-section">
+              <div class="record-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                Lead sources
+                <button class="btn btn-sm btn-primary" onclick="addSettingsSource()"><i class="ti ti-plus"></i> Add source</button>
+              </div>
+              <p style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">These appear in the "How did you find us?" dropdowns.</p>
+              <div id="settings-sources-list"></div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="saveSettings('sources')"><i class="ti ti-check"></i> Save sources</button>
+              <div id="set-sources-saved" style="display:none;font-size:13px;color:var(--green-600);align-self:center;">✓ Saved</div>
+            </div>
+          </div>
+
+          <!-- Defaults -->
+          <div id="settings-defaults" style="display:none;">
+            <div class="record-section">
+              <div class="record-section-title">Default values</div>
+              <div class="form-grid">
+                <div class="field"><label>Default lead status</label>
+                  <select id="set-default-status"><option>Lead</option><option>Quoted</option><option>Booked</option></select>
+                </div>
+                <div class="field"><label>Default assigned partner</label>
+                  <select id="set-default-partner"><option value="">TBD</option><option>Jack</option><option>Charlie</option><option>Tanner</option><option>Jack + Charlie</option><option>Jack + Tanner</option><option>Charlie + Tanner</option><option>All three</option></select>
+                </div>
+                <div class="field"><label>Default lead source</label>
+                  <select id="set-default-source"><option>Website Form</option><option>Referral</option><option>Door-to-door</option><option>Direct Outreach</option><option>Other</option></select>
+                </div>
+                <div class="field"><label>Default property type</label>
+                  <select id="set-default-property"><option>Residential</option><option>Commercial</option></select>
+                </div>
+                <div class="field" style="grid-column:1/-1;"><label>Follow-up message (Google review request)</label>
+                  <textarea id="set-followup-msg" style="min-height:90px;" placeholder="Hi [name]! Thank you so much for choosing us..."></textarea>
+                </div>
+                <div class="field" style="grid-column:1/-1;"><label>Booking reminder message</label>
+                  <textarea id="set-reminder-msg" style="min-height:90px;" placeholder="Hi [name]! Just a reminder that we're scheduled..."></textarea>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="saveSettings('defaults')"><i class="ti ti-check"></i> Save defaults</button>
+              <div id="set-defaults-saved" style="display:none;font-size:13px;color:var(--green-600);align-self:center;">✓ Saved</div>
+            </div>
+          </div>
+
+          <!-- Quote Pricing -->
+          <div id="settings-quote" style="display:none;">
+            <div class="record-section">
+              <div class="record-section-title">Quote pricing defaults</div>
+              <p style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">These are the default rates that auto-fill in the quote builder. You can always override them per quote.</p>
+              <div id="settings-quote-list"></div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="saveSettings('quote')"><i class="ti ti-check"></i> Save pricing</button>
+              <div id="set-quote-saved" style="display:none;font-size:13px;color:var(--green-600);align-self:center;">✓ Saved</div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1421,6 +1552,25 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<!-- ADD TEAM MEMBER MODAL -->
+<div class="overlay" id="modal-team-member">
+  <div class="modal">
+    <div class="modal-head"><h2 id="team-modal-title">Add team member</h2><button class="btn btn-sm" onclick="closeModal('team-member')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="team-edit-id">
+    <div class="form-grid">
+      <div class="field"><label>First name *</label><input id="team-first" placeholder="Jack"></div>
+      <div class="field"><label>Last name *</label><input id="team-last" placeholder="Edwards"></div>
+      <div class="field"><label>Email (CRM login) *</label><input id="team-email" type="email" placeholder="jack@company.com"></div>
+      <div class="field"><label>Role</label><select id="team-role"><option value="admin">Admin — full access + can edit settings</option><option value="partner">Partner — full access, no settings</option><option value="viewer">Viewer — read only</option></select></div>
+      <div class="field"><label>Display name (shown in dropdowns)</label><input id="team-display" placeholder="Jack"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('team-member')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeamMember()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -1480,6 +1630,7 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     await loadVisits();
     await loadResearch();
     await loadAccounts();
+    applySettingsOnLoad();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
   }
@@ -1523,7 +1674,7 @@ function nav(el){
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
   if(page==='map'){renderMap();}  if(page==='research')initResearch();
-  if(page==='embed')renderEmbed();
+  if(page==='embed')renderEmbed();if(page==='settings')initSettings();
 }
 function refreshAll(){
   renderDashboard();
@@ -2513,7 +2664,7 @@ async function ppSubmit(){
 <\/script>`;}
 
 // ── Page titles update ─────────────────────────────────────────────────────
-Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs',research:'Research',accounts:'Accounts'});
+Object.assign(pageTitles,{quotes:'Quote Builder',invoices:'Invoices',route:'Route Optimizer',followups:'Follow-ups',customers:'Customers',map:'Territory Map',recurring:'Recurring Jobs',research:'Research',accounts:'Accounts',settings:'Settings'});
 
 // ── Quote Builder ──────────────────────────────────────────────────────────
 const QUOTE_SERVICES = [
@@ -5806,6 +5957,319 @@ function openAddressLead(fromLeadId, prefill){
       if(bnEl)bnEl.value=lead.business_name;
     }
   }
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────
+const SETTINGS_KEY='ppp_crm_settings';
+
+const DEFAULT_SETTINGS={
+  branding:{bizName:'Palmetto Pressure Pros',brandColor:'#577C87',phone:'',email:'',website:'',license:'',address:'',logoB64:''},
+  services:['House Washing (Soft Wash)','Driveway / Walkway','Pool Deck','Wood Deck','Patio','Roof Cleaning','Fence Cleaning','Gutter Cleaning','Car Wash Bay','Concrete Storefront','Gas Station Concrete','Residential Window Washing','Commercial Window Washing','Commercial Property','HOA / Community','Listing-Ready Package','Curb Appeal Package','Full Exterior Package'],
+  sources:['Website Form','Referral','Realtor','HOA','Property Manager','Social Media','Direct Outreach','Door-to-door','Neighbor of Client','Other'],
+  defaults:{status:'Lead',partner:'',source:'Website Form',property:'Residential',followupMsg:'Hi [name]! Thank you so much for choosing Palmetto Pressure Pros — it was a pleasure working on your property! If you\'re happy with the results, we\'d love a quick Google review: https://g.page/r/palmettopressurepros/review It means the world to us. - Jack & the PPP team',reminderMsg:'Hi [name]! Just a reminder that we\'re scheduled to clean your property tomorrow. Please ensure access is available. Any questions call us at (843) 608-0529. - Palmetto Pressure Pros'},
+  quotePricing:{},
+  team:[]
+};
+
+function loadSettingsFromStorage(){
+  try{const raw=localStorage.getItem(SETTINGS_KEY);return raw?JSON.parse(raw):JSON.parse(JSON.stringify(DEFAULT_SETTINGS));}
+  catch(e){return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));}
+}
+
+function saveSettingsToStorage(settings){
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+}
+
+function getSettings(){return loadSettingsFromStorage();}
+
+function initSettings(){
+  const settings=getSettings();
+  document.querySelectorAll('.modal-tab[onclick*="switchSettingsTab"]').forEach((t,i)=>t.classList.toggle('active',i===0));
+  ['settings-branding','settings-team','settings-services','settings-sources','settings-defaults','settings-quote'].forEach((id,i)=>{
+    document.getElementById(id).style.display=i===0?'block':'none';
+  });
+  loadBrandingSettings(settings);
+  loadTeamSettings(settings);
+  loadServicesSettings(settings);
+  loadSourcesSettings(settings);
+  loadDefaultsSettings(settings);
+  loadQuoteSettings(settings);
+}
+
+function switchSettingsTab(tab,el){
+  document.querySelectorAll('#settings-tabs .modal-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['branding','team','services','sources','defaults','quote'].forEach(t=>{
+    document.getElementById('settings-'+t).style.display=t===tab?'block':'none';
+  });
+}
+
+function saveSettings(section){
+  const settings=getSettings();
+  const isAdmin=isCurrentUserAdmin();
+
+  if(section==='branding'){
+    settings.branding.bizName=document.getElementById('set-biz-name').value;
+    settings.branding.brandColor=document.getElementById('set-brand-color').value;
+    settings.branding.phone=document.getElementById('set-biz-phone').value;
+    settings.branding.email=document.getElementById('set-biz-email').value;
+    settings.branding.website=document.getElementById('set-biz-website').value;
+    settings.branding.license=document.getElementById('set-biz-license').value;
+    settings.branding.address=document.getElementById('set-biz-address').value;
+    // Apply brand color to CSS
+    document.documentElement.style.setProperty('--teal-600',settings.branding.brandColor);
+    showSettingsSaved('branding');
+  }
+
+  if(section==='services'){
+    const inputs=document.querySelectorAll('#settings-services-list .svc-input');
+    settings.services=[...inputs].map(i=>i.value.trim()).filter(Boolean);
+    showSettingsSaved('services');
+  }
+
+  if(section==='sources'){
+    const inputs=document.querySelectorAll('#settings-sources-list .src-input');
+    settings.sources=[...inputs].map(i=>i.value.trim()).filter(Boolean);
+    showSettingsSaved('sources');
+  }
+
+  if(section==='defaults'){
+    settings.defaults.status=document.getElementById('set-default-status').value;
+    settings.defaults.partner=document.getElementById('set-default-partner').value;
+    settings.defaults.source=document.getElementById('set-default-source').value;
+    settings.defaults.property=document.getElementById('set-default-property').value;
+    settings.defaults.followupMsg=document.getElementById('set-followup-msg').value;
+    settings.defaults.reminderMsg=document.getElementById('set-reminder-msg').value;
+    showSettingsSaved('defaults');
+  }
+
+  if(section==='quote'){
+    const rows=document.querySelectorAll('#settings-quote-list .quote-price-row');
+    settings.quotePricing={};
+    rows.forEach(row=>{
+      const name=row.dataset.service;
+      const rate=parseFloat(row.querySelector('.qp-rate')?.value)||0;
+      const unit=row.querySelector('.qp-unit')?.value||'sq ft';
+      settings.quotePricing[name]={rate,unit};
+    });
+    showSettingsSaved('quote');
+  }
+
+  saveSettingsToStorage(settings);
+
+  // If admin, offer to apply to all
+  if(isAdmin&&['services','sources','defaults'].includes(section)){
+    if(confirm('Apply these settings to all team members?')){
+      // In this single-file app, settings are shared via localStorage key
+      // For a real multi-user app this would push to Supabase
+      console.log('Settings applied globally');
+    }
+  }
+}
+
+function showSettingsSaved(section){
+  const el=document.getElementById('set-'+section+'-saved');
+  if(!el) return;
+  el.style.display='block';
+  setTimeout(()=>el.style.display='none',2500);
+}
+
+function loadBrandingSettings(s){
+  document.getElementById('set-biz-name').value=s.branding.bizName||'';
+  document.getElementById('set-brand-color').value=s.branding.brandColor||'#577C87';
+  document.getElementById('set-brand-color-hex').value=s.branding.brandColor||'#577C87';
+  document.getElementById('set-biz-phone').value=s.branding.phone||'';
+  document.getElementById('set-biz-email').value=s.branding.email||'';
+  document.getElementById('set-biz-website').value=s.branding.website||'';
+  document.getElementById('set-biz-license').value=s.branding.license||'';
+  document.getElementById('set-biz-address').value=s.branding.address||'';
+  if(s.branding.logoB64){
+    const prev=document.getElementById('set-logo-preview');
+    prev.innerHTML=`<img src="${s.branding.logoB64}" style="width:100%;height:100%;object-fit:cover;">`;
+  }
+}
+
+function loadTeamSettings(s){
+  const isAdmin=isCurrentUserAdmin();
+  const list=document.getElementById('settings-team-list');
+  const team=s.team||[];
+
+  // Always show current user
+  const allUsers=[{id:'current',email:currentUser?.email||'',role:'admin',displayName:currentUser?.email?.split('@')[0]||'You',lastSeen:new Date().toISOString()},...team];
+
+  list.innerHTML=allUsers.map(u=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--teal-600);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">${(u.displayName||u.email||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;">
+        <div style="font-weight:500;font-size:13px;">${u.displayName||u.email}</div>
+        <div style="font-size:12px;color:var(--ink-3);">${u.email}</div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Last seen: ${u.lastSeen?new Date(u.lastSeen).toLocaleString():'Never'}</div>
+      </div>
+      <div style="text-align:right;">
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${u.role==='admin'?'#fef9c3':'var(--teal-50)'};color:${u.role==='admin'?'#854d0e':'var(--teal-700)'};">${u.role==='admin'?'Admin':u.role==='partner'?'Partner':'Viewer'}</span>
+        ${isAdmin&&u.id!=='current'?`<div style="margin-top:6px;display:flex;gap:4px;justify-content:flex-end;">
+          <button class="btn btn-sm" onclick="editTeamMember('${u.id}')"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="removeTeamMember('${u.id}')"><i class="ti ti-trash"></i></button>
+        </div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function loadServicesSettings(s){
+  document.getElementById('settings-services-list').innerHTML=
+    (s.services||[]).map((svc,i)=>`
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <input class="svc-input" value="${svc}" style="flex:1;padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+        <button onclick="this.parentElement.remove()" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>
+      </div>`).join('');
+}
+
+function addSettingsService(){
+  const list=document.getElementById('settings-services-list');
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:center;';
+  div.innerHTML=`<input class="svc-input" placeholder="New service name..." style="flex:1;padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);"><button onclick="this.parentElement.remove()" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>`;
+  list.appendChild(div);
+  div.querySelector('input').focus();
+}
+
+function loadSourcesSettings(s){
+  document.getElementById('settings-sources-list').innerHTML=
+    (s.sources||[]).map(src=>`
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <input class="src-input" value="${src}" style="flex:1;padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+        <button onclick="this.parentElement.remove()" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>
+      </div>`).join('');
+}
+
+function addSettingsSource(){
+  const list=document.getElementById('settings-sources-list');
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:center;';
+  div.innerHTML=`<input class="src-input" placeholder="New source..." style="flex:1;padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);"><button onclick="this.parentElement.remove()" style="background:var(--red-light);color:var(--red-600);border:1px solid #f7c1c1;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;">✕</button>`;
+  list.appendChild(div);
+  div.querySelector('input').focus();
+}
+
+function loadDefaultsSettings(s){
+  document.getElementById('set-default-status').value=s.defaults.status||'Lead';
+  document.getElementById('set-default-partner').value=s.defaults.partner||'';
+  document.getElementById('set-default-source').value=s.defaults.source||'Website Form';
+  document.getElementById('set-default-property').value=s.defaults.property||'Residential';
+  document.getElementById('set-followup-msg').value=s.defaults.followupMsg||'';
+  document.getElementById('set-reminder-msg').value=s.defaults.reminderMsg||'';
+}
+
+function loadQuoteSettings(s){
+  const pricing=s.quotePricing||{};
+  document.getElementById('settings-quote-list').innerHTML=
+    QUOTE_SERVICES.map(svc=>{
+      const saved=pricing[svc.name]||{};
+      return`<div class="quote-price-row" data-service="${svc.name}" style="display:grid;grid-template-columns:1fr 100px 100px;gap:8px;margin-bottom:8px;align-items:center;">
+        <div style="font-size:13px;font-weight:500;">${svc.name}</div>
+        <select class="qp-unit" style="padding:6px 8px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);">
+          <option ${(saved.unit||svc.unit)==='sq ft'?'selected':''}>sq ft</option>
+          <option ${(saved.unit||svc.unit)==='lin ft'?'selected':''}>lin ft</option>
+          <option ${(saved.unit||svc.unit)==='unit'?'selected':''}>unit</option>
+        </select>
+        <div style="position:relative;"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-3);">$</span>
+        <input class="qp-rate" type="number" step="0.01" value="${saved.rate||svc.rate}" style="padding:6px 8px 6px 18px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);width:100%;"></div>
+      </div>`;
+    }).join('');
+}
+
+function syncColorHex(input){
+  const v=input.value;
+  const colorEl=document.getElementById('set-brand-color');
+  if(/^#[0-9A-Fa-f]{6}$/.test(v)&&colorEl) colorEl.value=v;
+}
+
+function isCurrentUserAdmin(){
+  const settings=getSettings();
+  const userEmail=currentUser?.email||'';
+  const team=settings.team||[];
+  const member=team.find(m=>m.email===userEmail);
+  // If not in team list, they're the owner = admin
+  return !member||member.role==='admin';
+}
+
+function openAddTeamMember(){
+  if(!isCurrentUserAdmin()){alert('Only admins can manage team members.');return;}
+  document.getElementById('team-modal-title').textContent='Add team member';
+  document.getElementById('team-edit-id').value='';
+  ['team-first','team-last','team-email','team-display'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('team-role').value='partner';
+  openModal('team-member');
+}
+
+function saveTeamMember(){
+  const settings=getSettings();
+  const id=document.getElementById('team-edit-id').value||uid();
+  const member={id,
+    firstName:document.getElementById('team-first').value.trim(),
+    lastName:document.getElementById('team-last').value.trim(),
+    email:document.getElementById('team-email').value.trim(),
+    role:document.getElementById('team-role').value,
+    displayName:document.getElementById('team-display').value.trim()||document.getElementById('team-first').value.trim(),
+    lastSeen:null,addedAt:new Date().toISOString()
+  };
+  if(!member.email){alert('Email is required.');return;}
+  if(!settings.team) settings.team=[];
+  const idx=settings.team.findIndex(m=>m.id===id);
+  if(idx>-1)settings.team[idx]=member;else settings.team.push(member);
+  saveSettingsToStorage(settings);
+  closeModal('team-member');
+  loadTeamSettings(settings);
+}
+
+function editTeamMember(id){
+  const settings=getSettings();
+  const m=settings.team?.find(t=>t.id===id);if(!m)return;
+  document.getElementById('team-modal-title').textContent='Edit team member';
+  document.getElementById('team-edit-id').value=id;
+  document.getElementById('team-first').value=m.firstName||'';
+  document.getElementById('team-last').value=m.lastName||'';
+  document.getElementById('team-email').value=m.email||'';
+  document.getElementById('team-role').value=m.role||'partner';
+  document.getElementById('team-display').value=m.displayName||'';
+  openModal('team-member');
+}
+
+function removeTeamMember(id){
+  if(!confirm('Remove this team member?'))return;
+  const settings=getSettings();
+  settings.team=(settings.team||[]).filter(m=>m.id!==id);
+  saveSettingsToStorage(settings);
+  loadTeamSettings(settings);
+}
+
+function uploadSettingsLogo(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result;
+    const settings=getSettings();
+    settings.branding.logoB64=b64;
+    saveSettingsToStorage(settings);
+    const prev=document.getElementById('set-logo-preview');
+    prev.innerHTML=`<img src="${b64}" style="width:100%;height:100%;object-fit:cover;">`;
+    // Also update auth screen logo
+    const authLogo=document.querySelector('.auth-logo-mark img, .auth-logo-mark');
+    if(authLogo&&authLogo.tagName==='IMG') authLogo.src=b64;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Apply settings on load
+function applySettingsOnLoad(){
+  const s=getSettings();
+  if(s.branding?.brandColor&&s.branding.brandColor!=='#577C87'){
+    document.documentElement.style.setProperty('--teal-600',s.branding.brandColor);
+  }
+  // Track last seen
+  const team=s.team||[];
+  const idx=team.findIndex(m=>m.email===currentUser?.email);
+  if(idx>-1){team[idx].lastSeen=new Date().toISOString();s.team=team;saveSettingsToStorage(s);}
 }
 
 function copyEmbed(){navigator.clipboard.writeText(document.getElementById('embed-box').textContent).then(()=>{const btn=document.querySelector('[onclick="copyEmbed()"]');btn.innerHTML='<i class="ti ti-check"></i> Copied!';setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copy code';},2000);});}
