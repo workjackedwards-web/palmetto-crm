@@ -1513,7 +1513,7 @@ function nav(el){
   document.getElementById('pg-'+page).style.display='block';
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
-  if(page==='customers')renderCustomers();if(page==='accounts')renderAccounts();
+  if(page==='customers')renderCustomers();if(page==='accounts'){if(allAccounts.length===0){loadAccounts().then(()=>renderAccounts());}else{renderAccounts();}}
   if(page==='recurring')renderRecurring();
   if(page==='pipeline')renderPipeline();
   if(page==='jobs')renderJobs();
@@ -3291,7 +3291,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
-  if(page==='map'){renderMap();}
+  if(page==='map'){renderMap();}  if(page==='accounts'){if(allAccounts.length===0){loadAccounts().then(()=>renderAccounts());}else{renderAccounts();}}
   if(page==='quotes'){initQuotePage();}
   if(page==='invoices'){initInvoicePage();}
   if(page==='route'){document.getElementById('route-date').value=new Date().toISOString().split('T')[0];loadRouteJobs();}
