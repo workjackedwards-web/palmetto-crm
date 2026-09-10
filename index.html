@@ -2153,8 +2153,7 @@ function renderLeads(){
         </div>
       </td>
     </tr>
-    <tbody id="${groupId}" style="display:none;">
-      ${g.leads.map(l=>`<tr style="background:#f8fcfd;">
+    ${g.leads.map(l=>`<tr class="${groupId}" style="display:none;background:#f8fcfd;">
         <td style="padding-left:32px;"><div style="font-size:12px;color:var(--ink-3);">📍 ${l.address||'No address'}</div></td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
         <td style="font-size:12px;">${l.service}</td>
@@ -2162,20 +2161,18 @@ function renderLeads(){
         <td style="font-size:12px;">${l.source||'—'}</td>
         <td>${l.job_date||'—'}</td>
         <td colspan="2"><button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${l.id}')"><i class="ti ti-eye"></i> Open</button></td>
-      </tr>`).join('')}
-    </tbody>`;
+      </tr>`).join('')}`;
   });
 
   document.getElementById('leads-body').innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads.</td></tr>';
 }
 
 function toggleLeadGroup(id){
-  const tbody=document.getElementById(id);
+  const rows=document.querySelectorAll('.'+id);
   const icon=document.getElementById(id+'-icon');
-  if(!tbody) return;
-  const open=tbody.style.display==='none';
-  tbody.style.display=open?'':'none';
-  if(icon) icon.style.transform=open?'rotate(180deg)':'';
+  const open=rows.length>0&&rows[0].style.display!=='none';
+  rows.forEach(r=>r.style.display=open?'none':'');
+  if(icon)icon.style.transform=open?'':'rotate(180deg)';
 }
 
 
@@ -3445,26 +3442,24 @@ function renderCustomers(){
       <td>${c.lastJob||'—'}</td>
       <td><button class="btn btn-sm" onclick="event.stopPropagation();viewCustomer('${c.key}')"><i class="ti ti-eye"></i></button></td>
     </tr>
-    ${multi?`<tbody id="${groupId}" style="display:none;">
-      ${uniqueAddresses.map(addr=>{
+    ${multi?uniqueAddresses.map(addr=>{
         const addrJobs=c.jobs.filter(j=>j.address===addr);
         const lastJob=addrJobs.sort((a,b)=>b.job_date?.localeCompare(a.job_date||'')||0)[0];
-        return`<tr style="background:#f8fcfd;">
+        return`<tr class="${groupId}" style="display:none;background:#f8fcfd;">
           <td style="padding-left:32px;" colspan="2"><div style="font-size:12px;color:var(--ink-3);">📍 ${addr}</div></td>
           <td style="font-size:12px;">${addrJobs.length} job${addrJobs.length!==1?'s':''}</td>
           <td style="font-size:12px;">${$m(addrJobs.reduce((s,j)=>s+(+j.revenue||0),0))}</td>
           <td>${lastJob?.job_date||'—'}</td>
           <td colspan="3"><button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${lastJob?.id}')"><i class="ti ti-eye"></i> Open</button></td>
         </tr>`;
-      }).join('')}
-    </tbody>`:''}`;
+      }).join(''):''}`;
   }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No customers yet. Completed jobs will appear here automatically.</td></tr>';
 }
 
 function toggleCustGroup(id){
-  const tbody=document.getElementById(id);
-  if(!tbody) return;
-  tbody.style.display=tbody.style.display==='none'?'':'none';
+  const rows=document.querySelectorAll('.'+id);
+  const open=rows.length>0&&rows[0].style.display!=='none';
+  rows.forEach(r=>r.style.display=open?'none':'');
 }
 
 let viewingCustomerKey=null;
