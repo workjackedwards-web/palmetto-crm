@@ -1656,26 +1656,6 @@ async function upsertComm(comm){const{data,error}=await sb.from('communications'
 
 // ── Navigation ────────────────────────────────────────────────────────────
 const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
-function nav(el){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
-  el.classList.add('active');
-  const page=el.dataset.page;
-  document.getElementById('pg-'+page).style.display='block';
-  document.getElementById('page-title').textContent=pageTitles[page]||page;
-  if(page==='leads')renderLeads();
-  if(page==='customers')renderCustomers();if(page==='accounts'){if(allAccounts.length===0){loadAccounts().then(()=>renderAccounts());}else{renderAccounts();}}
-  if(page==='recurring')renderRecurring();
-  if(page==='pipeline')renderPipeline();
-  if(page==='jobs')renderJobs();
-  if(page==='calendar')renderCalendar();
-  if(page==='comms')renderComms();
-  if(page==='connections')renderConnections();
-  if(page==='referrals')renderReferrals();
-  if(page==='analytics')renderAnalytics();
-  if(page==='map'){renderMap();}  if(page==='research'){initResearch();}
-  if(page==='embed')renderEmbed();if(page==='settings')initSettings();
-}
 function refreshAll(){
   renderDashboard();
   const active=document.querySelector('.nav-item.active');
@@ -3448,6 +3428,8 @@ function nav(el){
   if(page==='route'){document.getElementById('route-date').value=new Date().toISOString().split('T')[0];loadRouteJobs();}
   if(page==='followups')renderFollowups();
   if(page==='embed')renderEmbed();
+  if(page==='research'){initResearch();}
+  if(page==='settings'){initSettings();}
 }
 // ── Events (calendar meetings) ─────────────────────────────────────────────
 function openAddEvent(dateStr){
