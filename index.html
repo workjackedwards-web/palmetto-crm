@@ -1673,7 +1673,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
-  if(page==='map'){renderMap();}  if(page==='research')initResearch();
+  if(page==='map'){renderMap();}  if(page==='research'){initResearch();}
   if(page==='embed')renderEmbed();if(page==='settings')initSettings();
 }
 function refreshAll(){
@@ -4700,11 +4700,14 @@ let selectedBizIds=new Set();
 async function upsertResearchList(list){const{data,error}=await sb.from('research_lists').upsert([list],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertResearchBiz(biz){const{data,error}=await sb.from('research_businesses').upsert([biz],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
-function initResearch(){
+async function initResearch(){
   activeListId=null;
   selectedBizIds=new Set();
   document.getElementById('research-home').style.display='block';
   document.getElementById('research-active').style.display='none';
+  if(!allResearchLists.length||!allResearchBiz.length){
+    await loadResearch();
+  }
   renderResearchHome();
 }
 
