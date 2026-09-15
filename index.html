@@ -290,8 +290,9 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="sidebar-head"><div class="sidebar-brand">Palmetto Pros</div><div class="sidebar-sub">Business CRM</div></div>
     <div class="sidebar-user"><div class="sidebar-user-name" id="sb-user-name">Loading...</div><div class="sidebar-user-role">Partner</div></div>
     <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="todos" onclick="nav(this)"><i class="ti ti-list-check"></i><span>To-Do</span><span id="todo-badge" style="display:none;background:var(--red-600);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 7px;margin-left:auto;">0</span></div>
       <div class="nav-section">Overview</div>
-      <div class="nav-item active" data-page="dashboard" onclick="nav(this)"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></div>
+      <div class="nav-item" data-page="dashboard" onclick="nav(this)"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></div>
       <div class="nav-section">CRM</div>
       <div class="nav-item" data-page="pipeline" onclick="nav(this)"><i class="ti ti-columns"></i><span>Pipeline</span></div>
       <div class="nav-item" data-page="leads" onclick="nav(this)"><i class="ti ti-user-plus"></i><span>Leads</span></div>
@@ -330,7 +331,16 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="content">
 
       <!-- DASHBOARD -->
-      <div id="pg-dashboard" class="page-content">
+      <div id="pg-todos" class="page-content">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <div style="font-size:20px;font-weight:700;">To-Do</div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-primary" onclick="openAddTodo()"><i class="ti ti-plus"></i> Add task</button>
+        </div>
+        <div id="todo-grid" style="overflow-x:auto;"></div>
+      </div>
+
+      <div id="pg-dashboard" class="page-content" style="display:none;">
         <div class="metrics" id="dash-metrics"><div class="metric"><div class="metric-label">Loading</div><div class="metric-value">—</div></div></div>
         <div class="grid2" style="margin-bottom:16px;">
           <div class="card"><div class="card-title">Revenue by service</div><div id="svc-chart"></div></div>
@@ -1096,6 +1106,37 @@ tbody tr:hover td{background:#faf9f6;}
 </div>
 
 <!-- ADD/EDIT CONNECTION MODAL -->
+<div class="overlay" id="modal-todo">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modal-todo-title">Add task</h2><button class="btn btn-sm" onclick="closeModal('todo')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="todo-edit-id">
+    <input type="hidden" id="td-link-type">
+    <input type="hidden" id="td-link-id">
+    <div class="form-grid">
+      <div class="field"><label>Task *</label><input id="td-title" placeholder="What needs to happen?"></div>
+      <div class="field"><label>Assigned to</label><select id="td-assignee"></select></div>
+      <div class="field"><label>Status</label><select id="td-status"></select></div>
+      <div class="field"><label>Priority</label><select id="td-priority"></select></div>
+      <div class="field"><label>Due date</label><input type="date" id="td-due"></div>
+      <div class="field"><label>Category</label><select id="td-category"></select></div>
+      <div class="field">
+        <label>Link to a Lead / Account / Recurring Contract (optional)</label>
+        <input id="td-link-search" placeholder="Search by name..." oninput="searchTodoLink()" autocomplete="off">
+        <div id="td-link-results" style="display:none;border:1px solid var(--border-md);border-radius:var(--r-sm);max-height:180px;overflow-y:auto;margin-top:4px;"></div>
+        <div id="td-link-picked" style="display:none;align-items:center;gap:8px;margin-top:6px;background:var(--teal-50);border-radius:var(--r-sm);padding:6px 10px;">
+          <i class="ti ti-link"></i><span id="td-link-picked-label" style="flex:1;font-size:13px;"></span>
+          <button onclick="clearTodoLink()" style="background:none;border:none;cursor:pointer;color:var(--ink-3);"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+      <div class="field span2"><label>Notes</label><textarea id="td-notes" placeholder="Any context worth remembering..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('todo')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTodo()"><i class="ti ti-check"></i> Save task</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-connection">
   <div class="modal">
     <div class="modal-head"><h2 id="modal-conn-title">Add contact</h2><button class="btn btn-sm" onclick="closeModal('connection')"><i class="ti ti-x"></i></button></div>
@@ -1580,7 +1621,11 @@ const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], allAccounts=[], authMode='login', viewingLeadId=null;
+let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], allAccounts=[], allTodos=[], authMode='login', viewingLeadId=null;
+const TODO_ASSIGNEES=['Jack','Charlie','Tanner'];
+const TODO_STATUSES=['To Do','In Progress','Waiting','Done'];
+const TODO_PRIORITIES=['Urgent','High','Normal','Low'];
+const TODO_CATEGORIES=['Sales','Ops','Equipment','Admin','Marketing','Other'];
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 function toggleAuthMode(){
@@ -1632,13 +1677,240 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     await loadVisits();
     await loadResearch();
     await loadAccounts();
+    await loadTodos();
     applySettingsOnLoad();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
+    renderTodos();
   }
 });
 
 // ── Data ──────────────────────────────────────────────────────────────────
+async function loadTodos(){try{const{data,error}=await sb.from('todos').select('*').order('created_at',{ascending:false});if(error)console.error('todos error:',error);else allTodos=data||[];}catch(e){console.error('loadTodos failed:',e);}}
+async function initTodos(){await loadTodos();renderTodos();}
+
+function todoLinkLabel(t){
+  if(!t||!t.linked_type||!t.linked_id) return '';
+  if(t.linked_type==='lead'){const l=allLeads.find(x=>x.id===t.linked_id);return l?(l.business_name||`${l.first_name} ${l.last_name}`):'';}
+  if(t.linked_type==='account'){const a=allAccounts.find(x=>x.id===t.linked_id);return a?a.name:'';}
+  if(t.linked_type==='recurring'){const r=allRecurring.find(x=>x.id===t.linked_id);return r?(r.business_name||`${r.first_name} ${r.last_name}`):'';}
+  return '';
+}
+function openTodoLink(id){
+  const t=allTodos.find(x=>x.id===id); if(!t||!t.linked_type||!t.linked_id) return;
+  if(t.linked_type==='lead') viewLead(t.linked_id);
+  else if(t.linked_type==='account') viewAccount(t.linked_id);
+  else if(t.linked_type==='recurring') viewRecurring(t.linked_id);
+}
+
+function populateTodoFormOptions(){
+  const fill=(id,opts)=>{const el=document.getElementById(id);if(el&&!el.dataset.filled){el.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('');el.dataset.filled='1';}};
+  fill('td-assignee',TODO_ASSIGNEES);
+  fill('td-status',TODO_STATUSES);
+  fill('td-priority',TODO_PRIORITIES);
+  fill('td-category',TODO_CATEGORIES);
+}
+
+function openAddTodo(assignee,status){
+  populateTodoFormOptions();
+  document.getElementById('modal-todo-title').textContent='Add task';
+  document.getElementById('todo-edit-id').value='';
+  document.getElementById('td-title').value='';
+  document.getElementById('td-notes').value='';
+  document.getElementById('td-assignee').value=assignee||TODO_ASSIGNEES[0];
+  document.getElementById('td-status').value=status||'To Do';
+  document.getElementById('td-priority').value='Normal';
+  document.getElementById('td-due').value='';
+  document.getElementById('td-category').value=TODO_CATEGORIES[0];
+  clearTodoLink();
+  document.getElementById('td-link-search').value='';
+  document.getElementById('td-link-results').style.display='none';
+  openModal('todo');
+}
+
+function openEditTodo(id){
+  const t=allTodos.find(x=>x.id===id); if(!t) return;
+  populateTodoFormOptions();
+  document.getElementById('modal-todo-title').textContent='Edit task';
+  document.getElementById('todo-edit-id').value=t.id;
+  document.getElementById('td-title').value=t.title;
+  document.getElementById('td-notes').value=t.notes||'';
+  document.getElementById('td-assignee').value=t.assignee;
+  document.getElementById('td-status').value=t.status;
+  document.getElementById('td-priority').value=t.priority;
+  document.getElementById('td-due').value=t.due_date||'';
+  document.getElementById('td-category').value=t.category||TODO_CATEGORIES[0];
+  document.getElementById('td-link-type').value=t.linked_type||'';
+  document.getElementById('td-link-id').value=t.linked_id||'';
+  const label=todoLinkLabel(t);
+  document.getElementById('td-link-search').value='';
+  document.getElementById('td-link-results').style.display='none';
+  if(label){document.getElementById('td-link-picked').style.display='flex';document.getElementById('td-link-picked-label').textContent=label;}
+  else{document.getElementById('td-link-picked').style.display='none';}
+  openModal('todo');
+}
+
+async function saveTodo(){
+  const title=document.getElementById('td-title').value.trim();
+  if(!title){alert('Please enter a task title.');return;}
+  const editId=document.getElementById('todo-edit-id').value;
+  const id=editId||uid();
+  const existing=editId?allTodos.find(t=>t.id===editId):null;
+  const newStatus=document.getElementById('td-status').value;
+  const nowDone=newStatus==='Done';
+  const todo={
+    id,
+    title,
+    notes:document.getElementById('td-notes').value,
+    assignee:document.getElementById('td-assignee').value,
+    status:newStatus,
+    priority:document.getElementById('td-priority').value,
+    due_date:document.getElementById('td-due').value||null,
+    category:document.getElementById('td-category').value,
+    linked_type:document.getElementById('td-link-type').value||null,
+    linked_id:document.getElementById('td-link-id').value||null,
+    created_by:existing?existing.created_by:currentUser?.email,
+    created_at:existing?existing.created_at:new Date().toISOString(),
+    completed_by:nowDone?(existing?.completed_by||currentUser?.email):null,
+    completed_at:nowDone?(existing?.completed_at||new Date().toISOString()):null,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const{data,error}=await sb.from('todos').upsert([todo],{onConflict:'id'}).select();
+    if(error) throw error;
+    const saved=data[0];
+    const idx=allTodos.findIndex(t=>t.id===id);
+    if(idx>-1) allTodos[idx]=saved; else allTodos.unshift(saved);
+    closeModal('todo');
+    renderTodos();
+  }catch(e){alert('Save failed: '+e.message);}
+}
+
+async function moveTodoStatus(id,newStatus){
+  const t=allTodos.find(x=>x.id===id); if(!t) return;
+  const nowDone=newStatus==='Done';
+  const updated={...t,status:newStatus,
+    completed_by:nowDone?(t.completed_by||currentUser?.email):null,
+    completed_at:nowDone?(t.completed_at||new Date().toISOString()):null,
+    updated_at:new Date().toISOString()};
+  const{data,error}=await sb.from('todos').upsert([updated],{onConflict:'id'}).select();
+  if(error){alert('Update failed: '+error.message);return;}
+  const idx=allTodos.findIndex(x=>x.id===id);
+  if(idx>-1) allTodos[idx]=data[0];
+  renderTodos();
+}
+
+async function deleteTodo(id){
+  if(!confirm('Delete this task?')) return;
+  await sb.from('todos').delete().eq('id',id);
+  allTodos=allTodos.filter(t=>t.id!==id);
+  renderTodos();
+}
+
+function searchTodoLink(){
+  const q=document.getElementById('td-link-search').value.trim().toLowerCase();
+  const box=document.getElementById('td-link-results');
+  if(!q){box.style.display='none';box.innerHTML='';return;}
+  const esc=s=>String(s).replace(/'/g,"\\'");
+  const results=[];
+  allLeads.forEach(l=>{
+    const name=l.business_name||`${l.first_name} ${l.last_name}`;
+    if(name.toLowerCase().includes(q)) results.push({type:'lead',id:l.id,name,sub:'Lead'});
+  });
+  allAccounts.forEach(a=>{
+    if((a.name||'').toLowerCase().includes(q)) results.push({type:'account',id:a.id,name:a.name,sub:'Account'});
+  });
+  allRecurring.forEach(r=>{
+    const name=r.business_name||`${r.first_name} ${r.last_name}`;
+    if(name.toLowerCase().includes(q)) results.push({type:'recurring',id:r.id,name,sub:'Recurring'});
+  });
+  const top=results.slice(0,8);
+  box.innerHTML=top.length?top.map(r=>`<div onclick="pickTodoLink('${r.type}','${r.id}','${esc(r.name)}')" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);">${r.name} <span style="color:var(--ink-3);font-size:11px;">· ${r.sub}</span></div>`).join(''):'<div style="padding:7px 10px;font-size:12px;color:var(--ink-3);">No matches</div>';
+  box.style.display='block';
+}
+function pickTodoLink(type,id,name){
+  document.getElementById('td-link-type').value=type;
+  document.getElementById('td-link-id').value=id;
+  document.getElementById('td-link-search').value='';
+  document.getElementById('td-link-results').style.display='none';
+  document.getElementById('td-link-picked').style.display='flex';
+  document.getElementById('td-link-picked-label').textContent=name;
+}
+function clearTodoLink(){
+  document.getElementById('td-link-type').value='';
+  document.getElementById('td-link-id').value='';
+  document.getElementById('td-link-picked').style.display='none';
+}
+
+function updateTodoBadge(){
+  const today=new Date().toISOString().split('T')[0];
+  const count=allTodos.filter(t=>t.status!=='Done'&&t.due_date&&t.due_date<=today).length;
+  const badge=document.getElementById('todo-badge');
+  if(!badge) return;
+  if(count>0){badge.style.display='inline-block';badge.textContent=count;}
+  else{badge.style.display='none';}
+}
+
+function renderTodos(){
+  const grid=document.getElementById('todo-grid');
+  if(!grid){updateTodoBadge();return;}
+  const today=new Date().toISOString().split('T')[0];
+  const prioRank={Urgent:0,High:1,Normal:2,Low:3};
+  const prioColors={Urgent:'#A32D2D',High:'#c2410c',Normal:'#577C87',Low:'#6b7280'};
+  const sortTasks=(list)=>list.slice().sort((a,b)=>{
+    const pr=(prioRank[a.priority]??2)-(prioRank[b.priority]??2);
+    if(pr!==0) return pr;
+    if(a.due_date&&b.due_date) return a.due_date<b.due_date?-1:a.due_date>b.due_date?1:0;
+    if(a.due_date) return -1;
+    if(b.due_date) return 1;
+    return 0;
+  });
+  const cardHtml=(t)=>{
+    const overdue=t.due_date&&t.due_date<today&&t.status!=='Done';
+    const dueToday=t.due_date===today&&t.status!=='Done';
+    const link=todoLinkLabel(t);
+    const si=TODO_STATUSES.indexOf(t.status);
+    return `<div style="background:var(--surface);border:1px solid ${overdue?'#f7c1c1':'var(--border)'};border-left:4px solid ${prioColors[t.priority]||'#577C87'};border-radius:var(--r-sm);padding:9px 10px;margin-bottom:7px;cursor:pointer;" onclick="openEditTodo('${t.id}')">
+      <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${t.title}</div>
+      ${link?`<div style="font-size:11px;color:var(--teal-600);margin-bottom:3px;" onclick="event.stopPropagation();openTodoLink('${t.id}')"><i class="ti ti-link"></i> ${link}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--ink-3);">
+        ${t.due_date?`<span style="${overdue?'color:var(--red-600);font-weight:600;':dueToday?'color:#c2410c;font-weight:600;':''}"><i class="ti ti-calendar"></i> ${new Date(t.due_date+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}${overdue?' (overdue)':dueToday?' (today)':''}</span>`:''}
+        ${t.category?`<span>${t.category}</span>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;" onclick="event.stopPropagation();">
+        ${si>0?`<button class="btn btn-sm" style="padding:3px 7px;font-size:11px;" onclick="moveTodoStatus('${t.id}','${TODO_STATUSES[si-1]}')" title="Move back"><i class="ti ti-arrow-left"></i></button>`:''}
+        ${si<TODO_STATUSES.length-1?`<button class="btn btn-sm" style="padding:3px 7px;font-size:11px;" onclick="moveTodoStatus('${t.id}','${TODO_STATUSES[si+1]}')" title="Move forward"><i class="ti ti-arrow-right"></i></button>`:''}
+        <div style="flex:1;"></div>
+        <button class="btn btn-sm btn-danger" style="padding:3px 7px;font-size:11px;" onclick="deleteTodo('${t.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  };
+  grid.innerHTML=`<table style="width:100%;border-collapse:separate;border-spacing:8px;table-layout:fixed;">
+    <thead><tr>
+      <th style="width:100px;"></th>
+      ${TODO_STATUSES.map(s=>`<th style="text-align:left;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;padding:0 0 6px 10px;">${s}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${TODO_ASSIGNEES.map(person=>{
+        return `<tr>
+          <td style="vertical-align:top;font-weight:700;font-size:14px;padding-top:10px;">${person}</td>
+          ${TODO_STATUSES.map(status=>{
+            const items=sortTasks(allTodos.filter(t=>t.assignee===person&&t.status===status));
+            return `<td style="vertical-align:top;background:#faf9f6;border-radius:var(--r-sm);padding:8px;min-width:200px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${items.length}</span>
+                <button onclick="openAddTodo('${person}','${status}')" style="background:none;border:none;cursor:pointer;color:var(--teal-600);padding:2px;" title="Add task"><i class="ti ti-plus"></i></button>
+              </div>
+              ${items.map(cardHtml).join('')||'<div style="font-size:11px;color:#aaa;padding:6px 0;">—</div>'}
+            </td>`;
+          }).join('')}
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+  updateTodoBadge();
+}
+
 async function loadLeads(){try{const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});if(error)console.error('leads error:',error);else allLeads=data||[];}catch(e){console.error('loadLeads failed:',e);}}
 async function loadConnections(){try{const{data,error}=await sb.from('connections').select('*').order('created_at',{ascending:false});if(error)console.error('connections error:',error);else allConnections=data||[];}catch(e){console.error('loadConnections failed:',e);}}
 async function loadComms(){try{const{data,error}=await sb.from('communications').select('*').order('received_at',{ascending:false});if(error)console.error('comms error:',error);else allComms=data||[];}catch(e){console.error('loadComms failed:',e);}}
@@ -3432,6 +3704,8 @@ function nav(el){
   if(page==='embed')renderEmbed();
   if(page==='research'){initResearch();}
   if(page==='settings'){initSettings();}
+  if(page==='todos'){initTodos();}
+  if(page==='dashboard'){renderDashboard();}
 }
 // ── Events (calendar meetings) ─────────────────────────────────────────────
 function openAddEvent(dateStr){
