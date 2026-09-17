@@ -1065,12 +1065,14 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="modal-tab" onclick="switchViewTab('joblog',this)">Job log</div>
       <div class="modal-tab" onclick="switchViewTab('photos',this)">Photos</div>
       <div class="modal-tab" onclick="switchViewTab('quote',this)">Quote PDF</div>
+      <div class="modal-tab" id="vtab-btn-pieces" onclick="switchViewTab('pieces',this)" style="display:none;">Estimate Pieces</div>
       <div class="modal-tab" onclick="switchViewTab('commslog',this)">Communications</div>
     </div>
     <div id="view-tab-info"></div>
     <div id="view-tab-joblog" style="display:none;"></div>
     <div id="view-tab-photos" style="display:none;"></div>
     <div id="view-tab-quote" style="display:none;"></div>
+    <div id="view-tab-pieces" style="display:none;"></div>
     <div id="view-tab-commslog" style="display:none;"></div>
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="del-btn"><i class="ti ti-trash"></i> Delete</button>
@@ -1079,6 +1081,28 @@ tbody tr:hover td{background:#faf9f6;}
       <button class="btn btn-sm" id="send-followup-btn" style="display:none;background:var(--green-light);color:var(--green-600);border-color:#c3e6a0;" onclick="sendFollowupText()"><i class="ti ti-star"></i> Send follow-up</button>
       <button class="btn btn-sm" id="add-address-btn" style="background:var(--teal-50);color:var(--teal-700);border-color:var(--teal-300);" onclick="addAnotherAddress()"><i class="ti ti-map-pin-plus"></i> Add another address</button>
       <button class="btn" onclick="closeModal('view')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT ESTIMATE PIECE MODAL -->
+<div class="overlay" id="modal-piece">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modal-piece-title">Add estimate piece</h2><button class="btn btn-sm" onclick="closeModal('piece')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="piece-edit-id">
+    <div class="form-grid">
+      <div class="field"><label>What is this piece? *</label><input id="piece-label" placeholder="e.g. Water supply, Safety crew, Traffic control"></div>
+      <div class="field"><label>Vendor / Company</label><input id="piece-vendor" placeholder="Who's providing this?"></div>
+      <div class="field"><label>Contact name</label><input id="piece-contact-name"></div>
+      <div class="field"><label>Contact phone</label><input id="piece-contact-phone"></div>
+      <div class="field"><label>Contact email</label><input id="piece-contact-email"></div>
+      <div class="field"><label>Estimate amount</label><input type="number" step="0.01" id="piece-estimate" placeholder="0.00"></div>
+      <div class="field"><label>Status</label><select id="piece-status"><option>Requested</option><option>Received</option><option>Confirmed</option></select></div>
+      <div class="field span2"><label>Notes</label><textarea id="piece-notes" placeholder="Anything worth remembering about this piece..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('piece')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePiece()"><i class="ti ti-check"></i> Save piece</button>
     </div>
   </div>
 </div>
@@ -1992,6 +2016,10 @@ function commBadge(t){const tl=(t||'').toLowerCase();if(tl.includes('voicemail')
 function commIcon(t){const tl=(t||'').toLowerCase();if(tl.includes('voicemail'))return{cls:'voicemail',icon:'ti-voicemail'};if(tl.includes('missed'))return{cls:'call',icon:'ti-phone-off'};if(tl.includes('text')||tl.includes('sms'))return{cls:'text',icon:'ti-message'};if(tl.includes('email'))return{cls:'email',icon:'ti-mail'};return{cls:'note',icon:'ti-note'};}
 function profit(l){const r=+l.revenue||0,c=(+l.materials||0)+(+l.labor||0)+(+l.other_exp||0);return r-c;}
 function margin(l){const r=+l.revenue||0;return r?((profit(l)/r)*100):0;}
+// A completed job entered at $0 (comp job, warranty redo, goodwill work) still counts as a
+// completed job for job history and conversion-rate purposes, but is excluded from every
+// revenue/profit/margin statistic so it can't drag down averages or totals.
+function countsForRevenue(l){return l.status==='Completed'&&(+l.revenue||0)>0;}
 function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return d;}}
 
@@ -2233,9 +2261,10 @@ async function deleteLeadRecord(id){
 // ── View lead ──────────────────────────────────────────────────────────────
 function switchViewTab(tab,el){
   document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  ['info','joblog','photos','quote','commslog'].forEach(t=>document.getElementById('view-tab-'+t).style.display=t===tab?'block':'none');
+  ['info','joblog','photos','quote','pieces','commslog'].forEach(t=>document.getElementById('view-tab-'+t).style.display=t===tab?'block':'none');
   if(tab==='photos'&&viewingLeadId)loadPhotosTab(viewingLeadId);
   if(tab==='quote'&&viewingLeadId)loadQuoteTab(viewingLeadId);
+  if(tab==='pieces'&&viewingLeadId)renderLeadPieces(viewingLeadId);
   if(tab==='commslog'&&viewingLeadId)renderLeadComms(viewingLeadId);
 }
 
@@ -2245,7 +2274,8 @@ function viewLead(id){
   document.getElementById('view-title').textContent=`${l.first_name} ${l.last_name}`;
   const p=profit(l);const m=margin(l);
   document.querySelectorAll('.modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
-  ['info','joblog','photos','quote','commslog'].forEach(t=>document.getElementById('view-tab-'+t).style.display=t==='info'?'block':'none');
+  ['info','joblog','photos','quote','pieces','commslog'].forEach(t=>document.getElementById('view-tab-'+t).style.display=t==='info'?'block':'none');
+  document.getElementById('vtab-btn-pieces').style.display=l.property_type==='Commercial'?'block':'none';
   document.getElementById('view-tab-info').innerHTML=`
     <div class="record-section"><div class="record-section-title">Contact</div><div class="record-grid">
       <div class="record-field"><div class="lbl">Status</div>${badge(l.status)}</div>
@@ -2292,6 +2322,121 @@ function viewLead(id){
   followupBtn.style.display=l.status==='Completed'&&l.phone?'inline-flex':'none';
   if(l.status==='Completed'&&l.followup_sent) followupBtn.innerHTML='<i class="ti ti-check"></i> Follow-up sent';
   openModal('view');
+}
+
+function projectPiecesList(l){try{return JSON.parse(l.project_pieces||'[]');}catch(e){return [];}}
+
+async function saveLeadPieces(leadId,pieces){
+  const{error}=await sb.from('leads').update({project_pieces:JSON.stringify(pieces),updated_at:new Date().toISOString()}).eq('id',leadId);
+  if(error){alert('Save failed: '+error.message);return false;}
+  const idx=allLeads.findIndex(x=>x.id===leadId);
+  if(idx>-1){allLeads[idx].project_pieces=JSON.stringify(pieces);allLeads[idx].updated_at=new Date().toISOString();}
+  return true;
+}
+
+function renderLeadPieces(leadId){
+  const l=allLeads.find(x=>x.id===leadId); if(!l) return;
+  const pieces=projectPiecesList(l);
+  const subtotal=pieces.reduce((s,p)=>s+(+p.estimate||0),0);
+  const statusColors={Requested:'var(--ink-3)',Received:'var(--blue-600)',Confirmed:'var(--green-600)'};
+  const container=document.getElementById('view-tab-pieces');
+  container.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="font-size:13px;color:var(--ink-3);">Pieces subtotal: <span style="font-weight:700;color:var(--ink-1);">${$m(subtotal)}</span></div>
+      <div style="flex:1;"></div>
+      <button class="btn btn-sm btn-primary" onclick="openAddPiece('${leadId}')"><i class="ti ti-plus"></i> Add piece</button>
+    </div>
+    ${pieces.length?pieces.map(p=>`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <div style="font-weight:600;font-size:14px;">${p.label}</div>
+              <span class="badge" style="background:${statusColors[p.status]||'var(--ink-3)'}22;color:${statusColors[p.status]||'var(--ink-3)'};">${p.status||'Requested'}</span>
+            </div>
+            ${p.vendor?`<div style="font-size:12px;color:var(--ink-3);margin-bottom:2px;">${p.vendor}</div>`:''}
+            <div style="font-size:12px;color:var(--ink-3);display:flex;gap:12px;flex-wrap:wrap;">
+              ${p.contact_name?`<span><i class="ti ti-user"></i> ${p.contact_name}</span>`:''}
+              ${p.contact_phone?`<span><i class="ti ti-phone"></i> ${p.contact_phone}</span>`:''}
+              ${p.contact_email?`<span><i class="ti ti-mail"></i> ${p.contact_email}</span>`:''}
+            </div>
+            ${p.notes?`<div style="font-size:12px;color:var(--ink-2);margin-top:6px;">${p.notes}</div>`:''}
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:6px;">${p.estimate?$m(p.estimate):'—'}</div>
+            <button class="btn btn-sm" onclick="openEditPiece('${leadId}','${p.id}')"><i class="ti ti-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deletePiece('${leadId}','${p.id}')"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+      </div>`).join(''):'<div class="empty">No estimate pieces yet. Add contact info and a quote for each piece of this job — water supply, safety crew, permits, whatever you\'re waiting on.</div>'}
+  `;
+}
+
+function openAddPiece(leadId){
+  document.getElementById('modal-piece-title').textContent='Add estimate piece';
+  document.getElementById('piece-edit-id').value='';
+  document.getElementById('piece-label').value='';
+  document.getElementById('piece-vendor').value='';
+  document.getElementById('piece-contact-name').value='';
+  document.getElementById('piece-contact-phone').value='';
+  document.getElementById('piece-contact-email').value='';
+  document.getElementById('piece-estimate').value='';
+  document.getElementById('piece-status').value='Requested';
+  document.getElementById('piece-notes').value='';
+  document.getElementById('modal-piece').dataset.leadId=leadId;
+  openModal('piece');
+}
+
+function openEditPiece(leadId,pieceId){
+  const l=allLeads.find(x=>x.id===leadId); if(!l) return;
+  const piece=projectPiecesList(l).find(p=>p.id===pieceId); if(!piece) return;
+  document.getElementById('modal-piece-title').textContent='Edit estimate piece';
+  document.getElementById('piece-edit-id').value=piece.id;
+  document.getElementById('piece-label').value=piece.label||'';
+  document.getElementById('piece-vendor').value=piece.vendor||'';
+  document.getElementById('piece-contact-name').value=piece.contact_name||'';
+  document.getElementById('piece-contact-phone').value=piece.contact_phone||'';
+  document.getElementById('piece-contact-email').value=piece.contact_email||'';
+  document.getElementById('piece-estimate').value=piece.estimate||'';
+  document.getElementById('piece-status').value=piece.status||'Requested';
+  document.getElementById('piece-notes').value=piece.notes||'';
+  document.getElementById('modal-piece').dataset.leadId=leadId;
+  openModal('piece');
+}
+
+async function savePiece(){
+  const leadId=document.getElementById('modal-piece').dataset.leadId;
+  const l=allLeads.find(x=>x.id===leadId); if(!l) return;
+  const label=document.getElementById('piece-label').value.trim();
+  if(!label){alert('Please enter what this piece is (e.g. Water supply).');return;}
+  const editId=document.getElementById('piece-edit-id').value;
+  const pieces=projectPiecesList(l);
+  const piece={
+    id:editId||uid(),
+    label,
+    vendor:document.getElementById('piece-vendor').value,
+    contact_name:document.getElementById('piece-contact-name').value,
+    contact_phone:document.getElementById('piece-contact-phone').value,
+    contact_email:document.getElementById('piece-contact-email').value,
+    estimate:document.getElementById('piece-estimate').value||null,
+    status:document.getElementById('piece-status').value,
+    notes:document.getElementById('piece-notes').value
+  };
+  const idx=pieces.findIndex(p=>p.id===piece.id);
+  if(idx>-1) pieces[idx]=piece; else pieces.push(piece);
+  const ok=await saveLeadPieces(leadId,pieces);
+  if(!ok) return;
+  closeModal('piece');
+  renderLeadPieces(leadId);
+}
+
+async function deletePiece(leadId,pieceId){
+  if(!confirm('Delete this estimate piece?')) return;
+  const l=allLeads.find(x=>x.id===leadId); if(!l) return;
+  const pieces=projectPiecesList(l).filter(p=>p.id!==pieceId);
+  const ok=await saveLeadPieces(leadId,pieces);
+  if(!ok) return;
+  renderLeadPieces(leadId);
 }
 
 function renderLeadComms(leadId){
@@ -2530,24 +2675,25 @@ async function deleteQuotePDF(leadId,filename){
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function renderDashboard(){
   const done=allLeads.filter(l=>l.status==='Completed');
-  const totalRev=done.reduce((s,l)=>s+(+l.revenue||0),0);
-  const totalProfit=done.reduce((s,l)=>s+profit(l),0);
-  const avgMargin=done.length?done.reduce((s,l)=>s+margin(l),0)/done.length:0;
+  const doneRev=done.filter(countsForRevenue);
+  const totalRev=doneRev.reduce((s,l)=>s+(+l.revenue||0),0);
+  const totalProfit=doneRev.reduce((s,l)=>s+profit(l),0);
+  const avgMargin=doneRev.length?doneRev.reduce((s,l)=>s+margin(l),0)/doneRev.length:0;
   const conv=allLeads.length?((done.length/allLeads.length)*100):0;
   document.getElementById('dash-metrics').innerHTML=`
-    <div class="metric teal"><div class="metric-label">Total revenue</div><div class="metric-value">${$m(totalRev)}</div><div class="metric-sub">${done.length} completed jobs</div></div>
+    <div class="metric teal"><div class="metric-label">Total revenue</div><div class="metric-value">${$m(totalRev)}</div><div class="metric-sub">${doneRev.length} completed jobs</div></div>
     <div class="metric green"><div class="metric-label">Total profit</div><div class="metric-value">${$m(totalProfit)}</div><div class="metric-sub">After all costs</div></div>
     <div class="metric blue"><div class="metric-label">Avg. margin</div><div class="metric-value">${pct(avgMargin)}</div><div class="metric-sub">Completed jobs</div></div>
     <div class="metric amber"><div class="metric-label">Total leads</div><div class="metric-value">${allLeads.length}</div><div class="metric-sub">${allLeads.filter(l=>l.status==='Lead').length} open</div></div>
     <div class="metric teal"><div class="metric-label">Conversion</div><div class="metric-value">${pct(conv)}</div><div class="metric-sub">Lead → Completed</div></div>
     <div class="metric red"><div class="metric-label">Comms logged</div><div class="metric-value">${allComms.length}</div><div class="metric-sub">Calls, texts, voicemails</div></div>
   `;
-  const bySvc={};done.forEach(l=>{const s=l.service||'Other';bySvc[s]=(bySvc[s]||0)+(+l.revenue||0);});
+  const bySvc={};doneRev.forEach(l=>{const s=l.service||'Other';bySvc[s]=(bySvc[s]||0)+(+l.revenue||0);});
   const svcS=Object.entries(bySvc).sort((a,b)=>b[1]-a[1]);const maxSvc=svcS.length?svcS[0][1]:1;
   document.getElementById('svc-chart').innerHTML=svcS.length?svcS.map(([s,v])=>`<div class="bar-row"><div class="bar-lbl">${s.length>17?s.slice(0,15)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v/maxSvc)*100)}%">${$m(v)}</div></div></div>`).join(''):'<div class="empty">No completed jobs yet</div>';
   const recent=[...allLeads].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at)).slice(0,7);
   document.getElementById('recent-activity').innerHTML=recent.length?recent.map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;font-size:13px;">${l.first_name} ${l.last_name}</div><div class="td-muted">${l.service}</div></div><div style="text-align:right;">${badge(l.status)}<div class="td-muted" style="margin-top:3px;">${l.job_date||''}</div></div></div>`).join(''):'<div class="empty">No activity yet</div>';
-  const monthly={};done.forEach(l=>{if(!l.job_date)return;const k=l.job_date.slice(0,7);monthly[k]=(monthly[k]||0)+(+l.revenue||0);});
+  const monthly={};doneRev.forEach(l=>{if(!l.job_date)return;const k=l.job_date.slice(0,7);monthly[k]=(monthly[k]||0)+(+l.revenue||0);});
   const months=Object.keys(monthly).sort();const maxM=months.length?Math.max(...months.map(m=>monthly[m])):1;
   document.getElementById('monthly-chart').innerHTML=months.length?months.map(m=>`<div class="bar-row"><div class="bar-lbl">${m}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((monthly[m]/maxM)*100)}%">${$m(monthly[m])}</div></div></div>`).join(''):'<div class="empty">No revenue recorded yet</div>';
 }
@@ -2639,9 +2785,9 @@ function renderPipeline(){
 function renderJobs(){
   const fStat=document.getElementById('fj-status').value;
   const data=allLeads.filter(l=>['Booked','Completed'].includes(l.status)&&(!fStat||l.status===fStat));
-  const doneData=data.filter(l=>l.status==='Completed');
-  const totRev=doneData.reduce((s,l)=>s+(+l.revenue||0),0);
-  const totProfit=doneData.reduce((s,l)=>s+profit(l),0);
+  const doneDataRev=data.filter(countsForRevenue);
+  const totRev=doneDataRev.reduce((s,l)=>s+(+l.revenue||0),0);
+  const totProfit=doneDataRev.reduce((s,l)=>s+profit(l),0);
   document.getElementById('jobs-body').innerHTML=data.length?data.map(l=>{const p=profit(l);const m=margin(l);return`<tr><td style="font-weight:500;">${l.first_name} ${l.last_name}</td><td>${l.service}</td><td>${l.job_date||'—'}</td><td>${l.duration||'—'}</td><td>${l.revenue?$m(l.revenue):(l.quote?$m(l.quote)+' est':'—')}</td><td>${l.materials?$m(l.materials):'—'}</td><td>${l.labor?$m(l.labor):'—'}</td><td style="font-weight:500;color:${p>=0?'var(--green-600)':'var(--red-600)'};">${l.status==='Completed'?$m(p):'—'}</td><td>${l.status==='Completed'&&+l.revenue?pct(m):'—'}</td><td><button class="btn btn-sm" onclick="viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td></tr>`;}).join('')+`<tr style="background:#faf9f6;font-weight:600;"><td colspan="4" style="color:var(--ink-3);font-size:12px;">TOTALS — completed</td><td>${$m(totRev)}</td><td></td><td></td><td style="color:${totProfit>=0?'var(--green-600)':'var(--red-600)'};">${$m(totProfit)}</td><td></td><td></td></tr>`:'<tr><td colspan="10" style="text-align:center;color:var(--ink-3);padding:30px;">No jobs yet.</td></tr>';
 }
 
@@ -2744,9 +2890,10 @@ function renderReferrals(){
 // ── Analytics ──────────────────────────────────────────────────────────────
 function renderAnalytics(){
   const done=allLeads.filter(l=>l.status==='Completed');
-  const totRev=done.reduce((s,l)=>s+(+l.revenue||0),0);
-  const avgJob=done.length?totRev/done.length:0;
-  const avgMgn=done.length?done.reduce((s,l)=>s+margin(l),0)/done.length:0;
+  const doneRev=done.filter(countsForRevenue);
+  const totRev=doneRev.reduce((s,l)=>s+(+l.revenue||0),0);
+  const avgJob=doneRev.length?totRev/doneRev.length:0;
+  const avgMgn=doneRev.length?doneRev.reduce((s,l)=>s+margin(l),0)/doneRev.length:0;
   const conv=allLeads.length?((done.length/allLeads.length)*100):0;
   document.getElementById('analytics-metrics').innerHTML=`
     <div class="metric teal"><div class="metric-label">Avg. job value</div><div class="metric-value">${$m(avgJob)}</div></div>
@@ -2757,10 +2904,10 @@ function renderAnalytics(){
   const srcs={};allLeads.forEach(l=>{const s=l.source||'Unknown';if(!srcs[s])srcs[s]={t:0,c:0};srcs[s].t++;if(l.status==='Completed')srcs[s].c++;});
   const srcArr=Object.entries(srcs).sort((a,b)=>b[1].t-a[1].t);const maxSrc=srcArr.length?Math.max(...srcArr.map(([,v])=>v.t)):1;
   document.getElementById('source-chart').innerHTML=srcArr.length?srcArr.map(([s,v])=>{const r=v.t?Math.round((v.c/v.t)*100):0;return`<div class="bar-row"><div class="bar-lbl">${s.length>15?s.slice(0,13)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v.t/maxSrc)*100)}%">${v.t} leads</div></div><div class="bar-val">${r}% conv</div></div>`;}).join(''):'<div class="empty">No data yet</div>';
-  const svcV={};done.forEach(l=>{const s=l.service||'Other';if(!svcV[s])svcV[s]={sum:0,n:0};svcV[s].sum+=(+l.revenue||0);svcV[s].n++;});
+  const svcV={};doneRev.forEach(l=>{const s=l.service||'Other';if(!svcV[s])svcV[s]={sum:0,n:0};svcV[s].sum+=(+l.revenue||0);svcV[s].n++;});
   const svcA=Object.entries(svcV).map(([k,v])=>[k,v.n?v.sum/v.n:0]).sort((a,b)=>b[1]-a[1]);const maxA=svcA.length?svcA[0][1]:1;
   document.getElementById('avg-chart').innerHTML=svcA.length?svcA.map(([s,v])=>`<div class="bar-row"><div class="bar-lbl">${s.length>17?s.slice(0,15)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v/maxA)*100)}%">${$m(v)}</div></div></div>`).join(''):'<div class="empty">No completed jobs yet</div>';
-  const clv={};allLeads.forEach(l=>{const k=`${l.first_name} ${l.last_name}`;if(!clv[k])clv[k]={name:k,jobs:0,rev:0,profit:0,last:''};if(l.status==='Completed'){clv[k].jobs++;clv[k].rev+=(+l.revenue||0);clv[k].profit+=profit(l);if(!clv[k].last||l.job_date>clv[k].last)clv[k].last=l.job_date;}});
+  const clv={};allLeads.forEach(l=>{const k=`${l.first_name} ${l.last_name}`;if(!clv[k])clv[k]={name:k,jobs:0,rev:0,profit:0,last:''};if(countsForRevenue(l)){clv[k].jobs++;clv[k].rev+=(+l.revenue||0);clv[k].profit+=profit(l);if(!clv[k].last||l.job_date>clv[k].last)clv[k].last=l.job_date;}});
   const clvA=Object.values(clv).filter(c=>c.jobs>0).sort((a,b)=>b.rev-a.rev).slice(0,10);
   document.getElementById('clv-table').innerHTML=clvA.length?`<div class="table-wrap" style="border:none;"><table><thead><tr><th>Customer</th><th>Jobs</th><th>Revenue</th><th>Profit</th><th>Last job</th></tr></thead><tbody>${clvA.map(c=>`<tr><td style="font-weight:500;">${c.name}</td><td>${c.jobs}</td><td>${$m(c.rev)}</td><td style="color:var(--green-600);font-weight:500;">${$m(c.profit)}</td><td>${c.last||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No completed jobs yet</div>';
 }
