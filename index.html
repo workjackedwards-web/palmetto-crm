@@ -3638,7 +3638,7 @@ async function saveQuoteToCRM(){
 
   // Embed the structured data that built this quote, so it can be reloaded for editing later
   const quoteData={quoteNum,quoteDate,quoteValid,quoteBy,custName,custPhone,custAddr,notes,discPct,lineItems};
-  const dataBlock=`<script type="application/json" id="__quote_data__">${JSON.stringify(quoteData)}</script>`;
+  const dataBlock='<script type="application/json" id="__quote_data__">'+JSON.stringify(quoteData)+'<'+'/script>';
   const htmlWithData=html.replace('</body>',dataBlock+'</body>');
 
   try{
