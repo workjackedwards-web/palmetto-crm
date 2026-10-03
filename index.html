@@ -1033,8 +1033,12 @@ tbody tr:hover td{background:#faf9f6;}
     </div>
     <div class="fin-section" id="fin-section">
       <div class="fin-title">Job financials</div>
-      <div class="form-grid">
-        <div class="field"><label>Final revenue ($)</label><input id="f-rev" type="number" step="0.01" placeholder="0.00" oninput="calcProfit()"></div>
+      <input type="hidden" id="f-line-items-json">
+      <input type="hidden" id="f-rev">
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:8px;">How much did you actually make on each service?</div>
+      <div class="form-grid" id="fin-service-boxes"></div>
+      <div class="form-grid" style="margin-top:4px;">
+        <div class="field"><label>Tip ($)</label><input id="f-tip" type="number" step="0.01" placeholder="0.00" oninput="calcProfit()"></div>
         <div class="field"><label>Materials cost ($)</label><input id="f-mat" type="number" step="0.01" placeholder="0.00" oninput="calcProfit()"></div>
         <div class="field"><label>Labor cost ($)</label><input id="f-lab" type="number" step="0.01" placeholder="0.00" oninput="calcProfit()"></div>
         <div class="field"><label>Other expenses ($)</label><input id="f-oth" type="number" step="0.01" placeholder="0.00" oninput="calcProfit()"></div>
@@ -2038,7 +2042,9 @@ function closeModal(name){document.getElementById('modal-'+name).classList.remov
 function openAddLead(){
   document.getElementById('modal-lead-title').textContent='Add new lead';
   document.getElementById('edit-id').value='';
-  ['f-first','f-last','f-phone','f-email','f-addr','f-quote','f-notes','f-rev','f-mat','f-lab','f-oth','f-chemicals'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-first','f-last','f-phone','f-email','f-addr','f-quote','f-notes','f-rev','f-mat','f-lab','f-oth','f-chemicals','f-tip','f-line-items-json'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  window._finServiceSource=[];
+  const fsb=document.getElementById('fin-service-boxes');if(fsb)fsb.innerHTML='';
   setSelectedServices('');
   document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
   document.getElementById('f-duration').value='';document.getElementById('f-completed-by').value='';
@@ -2076,7 +2082,9 @@ function editLeadModal(lead){
   document.getElementById('f-mat').value=lead.materials||'';document.getElementById('f-lab').value=lead.labor||'';
   document.getElementById('f-oth').value=lead.other_exp||'';document.getElementById('f-duration').value=lead.duration||'';
   document.getElementById('f-completed-by').value=lead.completed_by||'';document.getElementById('f-chemicals').value=lead.chemicals||'';
+  document.getElementById('f-tip').value=lead.tip||'';document.getElementById('f-line-items-json').value=lead.job_line_items||'';
   document.getElementById('fin-section').style.display=lead.status==='Completed'?'block':'none';
+  if(lead.status==='Completed'){renderFinServiceBoxes();calcProfit();}
   const schedEl=document.getElementById('scheduled-section');
   if(schedEl) schedEl.style.display=lead.status==='Booked'?'block':'none';
   const sd=document.getElementById('f-sched-date'); if(sd) sd.value=lead.sched_date||'';
@@ -2099,6 +2107,7 @@ function toggleStatusSections(){
   const stat=document.getElementById('f-stat').value;
   document.getElementById('fin-section').style.display=stat==='Completed'?'block':'none';
   document.getElementById('scheduled-section').style.display=stat==='Booked'?'block':'none';
+  if(stat==='Completed'){renderFinServiceBoxes();calcProfit();}
 }
 function toggleFinancials(){toggleStatusSections();}
 
@@ -2215,8 +2224,33 @@ function renderCalendar(){
 }
 
 
+function renderFinServiceBoxes(){
+  const container=document.getElementById('fin-service-boxes');
+  if(!container) return;
+  let items=[];
+  try{items=JSON.parse(document.getElementById('f-line-items-json').value||'[]');}catch(e){items=[];}
+  let source;
+  if(items.length){
+    source=items;
+  } else {
+    const svcStr=getSelectedServices();
+    source=svcStr?svcStr.split(',').map(s=>s.trim()).filter(Boolean).map(s=>({service:s,qty:null,unit:null,quoted_amount:null,actual_amount:null})):[];
+  }
+  window._finServiceSource=source;
+  container.innerHTML=source.length?source.map((s,i)=>`
+    <div class="field">
+      <label>${s.service}${s.qty?` <span style="font-weight:400;color:var(--ink-3);">(${s.qty}${s.unit?' '+s.unit:''})</span>`:''}</label>
+      <input id="f-svc-amt-${i}" type="number" step="0.01" placeholder="${s.quoted_amount?('Quoted $'+s.quoted_amount):'0.00'}" value="${s.actual_amount!=null&&s.actual_amount!==''?s.actual_amount:''}" oninput="calcProfit()">
+    </div>`).join(''):'<div style="font-size:12px;color:var(--ink-3);margin-bottom:10px;">No services selected yet — pick services above first.</div>';
+}
+
 function calcProfit(){
-  const r=+document.getElementById('f-rev').value||0;
+  let rev=0;
+  (window._finServiceSource||[]).forEach((s,i)=>{rev+=(+document.getElementById('f-svc-amt-'+i)?.value||0);});
+  rev+=(+document.getElementById('f-tip')?.value||0);
+  const revField=document.getElementById('f-rev');
+  if(revField) revField.value=rev||'';
+  const r=rev;
   const c=(+document.getElementById('f-mat').value||0)+(+document.getElementById('f-lab').value||0)+(+document.getElementById('f-oth').value||0);
   const p=r-c;const m=r?((p/r)*100).toFixed(1):0;
   const el=document.getElementById('profit-preview');
@@ -2231,6 +2265,17 @@ async function saveLead(){
   if(!first||!addr||!svc){alert('Required: First name, Address, and at least one Service');return;}
   const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('edit-id').value||uid();
+  const existingLead=document.getElementById('edit-id').value?allLeads.find(l=>l.id===id):null;
+  const finVisible=document.getElementById('fin-section').style.display==='block';
+  let jobLineItemsOut,tipOut;
+  if(finVisible){
+    const liOut=(window._finServiceSource||[]).map((s,i)=>({service:s.service,qty:s.qty,unit:s.unit,quoted_amount:s.quoted_amount,actual_amount:document.getElementById('f-svc-amt-'+i)?.value||null}));
+    jobLineItemsOut=liOut.length?JSON.stringify(liOut):null;
+    tipOut=document.getElementById('f-tip').value||null;
+  } else {
+    jobLineItemsOut=existingLead?existingLead.job_line_items:null;
+    tipOut=existingLead?existingLead.tip:null;
+  }
   const lead={id,first_name:first,last_name:document.getElementById('f-last').value,
     phone:fmtPhoneNum(document.getElementById('f-phone').value),
     email:document.getElementById('f-email').value,address:addr,service:svc,
@@ -2245,6 +2290,7 @@ async function saveLead(){
     other_exp:document.getElementById('f-oth').value||null,duration:document.getElementById('f-duration').value||null,
     completed_by:document.getElementById('f-completed-by').value||null,
     chemicals:document.getElementById('f-chemicals').value||null,
+    job_line_items:jobLineItemsOut,tip:tipOut,
     referrer_id:document.getElementById('f-referrer-id').value||null,
     sched_date:document.getElementById('f-sched-date').value||null,
     sched_time:document.getElementById('f-sched-time').value||null,
@@ -2784,7 +2830,11 @@ function renderDashboard(){
     <div class="metric teal"><div class="metric-label">Conversion</div><div class="metric-value">${pct(conv)}</div><div class="metric-sub">Lead → Completed</div></div>
     <div class="metric red"><div class="metric-label">Comms logged</div><div class="metric-value">${allComms.length}</div><div class="metric-sub">Calls, texts, voicemails</div></div>
   `;
-  const bySvc={};doneRev.forEach(l=>{const s=l.service||'Other';bySvc[s]=(bySvc[s]||0)+(+l.revenue||0);});
+  const bySvc={};doneRev.forEach(l=>{
+    let items=[];try{items=JSON.parse(l.job_line_items||'[]');}catch(e){items=[];}
+    if(items.length){items.forEach(li=>{const s=li.service||'Other';bySvc[s]=(bySvc[s]||0)+(+li.actual_amount||0);});}
+    else{const s=l.service||'Other';bySvc[s]=(bySvc[s]||0)+(+l.revenue||0);}
+  });
   const svcS=Object.entries(bySvc).sort((a,b)=>b[1]-a[1]);const maxSvc=svcS.length?svcS[0][1]:1;
   document.getElementById('svc-chart').innerHTML=svcS.length?svcS.map(([s,v])=>`<div class="bar-row"><div class="bar-lbl">${s.length>17?s.slice(0,15)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v/maxSvc)*100)}%">${$m(v)}</div></div></div>`).join(''):'<div class="empty">No completed jobs yet</div>';
   const recent=[...allLeads].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at)).slice(0,7);
@@ -3000,7 +3050,11 @@ function renderAnalytics(){
   const srcs={};allLeads.forEach(l=>{const s=l.source||'Unknown';if(!srcs[s])srcs[s]={t:0,c:0};srcs[s].t++;if(l.status==='Completed')srcs[s].c++;});
   const srcArr=Object.entries(srcs).sort((a,b)=>b[1].t-a[1].t);const maxSrc=srcArr.length?Math.max(...srcArr.map(([,v])=>v.t)):1;
   document.getElementById('source-chart').innerHTML=srcArr.length?srcArr.map(([s,v])=>{const r=v.t?Math.round((v.c/v.t)*100):0;return`<div class="bar-row"><div class="bar-lbl">${s.length>15?s.slice(0,13)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v.t/maxSrc)*100)}%">${v.t} leads</div></div><div class="bar-val">${r}% conv</div></div>`;}).join(''):'<div class="empty">No data yet</div>';
-  const svcV={};doneRev.forEach(l=>{const s=l.service||'Other';if(!svcV[s])svcV[s]={sum:0,n:0};svcV[s].sum+=(+l.revenue||0);svcV[s].n++;});
+  const svcV={};doneRev.forEach(l=>{
+    let items=[];try{items=JSON.parse(l.job_line_items||'[]');}catch(e){items=[];}
+    if(items.length){items.forEach(li=>{const s=li.service||'Other';if(!svcV[s])svcV[s]={sum:0,n:0};svcV[s].sum+=(+li.actual_amount||0);svcV[s].n++;});}
+    else{const s=l.service||'Other';if(!svcV[s])svcV[s]={sum:0,n:0};svcV[s].sum+=(+l.revenue||0);svcV[s].n++;}
+  });
   const svcA=Object.entries(svcV).map(([k,v])=>[k,v.n?v.sum/v.n:0]).sort((a,b)=>b[1]-a[1]);const maxA=svcA.length?svcA[0][1]:1;
   document.getElementById('avg-chart').innerHTML=svcA.length?svcA.map(([s,v])=>`<div class="bar-row"><div class="bar-lbl">${s.length>17?s.slice(0,15)+'…':s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((v/maxA)*100)}%">${$m(v)}</div></div></div>`).join(''):'<div class="empty">No completed jobs yet</div>';
   const clv={};allLeads.forEach(l=>{const k=`${l.first_name} ${l.last_name}`;if(!clv[k])clv[k]={name:k,jobs:0,rev:0,profit:0,last:''};if(countsForRevenue(l)){clv[k].jobs++;clv[k].rev+=(+l.revenue||0);clv[k].profit+=profit(l);if(!clv[k].last||l.job_date>clv[k].last)clv[k].last=l.job_date;}});
@@ -3651,7 +3705,8 @@ async function saveQuoteToCRM(){
     if(uploadError) throw uploadError;
 
     // Also save the quote amount to the lead record
-    const updated={...lead,quote:grandTotal,updated_at:new Date().toISOString()};
+    const quoteLineItemsForLead=lineItems.map(li=>({service:li.name,qty:li.qty,unit:li.unit,quoted_amount:li.total,actual_amount:null}));
+    const updated={...lead,quote:grandTotal,job_line_items:JSON.stringify(quoteLineItemsForLead),updated_at:new Date().toISOString()};
     const saved=await upsertLead(updated);
     const idx=allLeads.findIndex(l=>l.id===leadId);
     if(idx>-1) allLeads[idx]=saved;
