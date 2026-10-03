@@ -357,7 +357,7 @@ tbody tr:hover td{background:#faf9f6;}
           <div style="flex:1;"></div>
           <input type="text" id="search" placeholder="Search name, address, phone..." oninput="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
           <select id="f-status" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
-            <option value="">All active</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Door-to-door</option>
+            <option value="active">All active</option><option value="">All leads</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Door-to-door</option><option>Lost</option>
           </select>
           <select id="f-source" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
@@ -2895,10 +2895,16 @@ function renderLeads(){
   const isNewLead=l=>l.source==='Website Form'&&!l.last_viewed_at;
   const priority=l=>isNewLead(l)?0:isStale(l)?1:2;
 
+  const statusMatch=l=>{
+    if(fStat==='active') return l.status!=='Lost';
+    if(fStat==='') return true; // All leads — every non-completed status, Lost included
+    return l.status===fStat;
+  };
+
   let data=allLeads.filter(l=>{
     if(l.status==='Completed') return false;
     const t=`${l.first_name} ${l.last_name} ${l.address} ${l.email||''} ${l.phone||''} ${l.business_name||''}`.toLowerCase();
-    return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc)
+    return (!search||t.includes(search))&&statusMatch(l)&&(!fSrc||l.source===fSrc)
       &&(!fPtype||(l.property_type||'Residential')===fPtype)
       &&(!fService||(l.service||'').includes(fService))
       &&(!fStaleOnly||isStale(l));
