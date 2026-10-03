@@ -363,6 +363,27 @@ tbody tr:hover td{background:#faf9f6;}
             <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
             <option>HOA</option><option>Property Manager</option><option>Social Media</option><option>Direct Outreach</option><option>Door-to-door</option><option>Neighbor of Client</option><option>Other</option>
           </select>
+          <select id="f-ptype" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All properties</option><option>Residential</option><option>Commercial</option>
+          </select>
+          <select id="f-service" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All services</option>
+          </select>
+          <select id="f-sort" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="newest">Sort: Newest first</option>
+            <option value="oldest">Sort: Oldest first</option>
+            <option value="stale">Sort: Longest since contact</option>
+            <option value="name">Sort: Name A&ndash;Z</option>
+            <option value="quote">Sort: Quote $ high&ndash;low</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="f-stale" onchange="renderLeads()" style="width:15px;height:15px;accent-color:var(--teal-600);">
+            Needs follow-up (7+ days)
+          </label>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;color:var(--ink-3);">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--green-light);border:1px solid var(--green-600);"></span> New website lead, not yet opened</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--amber-light);border:1px solid var(--amber-600);"></span> Needs follow-up (7+ days)</div>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Lead</th><th>Type</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
@@ -2321,8 +2342,18 @@ function switchViewTab(tab,el){
   if(tab==='commslog'&&viewingLeadId)renderLeadComms(viewingLeadId);
 }
 
+async function markLeadViewed(id){
+  const l=allLeads.find(x=>x.id===id); if(!l) return;
+  const now=new Date().toISOString();
+  l.last_viewed_at=now; // optimistic local update — clears the highlight immediately
+  renderLeads();
+  try{await sb.from('leads').update({last_viewed_at:now}).eq('id',id);}
+  catch(e){console.error('markLeadViewed failed:',e);}
+}
+
 function viewLead(id){
   const l=allLeads.find(x=>x.id===id);if(!l)return;
+  markLeadViewed(id);
   viewingLeadId=id;
   document.getElementById('view-title').textContent=`${l.first_name} ${l.last_name}`;
   const p=profit(l);const m=margin(l);
@@ -2848,10 +2879,39 @@ function renderLeads(){
   const search=(document.getElementById('search')?.value||'').toLowerCase();
   const fStat=document.getElementById('f-status')?.value||'';
   const fSrc=document.getElementById('f-source')?.value||'';
-  const data=allLeads.filter(l=>{
+  const fPtype=document.getElementById('f-ptype')?.value||'';
+  const fService=document.getElementById('f-service')?.value||'';
+  const fStaleOnly=document.getElementById('f-stale')?.checked||false;
+  const fSort=document.getElementById('f-sort')?.value||'newest';
+
+  // Populate the service dropdown once, from the real services list
+  const svcSel=document.getElementById('f-service');
+  if(svcSel&&svcSel.options.length===1){
+    svcSel.innerHTML='<option value="">All services</option>'+QUOTE_SERVICES.map(s=>`<option>${s.name}</option>`).join('');
+  }
+
+  const STALE_MS=7*24*60*60*1000;
+  const isStale=l=>(l.status==='Lead'||l.status==='Quoted')&&(Date.now()-new Date(l.last_viewed_at||l.created_at).getTime())>STALE_MS;
+  const isNewLead=l=>l.source==='Website Form'&&!l.last_viewed_at;
+  const priority=l=>isNewLead(l)?0:isStale(l)?1:2;
+
+  let data=allLeads.filter(l=>{
     if(l.status==='Completed') return false;
     const t=`${l.first_name} ${l.last_name} ${l.address} ${l.email||''} ${l.phone||''} ${l.business_name||''}`.toLowerCase();
-    return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc);
+    return (!search||t.includes(search))&&(!fStat||l.status===fStat)&&(!fSrc||l.source===fSrc)
+      &&(!fPtype||(l.property_type||'Residential')===fPtype)
+      &&(!fService||(l.service||'').includes(fService))
+      &&(!fStaleOnly||isStale(l));
+  });
+
+  data=data.slice().sort((a,b)=>{
+    const pa=priority(a),pb=priority(b);
+    if(pa!==pb) return pa-pb; // new-lead and needs-follow-up always pin to the top
+    if(fSort==='oldest') return new Date(a.created_at)-new Date(b.created_at);
+    if(fSort==='stale') return new Date(a.last_viewed_at||a.created_at)-new Date(b.last_viewed_at||b.created_at);
+    if(fSort==='name') return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+    if(fSort==='quote') return (+b.quote||0)-(+a.quote||0);
+    return new Date(b.created_at)-new Date(a.created_at); // newest
   });
 
   // Group by client key (phone or name)
@@ -2871,7 +2931,9 @@ function renderLeads(){
     if(!multi){
       // Single address — render normally
       const l=first;
-      return`<tr>
+      const p=priority(l);
+      const rowBg=p===0?'var(--green-light)':p===1?'var(--amber-light)':'';
+      return`<tr${rowBg?` style="background:${rowBg};"`:''}>
         <td><div style="font-weight:500;">${name}</div>${l.business_name?`<div class="td-muted">${l.business_name}</div>`:''}<div class="td-muted">${l.phone||''}</div></td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
         <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td>
@@ -2884,7 +2946,9 @@ function renderLeads(){
     }
 
     // Multiple addresses — grouped row + expandable sub-rows
-    return`<tr style="cursor:pointer;background:var(--teal-50);" onclick="toggleLeadGroup('${groupId}')">
+    const groupPriority=Math.min(...g.leads.map(priority));
+    const groupBg=groupPriority===0?'var(--green-light)':groupPriority===1?'var(--amber-light)':'var(--teal-50)';
+    return`<tr style="cursor:pointer;background:${groupBg};" onclick="toggleLeadGroup('${groupId}')">
       <td colspan="8">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="background:var(--teal-600);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;">${g.leads.length}</span>
@@ -2897,7 +2961,10 @@ function renderLeads(){
         </div>
       </td>
     </tr>
-    ${g.leads.map(l=>`<tr class="${groupId}" style="display:none;background:#f8fcfd;">
+    ${g.leads.map(l=>{
+      const lp=priority(l);
+      const subBg=lp===0?'var(--green-light)':lp===1?'var(--amber-light)':'#f8fcfd';
+      return`<tr class="${groupId}" style="display:none;background:${subBg};">
         <td style="padding-left:32px;"><div style="font-size:12px;color:var(--ink-3);">📍 ${l.address||'No address'}</div></td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
         <td style="font-size:12px;">${l.service}</td>
@@ -2905,7 +2972,8 @@ function renderLeads(){
         <td style="font-size:12px;">${l.source||'—'}</td>
         <td>${l.job_date||'—'}</td>
         <td colspan="2"><button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${l.id}')"><i class="ti ti-eye"></i> Open</button></td>
-      </tr>`).join('')}`;
+      </tr>`;
+    }).join('')}`;
   });
 
   document.getElementById('leads-body').innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads.</td></tr>';
