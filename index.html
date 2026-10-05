@@ -558,7 +558,10 @@ tbody tr:hover td{background:#faf9f6;}
 
       <!-- CONNECTIONS -->
       <div id="pg-outreach" class="page-content" style="display:none;">
-        <div id="out-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+          <div id="out-summary" style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:0;"></div>
+          <button class="btn" id="out-help-btn" title="How Outreach works" aria-label="How Outreach works" onclick="openOutreachHelp()" style="flex-shrink:0;border-radius:50%;width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:20px;color:var(--teal-600);"><span style="font-weight:700;font-size:18px;line-height:1;">?</span></button>
+        </div>
         <div class="filters">
           <input type="text" id="out-search" placeholder="Search name, company, email..." oninput="renderOutreach()">
           <select id="out-filter-status" onchange="renderOutreach()">
@@ -1270,6 +1273,46 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="np-card" onclick="startNewProfileFromComm('connection')"><i class="ti ti-address-book"></i><div><div style="font-weight:600;font-size:13px;">Connection</div><div style="font-size:12px;color:var(--ink-3);">A realtor, property manager, HOA or other referral contact.</div></div></div>
     <div class="np-card" onclick="startNewProfileFromComm('account')"><i class="ti ti-building"></i><div><div style="font-weight:600;font-size:13px;">Account</div><div style="font-size:12px;color:var(--ink-3);">A business or property group with multiple locations.</div></div></div>
     <div class="modal-foot"><button class="btn" onclick="closeModal('comm-newprofile')">Cancel</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-outreach-help">
+  <div class="modal" style="width:600px;">
+    <div class="modal-head"><h2>How Outreach works</h2><button class="btn btn-sm" onclick="closeModal('outreach-help')"><i class="ti ti-x"></i></button></div>
+    <div style="font-size:13px;line-height:1.6;color:var(--ink-2);">
+      <p style="margin-bottom:12px;color:var(--ink);">Outreach is where everyone you have cold-emailed lives until they write back. When someone replies, they move into <strong>Connections</strong> automatically.</p>
+
+      <div style="font-weight:600;color:var(--ink);margin-bottom:4px;">1. Add people</div>
+      <ul style="margin:0 0 12px 18px;padding:0;">
+        <li><strong>Add contact</strong> for one person.</li>
+        <li><strong>Import list</strong> to paste rows from a spreadsheet or upload a CSV. Put column names in the first row (First Name, Last Name, Company, Type, Email, Phone). Only a name is required. You get a preview first, and anyone already in your CRM is skipped.</li>
+        <li>Pick who reached out and the date, and the follow-up clock starts.</li>
+      </ul>
+
+      <div style="font-weight:600;color:var(--ink);margin-bottom:4px;">2. Keep track as you go</div>
+      <ul style="margin:0 0 12px 18px;padding:0;">
+        <li><strong>Emailed</strong>: first email sent. <strong>Followed up</strong>: you've sent more.</li>
+        <li>Click the <i class="ti ti-mail-forward"></i> button on a row each time you send a follow-up. It adds to the count and sets the next follow-up for 7 days out.</li>
+        <li>A first follow-up is due 5 days after the first email. Overdue people turn <strong style="color:var(--amber-600);">yellow</strong> and jump to the top, so check the list each morning.</li>
+        <li><strong>Parked</strong>: no response after a few tries. <strong>Not interested</strong>: they said no. Both stay here and never move to Connections.</li>
+      </ul>
+
+      <div style="font-weight:600;color:var(--ink);margin-bottom:4px;">3. When someone replies</div>
+      <ul style="margin:0 0 12px 18px;padding:0;">
+        <li>Open them, change the status to <strong>Replied</strong>, and click <strong>Save</strong>. Or just click the <strong>Replied</strong> button on their row.</li>
+        <li>They are moved into <strong>Connections</strong> right away, with their name, company, type, email, phone and a note about your outreach history. If they're already in Connections, they're linked instead of duplicated.</li>
+        <li>Only mark a real reply. Don't use Replied for auto-replies or out-of-office messages.</li>
+        <li>You can still find them here under the <strong>Moved to Connections</strong> filter, and clicking one opens their Connections profile.</li>
+      </ul>
+
+      <div style="font-weight:600;color:var(--ink);margin-bottom:4px;">4. Finding people</div>
+      <ul style="margin:0 0 12px 18px;padding:0;">
+        <li>The list opens on <strong>Waiting on reply</strong>. Use the filters for partner, type or status, and tick <strong>Follow-up due</strong> to see only who needs a nudge.</li>
+        <li><strong>Last contact</strong> shows the newest of: a date you logged, any text or email already synced for that person, and past meetings. Use the sort to see who you've gone quiet on.</li>
+        <li>The numbers at the top show how many people you've contacted, who's waiting, follow-ups due, and your reply rate.</li>
+      </ul>
+    </div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="closeModal('outreach-help')">Got it</button></div>
   </div>
 </div>
 
@@ -3634,6 +3677,7 @@ async function logConnectionContact(id){
   renderConnections();outToast('Contact logged for today.');
 }
 
+function openOutreachHelp(){openModal('outreach-help');}
 async function loadOutreach(){
   try{
     const{data,error}=await sb.from('outreach').select('*').order('created_at',{ascending:false});
