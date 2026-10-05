@@ -168,6 +168,15 @@ tbody tr:hover td{background:#faf9f6;}
 .comm-icon.text{background:var(--blue-light);color:var(--blue-600);}
 .comm-icon.email{background:var(--amber-light);color:var(--amber-600);}
 .comm-icon.note{background:var(--green-light);color:var(--green-600);}
+.comm-check{width:16px;height:16px;margin-top:8px;flex-shrink:0;accent-color:var(--teal-600);cursor:pointer;}
+.comm-body{flex:1;min-width:0;overflow-wrap:anywhere;}
+.comm-chip{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;display:inline-block;margin-left:4px;}
+#comms-toolbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;background:var(--teal-50);border:1px solid var(--border);border-radius:var(--r-sm);}
+.profile-pick{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;}
+.profile-pick:hover{background:var(--teal-50);}
+.np-card{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border-md);border-radius:var(--r-sm);cursor:pointer;margin-bottom:8px;background:#fff;}
+.np-card:hover{border-color:var(--teal-500);background:var(--teal-50);}
+.np-card i{font-size:20px;color:var(--teal-600);margin-top:1px;}
 .cal-grid-month { display:grid; grid-template-columns:repeat(7,1fr); }
 .cal-day-header { text-align:center; font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; padding:10px 0; border-bottom:1px solid var(--border); background:#faf9f6; }
 .cal-day { min-height:100px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:6px; vertical-align:top; }
@@ -503,9 +512,26 @@ tbody tr:hover td{background:#faf9f6;}
           <input type="text" id="comms-search" placeholder="Search subject, from, body..." oninput="renderComms()">
           <select id="comms-filter-type" onchange="renderComms()">
             <option value="">All types</option>
-            <option>Voicemail</option><option>Missed Call</option><option>Text</option><option>Email</option><option>Note</option>
+            <option value="__voice">Google Voice (all)</option>
+            <option>Text</option><option>Voicemail</option><option>Missed Call</option><option>Email</option><option>Note</option>
+          </select>
+          <select id="comms-filter-link" onchange="renderComms()">
+            <option value="">All messages</option>
+            <option value="unlinked">Not matched to any profile</option>
+            <option value="linked">Matched to a profile</option>
           </select>
           <button class="btn btn-primary" onclick="openAddComm()"><i class="ti ti-plus"></i> Log communication</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px;color:var(--ink-3);">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="comms-all" class="comm-check" style="margin-top:0;" onchange="toggleAllComms(this.checked)"> Select all shown</label>
+          <span id="comms-count"></span>
+        </div>
+        <div id="comms-toolbar">
+          <strong id="comms-sel-count" style="font-size:13px;"></strong>
+          <button class="btn btn-sm" onclick="openCommLink()"><i class="ti ti-user-plus"></i> Add to profile</button>
+          <button class="btn btn-sm btn-primary" onclick="openCommNewProfile()"><i class="ti ti-id"></i> Make new profile</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteComms([...selectedComms])"><i class="ti ti-trash"></i> Delete</button>
+          <button class="btn btn-sm" onclick="clearCommSel()">Clear</button>
         </div>
         <div class="card" style="padding:0;">
           <div id="comms-list" style="padding:0 20px;"></div>
@@ -1175,6 +1201,36 @@ tbody tr:hover td{background:#faf9f6;}
 </div>
 
 <!-- ADD/EDIT CONNECTION MODAL -->
+<div class="overlay" id="modal-comm-link">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2>Add to profile</h2><button class="btn btn-sm" onclick="closeModal('comm-link')"><i class="ti ti-x"></i></button></div>
+    <p id="comm-link-summary" style="font-size:13px;color:var(--ink-3);margin-bottom:12px;"></p>
+    <div class="modal-tabs" id="comm-link-tabs" style="margin-bottom:12px;overflow-x:auto;">
+      <div class="modal-tab active" data-k="lead" onclick="setCommLinkKind('lead')">Lead</div>
+      <div class="modal-tab" data-k="customer" onclick="setCommLinkKind('customer')">Customer</div>
+      <div class="modal-tab" data-k="account" onclick="setCommLinkKind('account')">Account</div>
+      <div class="modal-tab" data-k="connection" onclick="setCommLinkKind('connection')">Connection</div>
+    </div>
+    <input type="text" id="comm-link-search" placeholder="Search..." oninput="renderCommLinkList()" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:10px;box-sizing:border-box;">
+    <div id="comm-link-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('comm-link')">Cancel</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-comm-newprofile">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2>Make new profile</h2><button class="btn btn-sm" onclick="closeModal('comm-newprofile')"><i class="ti ti-x"></i></button></div>
+    <div id="comm-np-preview" style="background:var(--teal-50);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;margin-bottom:14px;line-height:1.7;"></div>
+    <div id="comm-np-matches"></div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">What kind of profile?</div>
+    <div class="np-card" onclick="startNewProfileFromComm('lead')"><i class="ti ti-user-plus"></i><div><div style="font-weight:600;font-size:13px;">Lead</div><div style="font-size:12px;color:var(--ink-3);">A prospective job. Name, number and the message are filled in for you.</div></div></div>
+    <div class="np-card" onclick="startNewProfileFromComm('customer')"><i class="ti ti-users"></i><div><div style="font-weight:600;font-size:13px;">Customer</div><div style="font-size:12px;color:var(--ink-3);">A past customer. Opens a completed-job record, because customers in your CRM are people with a completed job.</div></div></div>
+    <div class="np-card" onclick="startNewProfileFromComm('connection')"><i class="ti ti-address-book"></i><div><div style="font-weight:600;font-size:13px;">Connection</div><div style="font-size:12px;color:var(--ink-3);">A realtor, property manager, HOA or other referral contact.</div></div></div>
+    <div class="np-card" onclick="startNewProfileFromComm('account')"><i class="ti ti-building"></i><div><div style="font-weight:600;font-size:13px;">Account</div><div style="font-size:12px;color:var(--ink-3);">A business or property group with multiple locations.</div></div></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('comm-newprofile')">Cancel</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-todo">
   <div class="modal">
     <div class="modal-head"><h2 id="modal-todo-title">Add task</h2><button class="btn btn-sm" onclick="closeModal('todo')"><i class="ti ti-x"></i></button></div>
@@ -2080,6 +2136,7 @@ function openModal(name){
 }
 function closeModal(name){
   document.getElementById('modal-'+name).classList.remove('open');
+  if(name==='lead'||name==='connection'||name==='account')window._pendingCommLink=null;
   document.body.style.position='';
   document.body.style.top='';
   document.body.style.width='';
@@ -2345,7 +2402,7 @@ async function saveLead(){
     sched_duration:document.getElementById('f-sched-duration').value||null,
     sched_notes:document.getElementById('f-sched-notes').value||null,
     added_by:currentUser?.email,updated_at:new Date().toISOString()};
-  try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);closeModal('lead');refreshAll();}
+  try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);await consumePendingCommLink('lead',saved.id);closeModal('lead');refreshAll();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save lead';
 }
@@ -2552,12 +2609,7 @@ async function deletePiece(leadId,pieceId){
 
 function renderLeadComms(leadId){
   const l=allLeads.find(x=>x.id===leadId);
-  const phone=(l?.phone||'').replace(/\D/g,'');
-  const comms=allComms.filter(c=>{
-    if(c.lead_id===leadId)return true;
-    if(phone&&c.from_address&&c.from_address.replace(/\D/g,'').includes(phone))return true;
-    return false;
-  });
+  const comms=commsForKeys(leadKeys(leadId));
   const linkedEvents=allEvents.filter(e=>e.lead_id===leadId);
   const container=document.getElementById('view-tab-commslog');
   container.innerHTML=`
@@ -2570,7 +2622,7 @@ function renderLeadComms(leadId){
       <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Linked calendar events</div>
       ${linkedEvents.map(e=>`<div class="comm-item"><div class="comm-icon" style="background:#f0e6fb;color:#6b21a8;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-calendar-event"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${e.title}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${e.event_date}${e.start_time?' at '+e.start_time:''} · ${e.event_type||'event'}${e.attendees?' · with '+e.attendees:''}</div>${e.location?`<div style="font-size:12px;color:var(--ink-3);">📍 ${e.location}</div>`:''} ${e.notes?`<div style="font-size:12px;margin-top:4px;color:var(--ink-2);">${e.notes}</div>`:''}</div><button class="btn btn-sm" onclick="viewEvent('${e.id}')" style="flex-shrink:0;"><i class="ti ti-edit"></i></button></div>`).join('')}
     </div>`:''}
-    ${comms.length?comms.map(c=>{const ic=commIcon(c.type||c.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:500;font-size:13px;">${esc(c.subject||c.type||'Communication')}</div>${commBadge(c.type||c.subject)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${esc(c.from_address)||'—'} · ${fmtDate(c.received_at)}</div>${c.body?`<div style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">${esc(c.body)}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications logged yet</div>'}
+    ${comms.length?comms.map(c=>commRowHtml(c,true)).join(''):'<div class="empty">No communications logged yet</div>'}
   `;
 }
 
@@ -2647,20 +2699,277 @@ async function saveComm(){
   const subject=document.getElementById('comm-subject').value.trim();
   if(!subject){alert('Please add a subject/summary.');return;}
   const comm={id:uid(),type:document.getElementById('comm-type').value,from_address:document.getElementById('comm-from').value,subject,body:document.getElementById('comm-body').value,received_at:document.getElementById('comm-date').value||new Date().toISOString(),lead_id:document.getElementById('comm-lead-id').value||null};
-  try{const saved=await upsertComm(comm);allComms.unshift(saved);closeModal('comm');renderComms();if(viewingLeadId)renderLeadComms(viewingLeadId);}
+  try{const saved=await upsertComm(comm);allComms.unshift(saved);closeModal('comm');refreshCommViews();}
   catch(e){alert('Save failed: '+e.message);}
+}
+// ── Communications: classify, parse, select, link, delete ──────────────────
+let selectedComms=new Set();
+function commKind(c){const t=String(c.type||c.subject||'').toLowerCase();if(t.includes('voicemail'))return'Voicemail';if(t.includes('missed'))return'Missed Call';if(t.includes('text')||t.includes('sms'))return'Text';if(t.includes('email'))return'Email';return'Note';}
+function isGoogleVoice(c){const from=String(c.from_address||'').toLowerCase();const s=String(c.subject||'');const ty=String(c.type||'');const re=/^(new text message|new voicemail|missed call)\b/i;return /voice\.google\.com|voice-noreply@google\.com/.test(from)||re.test(s)||re.test(ty);}
+function decodeEntities(v){const t=document.createElement('textarea');t.innerHTML=String(v==null?'':v);return t.value;}
+function fmtCommPhone(raw){let d=String(raw||'').replace(/\D/g,'');if(d.length===11&&d[0]==='1')d=d.slice(1);return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:'';}
+function splitPersonName(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);return{first:p[0]||'',last:p.slice(1).join(' ')};}
+function parseCommContact(c){
+  const subj=decodeEntities(c.subject||c.type||'');const from=String(c.from_address||'').trim();
+  let name='',phone='',email='';
+  const m=subj.match(/(?:text message|voicemail|missed call|call)\s+from\s+(.+?)(?:\s+at\s+\d{1,2}:\d{2}.*)?$/i);
+  if(m){const who=m[1].trim();const p=fmtCommPhone(who);if(p)phone=p;else name=who;}
+  const vm=from.match(/^\d+\.(\d+)\.[^@\s]+@(?:txt\.)?voice\.google\.com$/i);
+  if(vm&&!phone)phone=fmtCommPhone(vm[1]);
+  if(!phone&&from&&!from.includes('@')){const p=fmtCommPhone(from);if(p)phone=p;else if(!name)name=from;}
+  const em=from.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if(em&&!/voice\.google\.com$/i.test(em[0])&&!/^voice-noreply@google\.com$/i.test(em[0]))email=em[0];
+  return{name,phone,email};
+}
+function commFromLabel(c){
+  if(isGoogleVoice(c)){const ct=parseCommContact(c);const l=[ct.name,ct.phone].filter(Boolean).join(' · ');if(l)return l;}
+  return c.from_address||'—';
+}
+function commRowHtml(c,deletable){
+  const ic=commIcon(c.type||c.subject);const body=c.body?String(c.body):'';
+  return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div class="comm-body"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"><div style="font-weight:500;font-size:13px;">${esc(c.subject||c.type||'Communication')}</div>${commBadge(c.type||c.subject)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${esc(commFromLabel(c))} · ${fmtDate(c.received_at)}</div>${body?`<div style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">${esc(body.slice(0,200))}${body.length>200?'…':''}</div>`:''}</div>${deletable?`<button class="btn btn-sm btn-danger" style="flex-shrink:0;padding:4px 8px;" title="Delete this message everywhere" onclick="deleteComms(['${c.id}'])"><i class="ti ti-trash"></i></button>`:''}</div>`;
+}
+// ── Automatic profile matching: a message belongs to every profile that owns its number/email ──
+const _commKeyCache=new WeakMap();
+function lastTen(v){let d=String(v||'').replace(/\D/g,'');if(d.length>=10)d=d.slice(-10);return d.length===10?d:'';}
+function recContacts(rec){try{const a=JSON.parse(rec&&rec.contacts||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}}
+function newKeys(){return{phones:new Set(),emails:new Set(),leadIds:[],accountId:null,connectionId:null};}
+function addKey(k,phone,email){const t=lastTen(phone);if(t)k.phones.add(t);const m=String(email||'').trim().toLowerCase();if(m&&m.includes('@'))k.emails.add(m);}
+function addRecordKeys(k,rec){if(!rec)return k;addKey(k,rec.phone,rec.email);recContacts(rec).forEach(c=>addKey(k,c&&c.phone,c&&c.email));return k;}
+function leadKeys(leadId){const k=newKeys();k.leadIds=[leadId];addRecordKeys(k,allLeads.find(l=>l.id===leadId));return k;}
+function customerKeys(c){const k=newKeys();k.leadIds=c.jobs.map(j=>j.id);addKey(k,c.phone,c.email);c.jobs.forEach(j=>addRecordKeys(k,j));return k;}
+function recKeys(rec){return addRecordKeys(newKeys(),rec);}
+function connectionKeys(id){const k=newKeys();k.connectionId=id;addRecordKeys(k,allConnections.find(c=>c.id===id));return k;}
+function accountKeys(id){
+  const k=newKeys();k.accountId=id;addRecordKeys(k,allAccounts.find(a=>a.id===id));
+  allLeads.filter(l=>l.account_id===id).forEach(l=>{k.leadIds.push(l.id);addRecordKeys(k,l);});
+  allRecurring.filter(r=>r.account_id===id).forEach(r=>addRecordKeys(k,r));
+  return k;
+}
+function commKeys(c){
+  let v=_commKeyCache.get(c);if(v)return v;
+  const ct=parseCommContact(c);v={phone:lastTen(ct.phone),email:String(ct.email||'').toLowerCase()};
+  _commKeyCache.set(c,v);return v;
+}
+function commsForKeys(k){
+  return allComms.filter(c=>{
+    if(k.leadIds&&k.leadIds.length&&k.leadIds.includes(c.lead_id))return true;
+    if(k.accountId&&c.account_id===k.accountId)return true;
+    if(k.connectionId&&c.connection_id===k.connectionId)return true;
+    const ck=commKeys(c);
+    return !!((ck.phone&&k.phones.has(ck.phone))||(ck.email&&k.emails.has(ck.email)));
+  }).sort((a,b)=>String(b.received_at||'').localeCompare(String(a.received_at||'')));
+}
+// One pass over all profiles so the main list can show who each message is synced to
+function buildProfileIndex(){
+  const byPhone=new Map(),byEmail=new Map();
+  const put=(m,key,p)=>{if(!key)return;if(!m.has(key))m.set(key,new Map());m.get(key).set(p.kind+':'+p.id,p);};
+  const reg=(p,k)=>{k.phones.forEach(x=>put(byPhone,x,p));k.emails.forEach(x=>put(byEmail,x,p));};
+  const leadsByAcct=new Map(),recsByAcct=new Map();
+  allLeads.forEach(l=>{if(l.account_id){if(!leadsByAcct.has(l.account_id))leadsByAcct.set(l.account_id,[]);leadsByAcct.get(l.account_id).push(l);}});
+  allRecurring.forEach(r=>{if(r.account_id){if(!recsByAcct.has(r.account_id))recsByAcct.set(r.account_id,[]);recsByAcct.get(r.account_id).push(r);}});
+  allLeads.forEach(l=>reg({kind:l.status==='Completed'?'customer':'lead',id:l.id,label:`${l.first_name} ${l.last_name}`.trim()},addRecordKeys(newKeys(),l)));
+  allRecurring.forEach(r=>reg({kind:'recurring',id:r.id,label:`${r.first_name||''} ${r.last_name||''}`.trim()},addRecordKeys(newKeys(),r)));
+  allConnections.forEach(c=>reg({kind:'connection',id:c.id,label:`${c.first_name} ${c.last_name}`.trim()},addRecordKeys(newKeys(),c)));
+  allAccounts.forEach(a=>{const k=addRecordKeys(newKeys(),a);(leadsByAcct.get(a.id)||[]).forEach(l=>addRecordKeys(k,l));(recsByAcct.get(a.id)||[]).forEach(r=>addRecordKeys(k,r));reg({kind:'account',id:a.id,label:a.name},k);});
+  return{byPhone,byEmail};
+}
+function profilesForComm(c,idx){
+  const out=new Map();const add=p=>out.set(p.kind+':'+p.id,p);
+  if(c.lead_id){const l=allLeads.find(x=>x.id===c.lead_id);if(l)add({kind:l.status==='Completed'?'customer':'lead',id:l.id,label:`${l.first_name} ${l.last_name}`.trim()});}
+  if(c.account_id){const a=allAccounts.find(x=>x.id===c.account_id);if(a)add({kind:'account',id:a.id,label:a.name});}
+  if(c.connection_id){const x=allConnections.find(y=>y.id===c.connection_id);if(x)add({kind:'connection',id:x.id,label:`${x.first_name} ${x.last_name}`.trim()});}
+  const ck=commKeys(c);
+  if(ck.phone&&idx.byPhone.has(ck.phone))idx.byPhone.get(ck.phone).forEach(add);
+  if(ck.email&&idx.byEmail.has(ck.email))idx.byEmail.get(ck.email).forEach(add);
+  return [...out.values()];
+}
+const COMM_CHIP={lead:['Lead','var(--teal-50)','var(--teal-600)'],customer:['Customer','var(--green-light)','var(--green-600)'],account:['Account','#fff7ed','#ea580c'],connection:['Contact','var(--blue-light)','var(--blue-600)'],recurring:['Recurring','#fff7ed','#ea580c']};
+function profileCommsInner(k){
+  const list=commsForKeys(k);
+  return`<div style="font-size:13px;font-weight:600;margin-bottom:8px;">💬 Communications (${list.length})</div>${list.length?list.map(c=>commRowHtml(c,true)).join(''):'<div style="color:var(--ink-3);font-size:13px;padding:6px 0;">No messages yet. Anything from a number or email saved on this profile appears here automatically.</div>'}`;
+}
+function profileCommsHtml(k,elId){return`<div id="${elId}" style="margin-top:20px;">${profileCommsInner(k)}</div>`;}
+// Re-draw whatever profile Communications tab is open, so deletes show everywhere at once
+function refreshCommViews(){
+  renderComms();
+  const vis=id=>{const el=document.getElementById(id);return el&&el.getClientRects().length>0;};
+  try{if(vis('view-tab-commslog')&&viewingLeadId)renderLeadComms(viewingLeadId);}catch(e){}
+  try{if(vis('cust-tab-comms')&&viewingCustomerKey)renderCustomerComms();}catch(e){}
+  try{if(vis('rec-tab-comms')&&viewingRecId){const r=allRecurring.find(x=>x.id===viewingRecId);if(r)renderRecComms(r);}}catch(e){}
+  try{if(vis('acct-comms-section')&&window._viewAcctId)document.getElementById('acct-comms-section').innerHTML=profileCommsInner(accountKeys(window._viewAcctId));}catch(e){}
+  try{if(vis('conn-comms-section')&&window._viewConnId)document.getElementById('conn-comms-section').innerHTML=profileCommsInner(connectionKeys(window._viewConnId));}catch(e){}
 }
 function renderComms(){
   const search=(document.getElementById('comms-search').value||'').toLowerCase();
   const fType=document.getElementById('comms-filter-type').value;
-  const data=allComms.filter(c=>{
+  const fLink=(document.getElementById('comms-filter-link')||{}).value||'';
+  const idx=buildProfileIndex();
+  const rows=allComms.map(c=>({c,profiles:profilesForComm(c,idx)}));
+  const data=rows.filter(({c,profiles})=>{
     const t=`${c.subject||''} ${c.from_address||''} ${c.body||''}`.toLowerCase();
-    const typeMatch=!fType||(c.type||c.subject||'').toLowerCase().includes(fType.toLowerCase());
-    return(!search||t.includes(search))&&typeMatch;
+    const typeMatch=!fType||(fType==='__voice'?isGoogleVoice(c):commKind(c)===fType);
+    const linked=profiles.length>0;
+    const linkMatch=!fLink||(fLink==='linked'?linked:!linked);
+    return(!search||t.includes(search))&&typeMatch&&linkMatch;
   });
+  window._commsShown=data.map(r=>r.c.id);
+  const cnt=document.getElementById('comms-count');if(cnt)cnt.textContent=`Showing ${data.length} of ${allComms.length}`;
   document.getElementById('comms-list').innerHTML=data.length
-    ?data.map(c=>{const ic=commIcon(c.type||c.subject);const lead=c.lead_id?allLeads.find(l=>l.id===c.lead_id):null;return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"><div style="font-weight:500;font-size:13px;">${esc(c.subject||c.type||'Communication')}</div>${commBadge(c.type||c.subject)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${esc(c.from_address)||'—'} · ${fmtDate(c.received_at)}${lead?` · <span style="color:var(--teal-500);">${lead.first_name} ${lead.last_name}</span>`:''}</div>${c.body?`<div style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">${esc(c.body.slice(0,200))}${c.body.length>200?'…':''}</div>`:''}</div></div>`;}).join('')
-    :'<div class="empty" style="padding:40px;">No communications yet. Google Voice notifications will appear here automatically, or use the Log button to add manually.</div>';
+    ?data.map(({c,profiles})=>{
+      const ic=commIcon(c.type||c.subject);
+      const chips=profiles.slice(0,4).map(p=>{const m=COMM_CHIP[p.kind]||COMM_CHIP.lead;return`<span class="comm-chip" style="background:${m[1]};color:${m[2]};">${m[0]}: ${esc(p.label)}</span>`;}).join('')+(profiles.length>4?`<span class="comm-chip" style="background:var(--surface);color:var(--ink-3);">+${profiles.length-4} more</span>`:'');
+      const body=c.body?String(c.body):'';
+      return`<div class="comm-item"><input type="checkbox" class="comm-check" ${selectedComms.has(c.id)?'checked':''} onchange="toggleCommSel('${c.id}',this.checked)"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div class="comm-body"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"><div style="font-weight:500;font-size:13px;">${esc(c.subject||c.type||'Communication')}</div>${commBadge(c.type||c.subject)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${esc(commFromLabel(c))} · ${fmtDate(c.received_at)}${chips}</div>${body?`<div style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">${esc(body.slice(0,200))}${body.length>200?'…':''}</div>`:''}</div><button class="btn btn-sm btn-danger" style="flex-shrink:0;padding:4px 8px;" title="Delete" onclick="deleteComms(['${c.id}'])"><i class="ti ti-trash"></i></button></div>`;
+    }).join('')
+    :'<div class="empty" style="padding:40px;">No communications match. Google Voice texts and voicemails labeled "Communications" in Gmail will appear here automatically, or use the Log button to add one manually.</div>';
+  updateCommToolbar();
+}
+function updateCommToolbar(){
+  const n=selectedComms.size;const tb=document.getElementById('comms-toolbar');if(!tb)return;
+  tb.style.display=n?'flex':'none';
+  const lbl=document.getElementById('comms-sel-count');if(lbl)lbl.textContent=`${n} selected`;
+  const all=document.getElementById('comms-all');const shown=window._commsShown||[];
+  if(all)all.checked=shown.length>0&&shown.every(id=>selectedComms.has(id));
+}
+function toggleCommSel(id,on){if(on)selectedComms.add(id);else selectedComms.delete(id);updateCommToolbar();}
+function toggleAllComms(on){(window._commsShown||[]).forEach(id=>{if(on)selectedComms.add(id);else selectedComms.delete(id);});renderComms();}
+function clearCommSel(){selectedComms.clear();renderComms();}
+
+async function deleteComms(ids){
+  if(!ids||!ids.length)return;
+  const idx=buildProfileIndex();let synced=0;ids.forEach(id=>{const c=allComms.find(x=>x.id===id);if(c&&profilesForComm(c,idx).length)synced++;});
+  if(!confirm(`Delete ${ids.length} communication${ids.length>1?'s':''}?`+(synced?`\n\n${synced} of these ${synced>1?'are':'is'} synced to a profile and will be removed from that profile's Communications tab too.`:'')+`\n\nThis only removes the CRM copy. Nothing is deleted from Gmail or Google Voice.`))return;
+  const{data,error}=await sb.from('communications').delete().in('id',ids).select('id');
+  if(error){alert('Delete failed: '+error.message);return;}
+  if(!data||!data.length){alert('Nothing was deleted: the database blocked it. Run the "delete permission" SQL step, then try again.');return;}
+  const gone=new Set(data.map(r=>r.id));
+  allComms=allComms.filter(c=>!gone.has(c.id));ids.forEach(i=>selectedComms.delete(i));
+  refreshCommViews();
+  if(gone.size<ids.length)alert(`Deleted ${gone.size} of ${ids.length}. The rest were blocked by the database.`);
+}
+
+async function linkCommsTo(ids,kind,recordId){
+  const col={lead:'lead_id',account:'account_id',connection:'connection_id'}[kind];
+  if(!col)throw new Error('Unknown profile type');
+  const{data,error}=await sb.from('communications').update({[col]:recordId}).in('id',ids).select();
+  if(error){
+    if(/column .* does not exist|could not find/i.test(error.message))throw new Error('The communications table is missing the new link columns. Run the SQL step first.');
+    throw error;
+  }
+  if(!data||!data.length)throw new Error('The database blocked the update. Run the SQL step (update permission), then try again.');
+  data.forEach(row=>{const i=allComms.findIndex(c=>c.id===row.id);if(i>-1)allComms[i]=row;});
+  refreshCommViews();
+}
+
+// Add selected communications to an existing profile
+let commLinkKind='lead';
+function openCommLink(){
+  if(!selectedComms.size)return;
+  document.getElementById('comm-link-search').value='';
+  document.getElementById('comm-link-summary').textContent=`Add ${selectedComms.size} selected communication${selectedComms.size>1?'s':''} to a profile. They will appear in that profile's Communications section.`;
+  setCommLinkKind('lead');openModal('comm-link');
+}
+function setCommLinkKind(k){
+  commLinkKind=k;
+  document.querySelectorAll('#comm-link-tabs .modal-tab').forEach(t=>t.classList.toggle('active',t.dataset.k===k));
+  renderCommLinkList();
+}
+function commLinkOptions(){
+  const q=(document.getElementById('comm-link-search').value||'').toLowerCase();let o=[];
+  if(commLinkKind==='lead')o=allLeads.map(l=>({id:l.id,label:`${l.first_name} ${l.last_name}`.trim(),sub:`${l.address||''} · ${l.status}`}));
+  if(commLinkKind==='customer')o=getCustomerProfiles().map(c=>({id:c.key,label:`${c.first_name} ${c.last_name}`.trim(),sub:`${c.phone||''} · ${c.jobs.length} completed job${c.jobs.length>1?'s':''}`}));
+  if(commLinkKind==='account')o=allAccounts.map(a=>({id:a.id,label:a.name,sub:[a.contact,a.phone].filter(Boolean).join(' · ')}));
+  if(commLinkKind==='connection')o=allConnections.map(c=>({id:c.id,label:`${c.first_name} ${c.last_name}`.trim(),sub:[c.company,c.contact_type,c.phone].filter(Boolean).join(' · ')}));
+  return o.filter(x=>!q||`${x.label} ${x.sub}`.toLowerCase().includes(q)).slice(0,200);
+}
+function renderCommLinkList(){
+  const opts=commLinkOptions();window._commLinkOpts=opts;
+  document.getElementById('comm-link-list').innerHTML=opts.length
+    ?opts.map((o,i)=>`<div class="profile-pick" onclick="confirmCommLink(${i})"><div style="font-weight:500;font-size:13px;">${esc(o.label)}</div><div style="font-size:12px;color:var(--ink-3);">${esc(o.sub)}</div></div>`).join('')
+    :'<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">Nothing found.</div>';
+}
+async function confirmCommLink(i){
+  const o=(window._commLinkOpts||[])[i];if(!o)return;
+  const ids=[...selectedComms];let kind=commLinkKind,recordId=o.id;
+  if(kind==='customer'){
+    const c=getCustomerProfiles().find(p=>p.key===o.id);
+    const recent=((c&&c.jobs)||[]).slice().sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||''))[0];
+    if(!recent){alert('That customer has no job to attach to.');return;}
+    kind='lead';recordId=recent.id;
+  }
+  try{
+    await linkCommsTo(ids,kind,recordId);
+    closeModal('comm-link');selectedComms.clear();renderComms();
+    alert(`Added ${ids.length} communication${ids.length>1?'s':''} to ${o.label}.`);
+  }catch(e){alert('Could not add: '+e.message);}
+}
+
+// Make a new profile from a communication
+window._pendingCommLink=null;
+function findProfileMatches(ct){
+  const d=String(ct.phone||'').replace(/\D/g,'').slice(-10);const em=String(ct.email||'').toLowerCase();const out=[];
+  const same=(p,e)=>(d.length===10&&String(p||'').replace(/\D/g,'').slice(-10)===d)||(em&&String(e||'').toLowerCase()===em);
+  const seen=new Set();
+  allLeads.forEach(l=>{if(same(l.phone,l.email)){const k='l'+(String(l.phone||'').replace(/\D/g,'')||l.id);if(seen.has(k))return;seen.add(k);out.push({kind:'lead',id:l.id,label:`${l.first_name} ${l.last_name}`.trim(),sub:'Lead / customer'});}});
+  allConnections.forEach(c=>{if(same(c.phone,c.email))out.push({kind:'connection',id:c.id,label:`${c.first_name} ${c.last_name}`.trim(),sub:'Connection'});});
+  allAccounts.forEach(a=>{if(same(a.phone,a.email))out.push({kind:'account',id:a.id,label:a.name,sub:'Account'});});
+  return out.slice(0,4);
+}
+function openCommNewProfile(){
+  const ids=[...selectedComms];if(!ids.length)return;
+  const c=allComms.find(x=>x.id===ids[0]);if(!c)return;
+  const ct=parseCommContact(c);
+  document.getElementById('comm-np-preview').innerHTML=
+    `<div style="font-weight:600;margin-bottom:2px;">Details found in this message</div>`
+    +`<div>Name: <strong>${esc(ct.name||'not found')}</strong></div>`
+    +`<div>Phone: <strong>${esc(ct.phone||'not found')}</strong></div>`
+    +`<div>Email: <strong>${esc(ct.email||'not found')}</strong></div>`
+    +(ids.length>1?`<div style="color:var(--ink-3);margin-top:4px;">Using the first of ${ids.length} selected messages. All ${ids.length} will be added to the new profile.</div>`:'');
+  const m=findProfileMatches(ct);window._npMatches=m;
+  document.getElementById('comm-np-matches').innerHTML=m.length
+    ?`<div style="border:1px solid #f5d28a;background:#fff8e6;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;font-size:13px;"><div style="font-weight:600;margin-bottom:6px;">This looks like someone you already have:</div>${m.map((x,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;"><span>${esc(x.label)} <span style="color:var(--ink-3);font-size:12px;">· ${esc(x.sub)}</span></span><button class="btn btn-sm" onclick="quickLinkMatch(${i})">Add messages to them</button></div>`).join('')}<div style="color:var(--ink-3);font-size:12px;margin-top:4px;">Or pick a new profile type below.</div></div>`
+    :'';
+  openModal('comm-newprofile');
+}
+async function quickLinkMatch(i){
+  const x=(window._npMatches||[])[i];if(!x)return;const ids=[...selectedComms];
+  try{await linkCommsTo(ids,x.kind,x.id);closeModal('comm-newprofile');selectedComms.clear();renderComms();alert(`Added ${ids.length} communication${ids.length>1?'s':''} to ${x.label}.`);}
+  catch(e){alert('Could not add: '+e.message);}
+}
+function commNoteText(c){
+  const body=decodeEntities(c.body||'').replace(/\s+/g,' ').trim().slice(0,400);
+  return `${commKind(c)} on ${fmtDate(c.received_at)}: ${body||decodeEntities(c.subject||'')}`;
+}
+function startNewProfileFromComm(kind){
+  const ids=[...selectedComms];const c=allComms.find(x=>x.id===ids[0]);if(!c)return;
+  const ct=parseCommContact(c);const nm=splitPersonName(ct.name);const note=commNoteText(c);
+  closeModal('comm-newprofile');
+  if(kind==='lead'||kind==='customer'){
+    openAddLead();
+    document.getElementById('f-first').value=nm.first;document.getElementById('f-last').value=nm.last;
+    document.getElementById('f-phone').value=ct.phone;document.getElementById('f-email').value=ct.email;
+    document.getElementById('f-notes').value=note;document.getElementById('f-src').value='Other';
+    if(kind==='customer'){document.getElementById('f-stat').value='Completed';toggleStatusSections();}
+    window._pendingCommLink={ids,kind:'lead'};
+  }else if(kind==='connection'){
+    openAddConnection();
+    document.getElementById('c-first').value=nm.first;document.getElementById('c-last').value=nm.last;
+    document.getElementById('c-phone').value=ct.phone;document.getElementById('c-email').value=ct.email;
+    document.getElementById('c-notes').value=note;
+    window._pendingCommLink={ids,kind:'connection'};
+  }else if(kind==='account'){
+    openAddAccount({name:''});
+    document.getElementById('acct-contact').value=ct.name;document.getElementById('acct-phone').value=ct.phone;
+    document.getElementById('acct-email').value=ct.email;document.getElementById('acct-notes').value=note;
+    window._pendingCommLink={ids,kind:'account'};
+  }
+}
+async function consumePendingCommLink(kind,recordId){
+  const p=window._pendingCommLink;if(!p||p.kind!==kind)return;
+  window._pendingCommLink=null;
+  try{await linkCommsTo(p.ids,kind,recordId);selectedComms.clear();renderComms();}
+  catch(e){alert('The profile was saved, but linking the message failed: '+e.message+'\n\nYou can still link it with "Add to profile" on the Communications page.');}
 }
 
 function formatPhone(input){
@@ -3059,7 +3368,7 @@ async function saveConnection(){
   const btn=document.getElementById('conn-save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('conn-edit-id').value||uid();
   const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:getContactType(),phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
-  try{const saved=await upsertConnection(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);closeModal('connection');renderConnections();renderReferrals();}
+  try{const saved=await upsertConnection(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);await consumePendingCommLink('connection',saved.id);closeModal('connection');renderConnections();renderReferrals();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save contact';
 }
@@ -3071,6 +3380,7 @@ async function deleteConnection(id){
 }
 function viewConnection(id){
   const c=allConnections.find(x=>x.id===id);if(!c)return;
+  window._viewConnId=id;
   document.getElementById('view-conn-title').textContent=`${c.first_name} ${c.last_name}`;
   const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
   const tierInfo=getReferralTier(jobsReferred);
@@ -3101,6 +3411,7 @@ function viewConnection(id){
           <button class="btn btn-sm" onclick="closeModal('view-conn');viewEvent('${e.id}')"><i class="ti ti-edit"></i></button>
         </div>`).join('')}
     </div>`:''}
+    ${profileCommsHtml(connectionKeys(c.id),'conn-comms-section')}
   `;
   document.getElementById('conn-edit-btn').onclick=()=>editConnectionModal(c);
   document.getElementById('conn-del-btn').onclick=()=>deleteConnection(c.id);
@@ -4417,12 +4728,7 @@ function renderCustomerComms(){
   const profiles=getCustomerProfiles();
   const c=profiles.find(p=>p.key===viewingCustomerKey); if(!c) return;
   const leadIds=c.jobs.map(j=>j.id);
-  const phone=(c.phone||'').replace(/\D/g,'');
-  const comms=allComms.filter(cm=>{
-    if(leadIds.includes(cm.lead_id)) return true;
-    if(phone&&cm.from_address&&cm.from_address.replace(/\D/g,'').includes(phone)) return true;
-    return false;
-  });
+  const comms=commsForKeys(customerKeys(c));
   const linkedEvents=allEvents.filter(e=>leadIds.includes(e.lead_id));
   document.getElementById('cust-tab-comms').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -4430,7 +4736,7 @@ function renderCustomerComms(){
       <button class="btn btn-sm btn-primary" onclick="openAddCommForCustomer('${viewingCustomerKey}')"><i class="ti ti-plus"></i> Log</button>
     </div>
     ${linkedEvents.length?`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;margin-bottom:8px;">Linked calendar events</div>${linkedEvents.map(e=>`<div class="comm-item"><div class="comm-icon" style="background:#f0e6fb;color:#6b21a8;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-calendar-event"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${e.title}</div><div style="font-size:12px;color:var(--ink-3);">${e.event_date}${e.start_time?' at '+e.start_time:''}</div></div></div>`).join('')}</div>`:''}
-    ${comms.length?comms.map(cm=>{const ic=commIcon(cm.type||cm.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${esc(cm.subject||cm.type||'Communication')}</div><div style="font-size:12px;color:var(--ink-3);">${esc(cm.from_address)||'—'} · ${fmtDate(cm.received_at)}</div>${cm.body?`<div style="font-size:12px;margin-top:4px;color:var(--ink-2);">${esc(cm.body.slice(0,200))}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications yet.</div>'}
+    ${comms.length?comms.map(c=>commRowHtml(c,true)).join(''):'<div class="empty">No communications yet.</div>'}
   `;
 }
 
@@ -5127,14 +5433,10 @@ async function deleteRecContract(contractId,filename){
 }
 
 function renderRecComms(rec){
-  const phone=(rec.phone||'').replace(/\D/g,'');
-  const comms=allComms.filter(c=>{
-    if(phone&&c.from_address&&c.from_address.replace(/\D/g,'').includes(phone)) return true;
-    return false;
-  });
+  const comms=commsForKeys(recKeys(rec));
   document.getElementById('rec-tab-comms').innerHTML=`
     <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Communication history</div>
-    ${comms.length?comms.map(c=>{const ic=commIcon(c.type||c.subject);return`<div class="comm-item"><div class="comm-icon ${ic.cls}"><i class="ti ${ic.icon}"></i></div><div style="flex:1;"><div style="font-weight:500;font-size:13px;">${esc(c.subject||c.type||'Communication')}</div><div style="font-size:12px;color:var(--ink-3);">${esc(c.from_address)||'—'} · ${fmtDate(c.received_at)}</div>${c.body?`<div style="font-size:12px;margin-top:4px;">${esc(c.body.slice(0,200))}</div>`:''}</div></div>`;}).join(''):'<div class="empty">No communications found for this number.</div>'}
+    ${comms.length?comms.map(c=>commRowHtml(c,true)).join(''):'<div class="empty">No communications found for this number.</div>'}
   `;
 }
 
@@ -5982,6 +6284,7 @@ async function saveAccount(){
     const saved=await upsertAccount(acct);
     const idx=allAccounts.findIndex(a=>a.id===id);
     if(idx>-1)allAccounts[idx]=saved;else allAccounts.push(saved);
+    await consumePendingCommLink('account',saved.id);
     closeModal('account');
     renderAccounts();
     return saved;
@@ -5990,6 +6293,7 @@ async function saveAccount(){
 
 function viewAccount(id){
   const acct=allAccounts.find(a=>a.id===id);if(!acct)return;
+  window._viewAcctId=id;
   document.getElementById('view-acct-name').textContent=acct.name;
   const aLeads=allLeads.filter(l=>l.account_id===id);
   const aRec=allRecurring.filter(r=>r.account_id===id);
@@ -6028,6 +6332,7 @@ function viewAccount(id){
     <div style="margin-top:12px;">
       <button class="btn btn-sm" onclick="openAssignLocation('${id}')"><i class="ti ti-plus"></i> Assign existing lead or recurring</button>
     </div>
+    ${profileCommsHtml(accountKeys(id),'acct-comms-section')}
   `;
   document.getElementById('acct-edit-btn').onclick=()=>{
     closeModal('view-account');
