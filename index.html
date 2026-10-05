@@ -289,7 +289,7 @@ tbody tr:hover td{background:#faf9f6;}
 <body>
 
 <div id="auth-screen">
-  <div class="auth-card">
+  <div class="auth-card" id="login-card">
     <div class="auth-logo">
       <img src="data:image/jpeg;base64,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" style="width:56px;height:56px;border-radius:12px;object-fit:cover;" alt="Palmetto Pressure Pros">
       <div class="auth-logo-text"><strong>Palmetto Pressure Pros</strong><span>Business CRM</span></div>
@@ -301,8 +301,19 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="auth-field" id="auth-name-field" style="display:none;"><label>Full name</label><input type="text" id="auth-name" placeholder="Your name"></div>
     <button class="auth-btn" id="auth-submit-btn" onclick="authSubmit()">Sign in</button>
     <div class="auth-error" id="auth-error"></div>
+    <div class="auth-toggle" style="margin-top:12px;"><a onclick="forgotPassword()">Forgot password?</a></div>
     <div class="auth-toggle"><span id="auth-toggle-text">New partner account? </span><a onclick="toggleAuthMode()" id="auth-toggle-link">Create account</a></div>
     <div class="auth-security"><i class="ti ti-lock" style="font-size:14px;"></i> End-to-end encrypted · Supabase PostgreSQL</div>
+  </div>
+  <div class="auth-card" id="recovery-card" style="display:none;">
+    <div class="auth-logo" id="recovery-logo"></div>
+    <h2>Set a new password</h2>
+    <p>Choose a new password for your account. You'll be signed in right after.</p>
+    <div class="auth-field"><label>New password</label><input type="password" id="rec-pass1" placeholder="At least 8 characters" autocomplete="new-password"></div>
+    <div class="auth-field"><label>Confirm new password</label><input type="password" id="rec-pass2" placeholder="Type it again" autocomplete="new-password" onkeydown="if(event.key==='Enter')recoverySubmit()"></div>
+    <button class="auth-btn" id="rec-btn" onclick="recoverySubmit()">Save new password</button>
+    <div class="auth-error" id="rec-error"></div>
+    <div class="auth-toggle"><a onclick="recoveryCancel()">Cancel and go back to sign in</a></div>
   </div>
 </div>
 
@@ -1750,6 +1761,7 @@ tbody tr:hover td{background:#faf9f6;}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+let _recoveryMode=/[#&?]type=recovery\b/.test(window.location.hash+window.location.search);
 const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -1783,7 +1795,7 @@ async function authSubmit(){
     else{const name=document.getElementById('auth-name').value.trim();const{error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});if(error)throw error;showAuthErr('Account created! Check your email to confirm, then sign in.');btn.disabled=false;btn.textContent='Create account';return;}
   }catch(e){showAuthErr(e.message||'Authentication failed.');btn.disabled=false;btn.textContent=authMode==='login'?'Sign in':'Create account';}
 }
-function showAuthErr(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block';}
+function showAuthErr(msg,ok){const el=document.getElementById('auth-error');el.textContent=msg;el.style.color=ok?'var(--green-600)':'';el.style.display='block';}
 async function signOut(){
   await sb.auth.signOut();
   document.getElementById('app').style.display='none';
@@ -1791,7 +1803,9 @@ async function signOut(){
   document.getElementById('auth-email').value='';document.getElementById('auth-password').value='';
   allLeads=[];allConnections=[];allComms=[];currentUser=null;
 }
-sb.auth.onAuthStateChange(async(event,session)=>{
+async function handleAuthSession(event,session){
+  if(event==='PASSWORD_RECOVERY')_recoveryMode=true;
+  if(session&&_recoveryMode){showRecoveryScreen();return;}
   if(session){
     currentUser=session.user;
     const meta=session.user.user_metadata||{};
@@ -1816,7 +1830,52 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     renderDashboard();
     renderTodos();
   }
-});
+}
+sb.auth.onAuthStateChange(handleAuthSession);
+
+// ── Password reset ─────────────────────────────────────────────────────────
+function showRecoveryScreen(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('login-card').style.display='none';
+  const lg=document.getElementById('recovery-logo');const src=document.querySelector('#login-card .auth-logo');
+  if(lg&&src&&!lg.innerHTML)lg.innerHTML=src.innerHTML;
+  document.getElementById('recovery-card').style.display='block';
+}
+function recErr(msg){const el=document.getElementById('rec-error');el.textContent=msg;el.style.display='block';}
+async function recoverySubmit(){
+  const p1=document.getElementById('rec-pass1').value,p2=document.getElementById('rec-pass2').value;
+  document.getElementById('rec-error').style.display='none';
+  if(p1.length<8){recErr('Use at least 8 characters.');return;}
+  if(p1!==p2){recErr('The two passwords do not match.');return;}
+  const btn=document.getElementById('rec-btn');btn.disabled=true;btn.textContent='Saving...';
+  try{
+    const{error}=await sb.auth.updateUser({password:p1});
+    if(error)throw error;
+    _recoveryMode=false;
+    try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+    document.getElementById('recovery-card').style.display='none';
+    document.getElementById('login-card').style.display='block';
+    document.getElementById('rec-pass1').value='';document.getElementById('rec-pass2').value='';
+    const{data}=await sb.auth.getSession();
+    await handleAuthSession('SIGNED_IN',data.session);
+  }catch(e){recErr(e.message||'Could not save the password. Try again.');}
+  btn.disabled=false;btn.textContent='Save new password';
+}
+async function recoveryCancel(){
+  _recoveryMode=false;
+  try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+  await signOut();
+  document.getElementById('recovery-card').style.display='none';
+  document.getElementById('login-card').style.display='block';
+}
+async function forgotPassword(){
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){showAuthErr('Type your email above first, then click "Forgot password?".');return;}
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){showAuthErr(error.message);return;}
+  showAuthErr('If that email has an account, a reset link is on its way. Check your inbox.',true);
+}
 
 // ── Data ──────────────────────────────────────────────────────────────────
 async function loadTodos(){try{const{data,error}=await sb.from('todos').select('*').order('created_at',{ascending:false});if(error)console.error('todos error:',error);else allTodos=data||[];}catch(e){console.error('loadTodos failed:',e);}}
