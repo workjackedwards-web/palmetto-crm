@@ -169,6 +169,12 @@ tbody tr:hover td{background:#faf9f6;}
 .comm-icon.email{background:var(--amber-light);color:var(--amber-600);}
 .comm-icon.note{background:var(--green-light);color:var(--green-600);}
 .comm-check{width:16px;height:16px;margin-top:8px;flex-shrink:0;accent-color:var(--teal-600);cursor:pointer;}
+.out-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.out-grid .full{grid-column:1/-1;}
+@media(max-width:768px){.out-grid{grid-template-columns:1fr;}}
+.out-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;font-size:12px;color:var(--ink-3);}
+.out-stat strong{display:block;font-size:18px;color:var(--ink);font-weight:600;}
+#out-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#16161a;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;z-index:20000;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:90vw;display:none;}
 .comm-body{flex:1;min-width:0;overflow-wrap:anywhere;}
 .comm-chip{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;display:inline-block;margin-left:4px;}
 #comms-toolbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;background:var(--teal-50);border:1px solid var(--border);border-radius:var(--r-sm);}
@@ -332,6 +338,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="recurring" onclick="nav(this)"><i class="ti ti-repeat"></i><span>Recurring Jobs</span></div>
       <div class="nav-item" data-page="customers" onclick="nav(this)"><i class="ti ti-users"></i><span>Customers</span></div>
       <div class="nav-item" data-page="accounts" onclick="nav(this)"><i class="ti ti-building"></i><span>Accounts</span></div>
+      <div class="nav-item" data-page="outreach" onclick="nav(this)"><i class="ti ti-send"></i><span>Outreach</span></div>
       <div class="nav-item" data-page="connections" onclick="nav(this)"><i class="ti ti-address-book"></i><span>Connections</span></div>
       <div class="nav-item" data-page="jobs" onclick="nav(this)"><i class="ti ti-briefcase"></i><span>Jobs & Revenue</span></div>
       <div class="nav-item" data-page="calendar" onclick="nav(this)"><i class="ti ti-calendar"></i><span>Calendar</span></div>
@@ -550,15 +557,39 @@ tbody tr:hover td{background:#faf9f6;}
       </div>
 
       <!-- CONNECTIONS -->
+      <div id="pg-outreach" class="page-content" style="display:none;">
+        <div id="out-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div class="filters">
+          <input type="text" id="out-search" placeholder="Search name, company, email..." oninput="renderOutreach()">
+          <select id="out-filter-status" onchange="renderOutreach()">
+            <option value="waiting">Waiting on reply</option>
+            <option value="">Everyone</option>
+            <option>Emailed</option><option>Followed up</option><option>Parked</option><option>Not interested</option>
+            <option value="Replied">Moved to Connections</option>
+          </select>
+          <select id="out-filter-type" onchange="renderOutreach()"><option value="">All types</option><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select>
+          <select id="out-filter-by" onchange="renderOutreach()"><option value="">All partners</option><option>Jack</option><option>Charlie</option><option>Tanner</option></select>
+          <select id="out-sort" onchange="renderOutreach()"><option value="">Sort: Follow-ups first</option><option value="oldest">Sort: Last contact (oldest first)</option><option value="newest">Sort: Last contact (newest first)</option></select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="out-filter-due" onchange="renderOutreach()" style="width:15px;height:15px;accent-color:var(--teal-600);"> Follow-up due</label>
+          <button class="btn" onclick="openOutreachImport()"><i class="ti ti-upload"></i> Import list</button>
+          <button class="btn btn-primary" onclick="openAddOutreach()"><i class="ti ti-plus"></i> Add contact</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Contact</th><th>Type</th><th>Status</th><th>Email</th><th>Reached by</th><th>Last contact</th><th>Emailed</th><th>Follow up</th><th>Touches</th><th></th></tr></thead>
+          <tbody id="outreach-body"><tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr></tbody></table>
+        </div>
+      </div>
+
       <div id="pg-connections" class="page-content" style="display:none;">
         <div class="filters">
           <input type="text" id="conn-search" placeholder="Search name, company, email..." oninput="renderConnections()">
           <select id="conn-filter-type" onchange="renderConnections()"><option value="">All types</option><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select>
+          <select id="conn-sort" onchange="renderConnections()"><option value="">Sort: Default</option><option value="oldest">Sort: Last contact (oldest first)</option><option value="newest">Sort: Last contact (newest first)</option></select>
           <button class="btn btn-primary" onclick="openAddConnection()"><i class="ti ti-plus"></i> Add Contact</button>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Name</th><th>Company</th><th>Type</th><th>Phone</th><th>Email</th><th>Jobs Referred</th><th>Notes</th><th></th></tr></thead>
-          <tbody id="connections-body"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody></table>
+          <table><thead><tr><th>Name</th><th>Company</th><th>Type</th><th>Phone</th><th>Email</th><th>Last contact</th><th>Jobs Referred</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="connections-body"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
         </div>
       </div>
 
@@ -1242,6 +1273,52 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
 </div>
 
+<div class="overlay" id="modal-outreach">
+  <div class="modal" style="width:760px;">
+    <div class="modal-head"><h2 id="modal-out-title">Add outreach contact</h2><button class="btn btn-sm" onclick="closeModal('outreach')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="out-edit-id">
+    <div class="out-grid">
+      <div class="field"><label>First name *</label><input id="o-first" placeholder="Sarah"></div>
+      <div class="field"><label>Last name</label><input id="o-last" placeholder="Johnson"></div>
+      <div class="field"><label>Company</label><input id="o-company" placeholder="Brokerage / management company / HOA"></div>
+      <div class="field"><label>Type</label><select id="o-type"><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select></div>
+      <div class="field"><label>Email</label><input id="o-email" type="email" placeholder="name@company.com"></div>
+      <div class="field"><label>Phone</label><input id="o-phone" oninput="formatPhone(this)" placeholder="(843) 555-0100"></div>
+      <div class="field"><label>Reached out by</label><select id="o-by"><option value="">—</option><option>Jack</option><option>Charlie</option><option>Tanner</option></select></div>
+      <div class="field"><label>Date first emailed</label><input id="o-date" type="date"></div>
+      <div class="field"><label>Status</label><select id="o-status" onchange="outreachStatusHint()"><option>Emailed</option><option>Followed up</option><option>Replied</option><option>Parked</option><option>Not interested</option></select></div>
+      <div class="field"><label>Next follow-up</label><input id="o-next" type="date"></div>
+      <div class="field"><label>Last contact</label><input id="o-lastcontact" type="date"></div>
+      <div class="field"><label>Times contacted</label><input id="o-touches" type="number" min="1" placeholder="1"></div>
+      <div class="field full" id="o-hint" style="display:none;background:var(--green-light);color:var(--green-600);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;"></div>
+      <div class="field full"><label>Notes</label><textarea id="o-notes" placeholder="What you sent, what they said, anything worth remembering..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="o-del-btn" style="margin-right:auto;display:none;" onclick="deleteOutreach()"><i class="ti ti-trash"></i> Delete</button>
+      <button class="btn" onclick="closeModal('outreach')">Cancel</button>
+      <button class="btn btn-primary" id="o-save-btn" onclick="saveOutreach()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-outreach-import">
+  <div class="modal" style="width:760px;">
+    <div class="modal-head"><h2>Import outreach list</h2><button class="btn btn-sm" onclick="closeModal('outreach-import')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:10px;line-height:1.5;">Paste rows from a spreadsheet, or choose a CSV file. The first row should be column names, such as: <strong>First Name, Last Name, Company, Type, Email, Phone</strong>. Only a name is required. Anyone already in Outreach or Connections (same email or phone) is skipped.</p>
+    <input type="file" id="oi-file" accept=".csv,.txt,.tsv" onchange="outreachImportFile(this)" style="margin-bottom:10px;font-size:13px;">
+    <textarea id="oi-text" placeholder="Paste here..." oninput="outreachImportPreview()" style="width:100%;min-height:150px;padding:10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:12px;font-family:var(--font);box-sizing:border-box;margin-bottom:10px;"></textarea>
+    <div class="out-grid" style="margin-bottom:10px;">
+      <div class="field"><label>Reached out by</label><select id="oi-by"><option value="">—</option><option>Jack</option><option>Charlie</option><option>Tanner</option></select></div>
+      <div class="field"><label>Date emailed</label><input id="oi-date" type="date"></div>
+      <div class="field full"><label>Type (used when the list has no Type column or it isn't recognized)</label><select id="oi-type" onchange="outreachImportPreview()"><option>Realtor</option><option>Property Manager</option><option>HOA Manager</option><option>General Contractor</option><option>Other</option></select></div>
+    </div>
+    <div id="oi-preview" style="font-size:13px;line-height:1.6;background:var(--teal-50);border-radius:var(--r-sm);padding:10px 12px;min-height:20px;"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('outreach-import')">Cancel</button><button class="btn btn-primary" id="oi-go" onclick="outreachImportRun()" disabled><i class="ti ti-check"></i> Import</button></div>
+  </div>
+</div>
+
+<div id="out-toast"></div>
+
 <div class="overlay" id="modal-todo">
   <div class="modal">
     <div class="modal-head"><h2 id="modal-todo-title">Add task</h2><button class="btn btn-sm" onclick="closeModal('todo')"><i class="ti ti-x"></i></button></div>
@@ -1293,6 +1370,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field" id="c-type-custom-wrap" style="display:none;"><label>Custom type</label><input id="c-type-custom" placeholder="e.g. Landscape Company, Pool Company..."></div>
       <div class="field"><label>Phone</label><input id="c-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)"></div>
       <div class="field"><label>Email</label><input id="c-email" placeholder="sarah@compass.com"></div>
+      <div class="field"><label>Last contact (call, meeting, in person)</label><input id="c-lastcontact" type="date"></div>
       <div class="field"><label>Referral partner?</label><select id="c-referral"><option value="no">No</option><option value="yes">Yes — enrolled in referral program</option></select></div>
       <div class="field"><label>Bonuses paid out ($)</label><input id="c-paid" type="number" step="0.01" placeholder="0.00"></div>
       <div class="field span2"><label>Notes</label><textarea id="c-notes" placeholder="How you met, what they specialize in, follow-up reminders..."></textarea></div>
@@ -1766,6 +1844,7 @@ const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+let allOutreach=[], outreachMissing=false;
 let currentUser=null, allLeads=[], allConnections=[], allComms=[], allEvents=[], allRecurring=[], allVisits=[], allResearchLists=[], allResearchBiz=[], allAccounts=[], allTodos=[], authMode='login', viewingLeadId=null;
 const TODO_ASSIGNEES=['Jack','Charlie','Tanner'];
 const TODO_STATUSES=['To Do','In Progress','Waiting','Done'];
@@ -1825,6 +1904,7 @@ async function handleAuthSession(event,session){
     await loadResearch();
     await loadAccounts();
     await loadTodos();
+    await loadOutreach();
     applySettingsOnLoad();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
@@ -2161,7 +2241,7 @@ async function upsertConnection(conn){const{data,error}=await sb.from('connectio
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',outreach:'Outreach',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
 function refreshAll(){
   renderDashboard();
   const active=document.querySelector('.nav-item.active');
@@ -3408,7 +3488,7 @@ function renderJobs(){
 // ── Connections ────────────────────────────────────────────────────────────
 function openAddConnection(){
   document.getElementById('modal-conn-title').textContent='Add contact';document.getElementById('conn-edit-id').value='';
-  ['c-first','c-last','c-company','c-phone','c-email','c-notes','c-paid'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['c-first','c-last','c-company','c-phone','c-email','c-notes','c-paid','c-lastcontact'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('c-type').value='Realtor';document.getElementById('c-referral').value='no';
   const cw=document.getElementById('c-type-custom-wrap');if(cw)cw.style.display='none';
   const cc=document.getElementById('c-type-custom');if(cc)cc.value='';
@@ -3420,14 +3500,14 @@ function editConnectionModal(conn){
   document.getElementById('c-company').value=conn.company||'';setContactType(conn.contact_type||'Realtor');
   document.getElementById('c-phone').value=conn.phone||'';document.getElementById('c-email').value=conn.email||'';
   document.getElementById('c-referral').value=conn.is_referral_partner?'yes':'no';document.getElementById('c-paid').value=conn.bonuses_paid||'';
-  document.getElementById('c-notes').value=conn.notes||'';openModal('connection');
+  document.getElementById('c-notes').value=conn.notes||'';document.getElementById('c-lastcontact').value=conn.last_contact||'';openModal('connection');
 }
 async function saveConnection(){
   const first=document.getElementById('c-first').value.trim();if(!first){alert('First name is required.');return;}
   const btn=document.getElementById('conn-save-btn');btn.disabled=true;btn.textContent='Saving...';
   const id=document.getElementById('conn-edit-id').value||uid();
-  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:getContactType(),phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,updated_at:new Date().toISOString()};
-  try{const saved=await upsertConnection(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);await consumePendingCommLink('connection',saved.id);closeModal('connection');renderConnections();renderReferrals();}
+  const conn={id,first_name:first,last_name:document.getElementById('c-last').value,company:document.getElementById('c-company').value,contact_type:getContactType(),phone:fmtPhoneNum(document.getElementById('c-phone').value),email:document.getElementById('c-email').value,is_referral_partner:document.getElementById('c-referral').value==='yes',bonuses_paid:document.getElementById('c-paid').value||null,notes:document.getElementById('c-notes').value,last_contact:document.getElementById('c-lastcontact').value||null,updated_at:new Date().toISOString()};
+  try{const saved=await upsertConnectionSafe(conn);const idx=allConnections.findIndex(c=>c.id===id);if(idx>-1)allConnections[idx]=saved;else allConnections.unshift(saved);await consumePendingCommLink('connection',saved.id);closeModal('connection');renderConnections();renderReferrals();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save contact';
 }
@@ -3450,6 +3530,7 @@ function viewConnection(id){
       <div class="record-field"><div class="lbl">Company</div><div class="val">${c.company||'—'}</div></div>
       <div class="record-field"><div class="lbl">Phone</div><div class="val">${c.phone||'—'}</div></div>
       <div class="record-field"><div class="lbl">Email</div><div class="val">${c.email||'—'}</div></div>
+      <div class="record-field"><div class="lbl">Last contact</div><div class="val"><div id="conn-lc-val">${lastContactCell(connLastContact(c,buildLastContactIndex()),false)}</div><button class="btn btn-sm" style="margin-top:6px;" onclick="logConnectionContact('${c.id}')"><i class="ti ti-phone-check"></i> Log contact today</button></div></div>
       <div class="record-field"><div class="lbl">Referral partner</div><div class="val">${c.is_referral_partner?'✅ Yes':'No'}</div></div>
       <div class="record-field"><div class="lbl">Jobs referred</div><div class="val" style="font-weight:600;color:var(--teal-500);">${jobsReferred}</div></div>
       ${c.is_referral_partner?`<div class="record-field"><div class="lbl">Current tier</div><div class="val">${tierInfo.label}</div></div><div class="record-field"><div class="lbl">Bonuses paid</div><div class="val">${$m(c.bonuses_paid)}</div></div>`:''}
@@ -3479,8 +3560,328 @@ function viewConnection(id){
 function renderConnections(){
   const search=(document.getElementById('conn-search').value||'').toLowerCase();
   const fType=document.getElementById('conn-filter-type').value;
-  const data=allConnections.filter(c=>{const t=`${c.first_name} ${c.last_name} ${c.company||''} ${c.email||''}`.toLowerCase();return(!search||t.includes(search))&&(!fType||c.contact_type===fType);});
-  document.getElementById('connections-body').innerHTML=data.length?data.map(c=>{const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;return`<tr><td style="font-weight:500;">${c.first_name} ${c.last_name}</td><td>${c.company||'—'}</td><td><span class="badge badge-lead">${c.contact_type||'—'}</span></td><td>${c.phone||'—'}</td><td style="font-size:12px;">${c.email||'—'}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${c.notes||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;}).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No contacts yet.</td></tr>';
+  const sortBy=(document.getElementById('conn-sort')||{}).value||'';
+  const idx=buildLastContactIndex();
+  let rows=allConnections.filter(c=>{const t=`${c.first_name} ${c.last_name} ${c.company||''} ${c.email||''}`.toLowerCase();return(!search||t.includes(search))&&(!fType||c.contact_type===fType);}).map(c=>({c,lc:connLastContact(c,idx)}));
+  if(sortBy==='oldest')rows.sort((a,b)=>(a.lc?a.lc.ts:0)-(b.lc?b.lc.ts:0));
+  else if(sortBy==='newest')rows.sort((a,b)=>(b.lc?b.lc.ts:0)-(a.lc?a.lc.ts:0));
+  document.getElementById('connections-body').innerHTML=rows.length?rows.map(({c,lc})=>{
+    const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
+    return`<tr><td style="font-weight:500;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</td><td>${esc(c.company)||'—'}</td><td><span class="badge badge-lead">${esc(c.contact_type)||'—'}</span></td><td>${esc(c.phone)||'—'}</td><td style="font-size:12px;">${esc(c.email)||'—'}</td><td>${lastContactCell(lc,true)}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--ink-3);padding:30px;">No contacts yet.</td></tr>';
+}
+
+// ── Outreach ───────────────────────────────────────────────────────────────
+const OUTREACH_FOLLOWUP_DAYS=5;
+const OUTREACH_STATUS_STYLE={'Emailed':['var(--blue-light)','var(--blue-600)'],'Followed up':['var(--amber-light)','var(--amber-600)'],'Replied':['var(--green-light)','var(--green-600)'],'Parked':['#eceae4','#6b6a63'],'Not interested':['var(--red-light)','var(--red-600)']};
+function outToast(msg){const t=document.getElementById('out-toast');if(!t)return;t.textContent=msg;t.style.display='block';clearTimeout(window._outToastT);window._outToastT=setTimeout(()=>{t.style.display='none';},4500);}
+function outToday(){return new Date().toISOString().split('T')[0];}
+function outAddDays(dateStr,n){const d=new Date((dateStr||outToday())+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+function outShortDate(d){if(!d)return '—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch(e){return d;}}
+function outName(o){return `${o.first_name||''} ${o.last_name||''}`.trim()||o.company||'(no name)';}
+function outIsWaiting(o){return !o.connection_id&&(o.status==='Emailed'||o.status==='Followed up');}
+function outIsDue(o){return outIsWaiting(o)&&!!o.next_followup&&o.next_followup<=outToday();}
+function outBadge(o){const st=o.connection_id?'Replied':o.status;const c=OUTREACH_STATUS_STYLE[st]||OUTREACH_STATUS_STYLE.Emailed;return`<span class="badge" style="background:${c[0]};color:${c[1]};">${o.connection_id?'In Connections':esc(st)}</span>`;}
+
+// ── Last contact: newest of (logged by hand, synced messages, past meetings) ──
+function lcTs(v){if(!v)return 0;const x=String(v);const d=/^\d{4}-\d{2}-\d{2}$/.test(x)?new Date(x+'T12:00:00'):new Date(x);const t=d.getTime();return isNaN(t)?0:t;}
+function lcDaysAgo(ts){const d=new Date(ts);d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);return Math.round((t-d)/86400000);}
+function lcRel(days){if(days<=0)return'today';if(days===1)return'yesterday';if(days<14)return`${days} days ago`;if(days<60)return`${Math.round(days/7)} weeks ago`;return`${Math.round(days/30)} months ago`;}
+function lcDate(ts){const d=new Date(ts);const same=d.getFullYear()===new Date().getFullYear();return d.toLocaleDateString('en-US',same?{month:'short',day:'numeric'}:{month:'short',day:'numeric',year:'numeric'});}
+function buildLastContactIndex(){
+  const byPhone=new Map(),byEmail=new Map(),byConn=new Map(),evByConn=new Map();
+  const bump=(m,k,ts,src)=>{if(!k||!ts)return;const cur=m.get(k);if(!cur||ts>cur.ts)m.set(k,{ts,src});};
+  allComms.forEach(c=>{const ts=lcTs(c.received_at);if(!ts)return;const ck=commKeys(c);const src=commKind(c);bump(byPhone,ck.phone,ts,src);bump(byEmail,ck.email,ts,src);if(c.connection_id)bump(byConn,c.connection_id,ts,src);});
+  const now=Date.now();
+  allEvents.forEach(e=>{if(!e.connection_id||!e.event_date||(e.event_type||'meeting')!=='meeting')return;const ts=lcTs(e.event_date);if(!ts||ts>now)return;bump(evByConn,e.connection_id,ts,'Meeting');});
+  return{byPhone,byEmail,byConn,evByConn};
+}
+function lcBest(list){return list.filter(Boolean).sort((a,b)=>b.ts-a.ts)[0]||null;}
+function connLastContact(c,idx){
+  return lcBest([c.last_contact?{ts:lcTs(c.last_contact),src:'Logged'}:null,idx.byConn.get(c.id),idx.byPhone.get(lastTen(c.phone)),idx.byEmail.get(String(c.email||'').trim().toLowerCase()),idx.evByConn.get(c.id)]);
+}
+function outLastContact(o,idx){
+  if(o.connection_id){const c=allConnections.find(x=>x.id===o.connection_id);if(c)return connLastContact(c,idx);}
+  const own=o.last_touch||o.emailed_date;
+  return lcBest([own?{ts:lcTs(own),src:'Emailed'}:null,idx.byPhone.get(lastTen(o.phone)),idx.byEmail.get(String(o.email||'').trim().toLowerCase())]);
+}
+function lastContactCell(lc,cool){
+  if(!lc)return'<span style="color:var(--ink-3);font-size:12px;">Never</span>';
+  const days=lcDaysAgo(lc.ts);const amber=cool&&days>=60;
+  return`<div style="font-size:12px;font-weight:500;${amber?'color:var(--amber-600);':''}">${esc(lcDate(lc.ts))}</div><div class="td-muted" style="${amber?'color:var(--amber-600);':''}">${esc(lcRel(days))} · ${esc(lc.src)}</div>`;
+}
+// Saves a connection; if the new last_contact column hasn't been created yet, saves everything else anyway
+async function upsertConnectionSafe(conn){
+  try{return await upsertConnection(conn);}
+  catch(e){
+    if(/last_contact/i.test(e.message||'')){
+      const rest={...conn};delete rest.last_contact;
+      const saved=await upsertConnection(rest);
+      outToast('Saved. To keep manual "Last contact" dates, run the Last contact SQL step in Supabase.');
+      return saved;
+    }
+    throw e;
+  }
+}
+async function logConnectionContact(id){
+  const c=allConnections.find(x=>x.id===id);if(!c)return;
+  const today=outToday();
+  const{data,error}=await sb.from('connections').update({last_contact:today,updated_at:new Date().toISOString()}).eq('id',id).select();
+  if(error){alert(/last_contact/i.test(error.message||'')?'The "Last contact" column doesn\'t exist yet. Run the Last contact SQL step in Supabase, then try again.':'Could not save: '+error.message);return;}
+  if(!data||!data.length){alert('The database blocked that update.');return;}
+  const i=allConnections.findIndex(x=>x.id===id);if(i>-1)allConnections[i]=data[0];
+  const v=document.getElementById('conn-lc-val');if(v)v.innerHTML=lastContactCell(connLastContact(data[0],buildLastContactIndex()),false);
+  renderConnections();outToast('Contact logged for today.');
+}
+
+async function loadOutreach(){
+  try{
+    const{data,error}=await sb.from('outreach').select('*').order('created_at',{ascending:false});
+    if(error){console.error('outreach error:',error);outreachMissing=/does not exist|relation|schema cache|could not find the table/i.test(error.message||'');allOutreach=[];}
+    else{outreachMissing=false;allOutreach=data||[];}
+  }catch(e){console.error('loadOutreach failed:',e);}
+}
+function renderOutreach(){
+  const body=document.getElementById('outreach-body');if(!body)return;
+  if(outreachMissing){body.innerHTML='<tr><td colspan="10" style="padding:30px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.7;"><strong style="color:var(--ink);">One-time setup needed.</strong><br>The Outreach table hasn\'t been created in your database yet. Run the "Outreach table" SQL step in Supabase, then refresh this page.</td></tr>';document.getElementById('out-summary').innerHTML='';return;}
+  const search=(document.getElementById('out-search').value||'').toLowerCase();
+  const fStat=document.getElementById('out-filter-status').value;
+  const fType=document.getElementById('out-filter-type').value;
+  const fBy=document.getElementById('out-filter-by').value;
+  const fDue=document.getElementById('out-filter-due').checked;
+  const sortBy=(document.getElementById('out-sort')||{}).value||'';
+  const lcIdx=buildLastContactIndex();
+  // summary strip (always over everyone)
+  const total=allOutreach.length;const moved=allOutreach.filter(o=>o.connection_id).length;
+  const waiting=allOutreach.filter(outIsWaiting).length;const due=allOutreach.filter(outIsDue).length;
+  const rate=total?Math.round(moved/total*100):0;
+  document.getElementById('out-summary').innerHTML=
+    `<div class="out-stat"><strong>${total}</strong>Contacted</div>`
+    +`<div class="out-stat"><strong>${waiting}</strong>Waiting on reply</div>`
+    +`<div class="out-stat" style="${due?'background:var(--amber-light);':''}"><strong>${due}</strong>Follow-ups due</div>`
+    +`<div class="out-stat"><strong>${moved}</strong>Replied → Connections</div>`
+    +`<div class="out-stat"><strong>${rate}%</strong>Reply rate</div>`;
+  let data=allOutreach.filter(o=>{
+    const t=`${o.first_name||''} ${o.last_name||''} ${o.company||''} ${o.email||''}`.toLowerCase();
+    let statMatch;
+    if(fStat==='waiting')statMatch=outIsWaiting(o);
+    else if(fStat==='')statMatch=true;
+    else if(fStat==='Replied')statMatch=!!o.connection_id||o.status==='Replied';
+    else statMatch=!o.connection_id&&o.status===fStat;
+    return(!search||t.includes(search))&&statMatch&&(!fType||o.contact_type===fType)&&(!fBy||o.reached_by===fBy)&&(!fDue||outIsDue(o));
+  });
+  const lcOf=o=>{const x=outLastContact(o,lcIdx);return x?x.ts:0;};
+  if(sortBy==='oldest')data=data.slice().sort((a,b)=>lcOf(a)-lcOf(b));
+  else if(sortBy==='newest')data=data.slice().sort((a,b)=>lcOf(b)-lcOf(a));
+  else data=data.slice().sort((a,b)=>{
+    const da=outIsDue(a)?0:1,db=outIsDue(b)?0:1;if(da!==db)return da-db;
+    const na=a.next_followup||'9999',nb=b.next_followup||'9999';if(da===0&&na!==nb)return na<nb?-1:1;
+    return String(b.created_at||'').localeCompare(String(a.created_at||''));
+  });
+  body.innerHTML=data.length?data.map(o=>{
+    const due=outIsDue(o);const bg=due?' style="background:var(--amber-light);cursor:pointer;"':' style="cursor:pointer;"';
+    const click=o.connection_id?`viewConnection('${o.connection_id}')`:`editOutreach('${o.id}')`;
+    const actions=outIsWaiting(o)
+      ?`<button class="btn btn-sm" title="Log a follow-up email" onclick="event.stopPropagation();outreachLogFollowup('${o.id}')"><i class="ti ti-mail-forward"></i></button> <button class="btn btn-sm btn-primary" title="They replied: move to Connections" onclick="event.stopPropagation();outreachMarkReplied('${o.id}')"><i class="ti ti-check"></i> Replied</button>`
+      :(o.connection_id?`<button class="btn btn-sm" onclick="event.stopPropagation();viewConnection('${o.connection_id}')">Open</button>`:'');
+    return`<tr${bg} onclick="${click}"><td><div style="font-weight:500;">${esc(outName(o))}</div>${o.company?`<div class="td-muted">${esc(o.company)}</div>`:''}</td><td style="font-size:12px;">${esc(o.contact_type||'—')}</td><td>${outBadge(o)}</td><td style="font-size:12px;">${esc(o.email||'—')}</td><td style="font-size:12px;">${esc(o.reached_by||'—')}</td><td>${lastContactCell(outLastContact(o,lcIdx),false)}</td><td style="font-size:12px;">${outShortDate(o.emailed_date)}</td><td style="font-size:12px;${due?'font-weight:600;color:var(--amber-600);':''}">${outIsWaiting(o)?outShortDate(o.next_followup)+(due?' (due)':''):'—'}</td><td style="font-size:12px;">${o.touches||1}</td><td style="white-space:nowrap;">${actions}</td></tr>`;
+  }).join(''):`<tr><td colspan="10" style="padding:30px;text-align:center;color:var(--ink-3);font-size:13px;">${allOutreach.length?'No one matches these filters.':'No outreach yet. Click "Add contact", or "Import list" to bring in a spreadsheet.'}</td></tr>`;
+}
+
+function outDefaultPartner(){
+  const n=String((currentUser&&currentUser.user_metadata&&currentUser.user_metadata.full_name)||'').trim().split(/\s+/)[0].toLowerCase();
+  return TODO_ASSIGNEES.find(a=>a.toLowerCase()===n)||'';
+}
+function openAddOutreach(){
+  document.getElementById('modal-out-title').textContent='Add outreach contact';
+  document.getElementById('out-edit-id').value='';
+  ['o-first','o-last','o-company','o-email','o-phone','o-notes','o-touches'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('o-type').value='Realtor';document.getElementById('o-status').value='Emailed';
+  document.getElementById('o-by').value=outDefaultPartner();
+  document.getElementById('o-date').value=outToday();document.getElementById('o-lastcontact').value=outToday();document.getElementById('o-next').value=outAddDays(outToday(),OUTREACH_FOLLOWUP_DAYS);
+  document.getElementById('o-del-btn').style.display='none';
+  outreachStatusHint();openModal('outreach');
+}
+function editOutreach(id){
+  const o=allOutreach.find(x=>x.id===id);if(!o)return;
+  if(o.connection_id){viewConnection(o.connection_id);return;}
+  document.getElementById('modal-out-title').textContent=outName(o);
+  document.getElementById('out-edit-id').value=o.id;
+  document.getElementById('o-first').value=o.first_name||'';document.getElementById('o-last').value=o.last_name||'';
+  document.getElementById('o-company').value=o.company||'';document.getElementById('o-type').value=o.contact_type||'Other';
+  document.getElementById('o-email').value=o.email||'';document.getElementById('o-phone').value=o.phone||'';
+  document.getElementById('o-by').value=o.reached_by||'';document.getElementById('o-date').value=o.emailed_date||'';
+  document.getElementById('o-status').value=o.status||'Emailed';document.getElementById('o-next').value=o.next_followup||'';
+  document.getElementById('o-touches').value=o.touches||1;document.getElementById('o-lastcontact').value=o.last_touch||o.emailed_date||'';document.getElementById('o-notes').value=o.notes||'';
+  document.getElementById('o-del-btn').style.display='inline-flex';
+  outreachStatusHint();openModal('outreach');
+}
+function outreachStatusHint(){
+  const h=document.getElementById('o-hint');const st=document.getElementById('o-status').value;
+  if(st==='Replied'){h.style.display='block';h.textContent='When you click Save, this person will be moved into Connections automatically, with their outreach history added to their notes.';}
+  else h.style.display='none';
+}
+function outNorm(v){return String(v||'').trim().toLowerCase();}
+function outPhoneKey(v){const d=String(v||'').replace(/\D/g,'');return d.length>=10?d.slice(-10):'';}
+function outFindDuplicate(email,phone,ignoreId){
+  const e=outNorm(email),p=outPhoneKey(phone);if(!e&&!p)return null;
+  const o=allOutreach.find(x=>x.id!==ignoreId&&((e&&outNorm(x.email)===e)||(p&&outPhoneKey(x.phone)===p)));
+  if(o)return{label:outName(o),where:o.connection_id?'in Connections':'in Outreach'};
+  const c=allConnections.find(x=>(e&&outNorm(x.email)===e)||(p&&outPhoneKey(x.phone)===p));
+  if(c)return{label:`${c.first_name||''} ${c.last_name||''}`.trim(),where:'in Connections'};
+  return null;
+}
+function outConnectionMatch(email,phone){
+  const e=outNorm(email),p=outPhoneKey(phone);if(!e&&!p)return null;
+  return allConnections.find(x=>(e&&outNorm(x.email)===e)||(p&&outPhoneKey(x.phone)===p))||null;
+}
+// Create (or reuse) the Connection for someone who replied
+async function promoteOutreach(o){
+  const hit=outConnectionMatch(o.email,o.phone);
+  if(hit)return{conn:hit,created:false};
+  const bits=[`Outreach: first emailed ${outShortDate(o.emailed_date)}${o.reached_by?' by '+o.reached_by:''}, ${o.touches||1} email${(o.touches||1)>1?'s':''} sent, replied ${outShortDate(outToday())}.`];
+  if(o.notes)bits.push(o.notes);
+  const conn={id:uid(),first_name:o.first_name,last_name:o.last_name||'',company:o.company||'',contact_type:o.contact_type||'Other',phone:o.phone||'',email:o.email||'',is_referral_partner:false,bonuses_paid:null,notes:bits.join('\n'),last_contact:outToday(),updated_at:new Date().toISOString()};
+  const saved=await upsertConnectionSafe(conn);allConnections.unshift(saved);
+  return{conn:saved,created:true};
+}
+async function outSaveRow(row){
+  const{data,error}=await sb.from('outreach').upsert([row],{onConflict:'id'}).select();
+  if(error)throw error;const saved=data[0];
+  const i=allOutreach.findIndex(x=>x.id===saved.id);if(i>-1)allOutreach[i]=saved;else allOutreach.unshift(saved);
+  return saved;
+}
+function outPermMsg(e){return /permission|policy|row-level|does not exist|schema cache/i.test(e.message||'')?'The database blocked this. Run the "Outreach table" SQL step in Supabase first.':(e.message||'Something went wrong.');}
+async function saveOutreach(){
+  const first=document.getElementById('o-first').value.trim();
+  if(!first){alert('First name is required.');return;}
+  const id=document.getElementById('out-edit-id').value||uid();
+  const existing=allOutreach.find(x=>x.id===id);
+  const email=document.getElementById('o-email').value.trim();const phone=fmtPhoneNum(document.getElementById('o-phone').value);
+  if(!existing){const dup=outFindDuplicate(email,phone,id);if(dup&&!confirm(`${dup.label} is already ${dup.where} with that email or phone.\n\nAdd them again anyway?`))return;}
+  const status=document.getElementById('o-status').value;
+  const emailed=document.getElementById('o-date').value||outToday();
+  const row={id,first_name:first,last_name:document.getElementById('o-last').value.trim(),company:document.getElementById('o-company').value.trim(),contact_type:document.getElementById('o-type').value,email,phone,status,reached_by:document.getElementById('o-by').value||null,emailed_date:emailed,last_touch:document.getElementById('o-lastcontact').value||(existing&&existing.last_touch)||emailed,next_followup:document.getElementById('o-next').value||null,touches:parseInt(document.getElementById('o-touches').value,10)||1,notes:document.getElementById('o-notes').value.trim(),created_by:(existing&&existing.created_by)||(currentUser&&currentUser.email)||null,updated_at:new Date().toISOString()};
+  if(row.status!=='Emailed'&&row.status!=='Followed up')row.next_followup=null;
+  const btn=document.getElementById('o-save-btn');btn.disabled=true;btn.textContent='Saving...';
+  try{
+    let msg='Saved.';
+    if(status==='Replied'){
+      const r=await promoteOutreach(row);row.connection_id=r.conn.id;row.replied_at=new Date().toISOString();
+      msg=r.created?`${outName(row)} moved to Connections.`:`${outName(row)} was already in Connections, so I linked them instead of making a duplicate.`;
+    }
+    await outSaveRow(row);
+    closeModal('outreach');renderOutreach();if(status==='Replied'){renderConnections();renderReferrals();}
+    outToast(msg);
+  }catch(e){alert('Save failed: '+outPermMsg(e));}
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save';
+}
+async function deleteOutreach(){
+  const id=document.getElementById('out-edit-id').value;const o=allOutreach.find(x=>x.id===id);if(!o)return;
+  if(!confirm(`Delete ${outName(o)} from Outreach?`))return;
+  const{error}=await sb.from('outreach').delete().eq('id',id);
+  if(error){alert('Delete failed: '+outPermMsg(error));return;}
+  allOutreach=allOutreach.filter(x=>x.id!==id);closeModal('outreach');renderOutreach();
+}
+async function outreachLogFollowup(id){
+  const o=allOutreach.find(x=>x.id===id);if(!o)return;
+  const row={...o,status:'Followed up',touches:(o.touches||1)+1,last_touch:outToday(),next_followup:outAddDays(outToday(),7),updated_at:new Date().toISOString()};
+  try{await outSaveRow(row);renderOutreach();outToast(`Follow-up logged for ${outName(o)}. Next one in 7 days.`);}
+  catch(e){alert('Could not save: '+outPermMsg(e));}
+}
+async function outreachMarkReplied(id){
+  const o=allOutreach.find(x=>x.id===id);if(!o)return;
+  if(!confirm(`Mark ${outName(o)} as replied and move them to Connections?`))return;
+  try{
+    const r=await promoteOutreach(o);
+    await outSaveRow({...o,status:'Replied',connection_id:r.conn.id,replied_at:new Date().toISOString(),next_followup:null,updated_at:new Date().toISOString()});
+    renderOutreach();renderConnections();renderReferrals();
+    outToast(r.created?`${outName(o)} moved to Connections.`:`${outName(o)} was already in Connections, so I linked them.`);
+  }catch(e){alert('Could not move: '+outPermMsg(e));}
+}
+
+// ── Outreach import (paste or CSV) ─────────────────────────────────────────
+function outParseDelimited(text){
+  const t=String(text||'').replace(/\r\n?/g,'\n').replace(/^\uFEFF/,'').trim();if(!t)return[];
+  const firstLine=t.split('\n')[0];const delim=firstLine.includes('\t')?'\t':(firstLine.split(';').length>firstLine.split(',').length?';':',');
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){cell+='"';i++;}else q=false;}else cell+=c;}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cell);cell='';}
+    else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}
+    else cell+=c;
+  }
+  row.push(cell);rows.push(row);
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(x=>x));
+}
+const OUT_HEADER_MAP={first:'first',firstname:'first',givenname:'first',last:'last',lastname:'last',surname:'last',familyname:'last',name:'full',fullname:'full',contact:'full',contactname:'full',company:'company',organization:'company',business:'company',brokerage:'company',agency:'company',type:'type',role:'type',category:'type',contacttype:'type',email:'email',emailaddress:'email',mail:'email',phone:'phone',phonenumber:'phone',mobile:'phone',cell:'phone',tel:'phone',notes:'notes',note:'notes'};
+function outNormType(v,fallback){
+  const t=String(v||'').toLowerCase();
+  if(/realt|agent|broker/.test(t))return'Realtor';
+  if(/propert|pm\b|manage/.test(t)&&!/hoa|associat/.test(t))return'Property Manager';
+  if(/hoa|associat|communit/.test(t))return'HOA Manager';
+  if(/contract|builder|construct/.test(t))return'General Contractor';
+  return fallback;
+}
+function outBuildImport(){
+  const rows=outParseDelimited(document.getElementById('oi-text').value);
+  const fallbackType=document.getElementById('oi-type').value;
+  if(!rows.length)return{items:[],skipped:{dup:0,bad:0},total:0,headerFound:true};
+  const norm=h=>String(h||'').toLowerCase().replace(/[^a-z]/g,'');
+  const mapped=rows[0].map(h=>OUT_HEADER_MAP[norm(h)]||null);
+  const headerFound=mapped.filter(Boolean).length>=1&&mapped.some(m=>m==='first'||m==='full'||m==='email'||m==='company');
+  let cols,data;
+  if(headerFound){cols=mapped;data=rows.slice(1);}
+  else{cols=['first','last','company','type','email','phone'];data=rows;}
+  const seen=new Set();const items=[];let dup=0,bad=0;
+  data.forEach(r=>{
+    const rec={};cols.forEach((c,i)=>{if(c&&r[i]!==undefined&&!rec[c])rec[c]=r[i];});
+    let first=rec.first||'',last=rec.last||'';
+    if(!first&&rec.full){const p=rec.full.trim().split(/\s+/);first=p[0]||'';last=p.slice(1).join(' ');}
+    const email=(rec.email||'').trim();
+    if(!first&&!rec.company&&!email){bad++;return;}
+    if(!first)first=rec.company||email.split('@')[0];
+    const phone=fmtPhoneNum(rec.phone||'');
+    const e=outNorm(email),p=outPhoneKey(phone);
+    if((e&&seen.has('e'+e))||(p&&seen.has('p'+p))||outFindDuplicate(email,phone,null)){dup++;return;}
+    if(e)seen.add('e'+e);if(p)seen.add('p'+p);
+    items.push({first_name:first,last_name:last,company:rec.company||'',contact_type:outNormType(rec.type,fallbackType),email,phone,notes:rec.notes||''});
+  });
+  return{items,skipped:{dup,bad},total:data.length,headerFound};
+}
+function openOutreachImport(){
+  document.getElementById('oi-text').value='';document.getElementById('oi-file').value='';
+  document.getElementById('oi-by').value=outDefaultPartner();document.getElementById('oi-date').value=outToday();
+  document.getElementById('oi-preview').textContent='';document.getElementById('oi-go').disabled=true;
+  openModal('outreach-import');
+}
+function outreachImportFile(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{document.getElementById('oi-text').value=String(r.result||'');outreachImportPreview();};r.readAsText(f);
+}
+function outreachImportPreview(){
+  const res=outBuildImport();const box=document.getElementById('oi-preview');const go=document.getElementById('oi-go');
+  if(!res.total){box.textContent='';go.disabled=true;return;}
+  const n=res.items.length;
+  box.innerHTML=`<strong>${n}</strong> new contact${n===1?'':'s'} ready to import`+(res.skipped.dup?` · <strong>${res.skipped.dup}</strong> skipped (already in your CRM or repeated in the list)`:'')+(res.skipped.bad?` · <strong>${res.skipped.bad}</strong> skipped (no name, company or email)`:'')+(res.headerFound?'':'<br><span style="color:var(--amber-600);">No column names found in the first row, so I assumed this order: First name, Last name, Company, Type, Email, Phone.</span>')
+    +(n?'<div style="margin-top:6px;color:var(--ink-3);font-size:12px;">First few: '+res.items.slice(0,3).map(i=>esc(`${i.first_name} ${i.last_name}`.trim()+(i.email?' ('+i.email+')':''))).join('; ')+'</div>':'');
+  go.disabled=!n;go.innerHTML=`<i class="ti ti-check"></i> Import ${n}`;
+}
+async function outreachImportRun(){
+  const res=outBuildImport();if(!res.items.length)return;
+  const by=document.getElementById('oi-by').value||null;const date=document.getElementById('oi-date').value||outToday();
+  const now=new Date().toISOString();const go=document.getElementById('oi-go');go.disabled=true;go.textContent='Importing...';
+  const rows=res.items.map(i=>({id:uid(),...i,status:'Emailed',reached_by:by,emailed_date:date,last_touch:date,next_followup:outAddDays(date,OUTREACH_FOLLOWUP_DAYS),touches:1,created_by:(currentUser&&currentUser.email)||null,updated_at:now}));
+  try{
+    for(let i=0;i<rows.length;i+=200){
+      const{data,error}=await sb.from('outreach').insert(rows.slice(i,i+200)).select();
+      if(error)throw error;allOutreach=[...(data||[]),...allOutreach];
+    }
+    closeModal('outreach-import');renderOutreach();outToast(`Imported ${rows.length} contact${rows.length===1?'':'s'}.`);
+  }catch(e){alert('Import stopped: '+outPermMsg(e)+'\n\nAnything already imported before the error is saved; run the import again to add the rest (repeats are skipped).');renderOutreach();}
+  go.disabled=false;go.innerHTML='<i class="ti ti-check"></i> Import';
 }
 
 // ── Referrals ──────────────────────────────────────────────────────────────
@@ -4525,6 +4926,7 @@ function nav(el){
   if(page==='jobs')renderJobs();
   if(page==='calendar')renderCalendar();
   if(page==='comms')renderComms();
+  if(page==='outreach')renderOutreach();
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
