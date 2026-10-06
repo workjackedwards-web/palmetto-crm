@@ -1363,6 +1363,16 @@ tbody tr:hover td{background:#faf9f6;}
 
 <div id="out-toast"></div>
 
+<div class="overlay" id="modal-conn-acct-link">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2>Link to an account</h2><button class="btn btn-sm" onclick="closeModal('conn-acct-link')"><i class="ti ti-x"></i></button></div>
+    <p id="cal-summary" style="font-size:13px;color:var(--ink-3);margin-bottom:10px;"></p>
+    <input type="text" id="cal-search" placeholder="Search accounts..." oninput="renderConnAcctLinkList()" style="padding:8px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);width:100%;margin-bottom:10px;box-sizing:border-box;">
+    <div id="cal-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('conn-acct-link')">Cancel</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-todo">
   <div class="modal">
     <div class="modal-head"><h2 id="modal-todo-title">Add task</h2><button class="btn btn-sm" onclick="closeModal('todo')"><i class="ti ti-x"></i></button></div>
@@ -2309,21 +2319,32 @@ function esc(v){if(v==null)return'';const t=document.createElement('textarea');t
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return d;}}
 
 // ── Modals ─────────────────────────────────────────────────────────────────
-let _modalSavedScrollY=0;
+let _modalSavedScrollY=0,_modalDepth=0;
 function openModal(name){
-  document.getElementById('modal-'+name).classList.add('open');
-  _modalSavedScrollY=window.scrollY;
-  document.body.style.position='fixed';
-  document.body.style.top=`-${_modalSavedScrollY}px`;
-  document.body.style.width='100%';
+  const el=document.getElementById('modal-'+name);const wasOpen=el.classList.contains('open');
+  el.classList.add('open');
+  if(wasOpen)return;
+  if(_modalDepth===0){
+    _modalSavedScrollY=window.scrollY;
+    document.body.style.position='fixed';
+    document.body.style.top=`-${_modalSavedScrollY}px`;
+    document.body.style.width='100%';
+  }
+  _modalDepth++;
 }
 function closeModal(name){
-  document.getElementById('modal-'+name).classList.remove('open');
+  const el=document.getElementById('modal-'+name);const wasOpen=el.classList.contains('open');
+  el.classList.remove('open');
   if(name==='lead'||name==='connection'||name==='account')window._pendingCommLink=null;
-  document.body.style.position='';
-  document.body.style.top='';
-  document.body.style.width='';
-  window.scrollTo(0,_modalSavedScrollY);
+  if(name==='account')window._pendingConnAcctLink=null;
+  if(!wasOpen)return;
+  _modalDepth=Math.max(0,_modalDepth-1);
+  if(_modalDepth===0){
+    document.body.style.position='';
+    document.body.style.top='';
+    document.body.style.width='';
+    window.scrollTo(0,_modalSavedScrollY);
+  }
 }
 
 function openAddLead(){
@@ -2927,6 +2948,7 @@ function accountKeys(id){
   const k=newKeys();k.accountId=id;addRecordKeys(k,allAccounts.find(a=>a.id===id));
   allLeads.filter(l=>l.account_id===id).forEach(l=>{k.leadIds.push(l.id);addRecordKeys(k,l);});
   allRecurring.filter(r=>r.account_id===id).forEach(r=>addRecordKeys(k,r));
+  allConnections.filter(c=>c.account_id===id).forEach(c=>addRecordKeys(k,c));
   return k;
 }
 function commKeys(c){
@@ -2948,13 +2970,14 @@ function buildProfileIndex(){
   const byPhone=new Map(),byEmail=new Map();
   const put=(m,key,p)=>{if(!key)return;if(!m.has(key))m.set(key,new Map());m.get(key).set(p.kind+':'+p.id,p);};
   const reg=(p,k)=>{k.phones.forEach(x=>put(byPhone,x,p));k.emails.forEach(x=>put(byEmail,x,p));};
-  const leadsByAcct=new Map(),recsByAcct=new Map();
+  const leadsByAcct=new Map(),recsByAcct=new Map(),connsByAcct=new Map();
   allLeads.forEach(l=>{if(l.account_id){if(!leadsByAcct.has(l.account_id))leadsByAcct.set(l.account_id,[]);leadsByAcct.get(l.account_id).push(l);}});
   allRecurring.forEach(r=>{if(r.account_id){if(!recsByAcct.has(r.account_id))recsByAcct.set(r.account_id,[]);recsByAcct.get(r.account_id).push(r);}});
+  allConnections.forEach(c=>{if(c.account_id){if(!connsByAcct.has(c.account_id))connsByAcct.set(c.account_id,[]);connsByAcct.get(c.account_id).push(c);}});
   allLeads.forEach(l=>reg({kind:l.status==='Completed'?'customer':'lead',id:l.id,label:`${l.first_name} ${l.last_name}`.trim()},addRecordKeys(newKeys(),l)));
   allRecurring.forEach(r=>reg({kind:'recurring',id:r.id,label:`${r.first_name||''} ${r.last_name||''}`.trim()},addRecordKeys(newKeys(),r)));
   allConnections.forEach(c=>reg({kind:'connection',id:c.id,label:`${c.first_name} ${c.last_name}`.trim()},addRecordKeys(newKeys(),c)));
-  allAccounts.forEach(a=>{const k=addRecordKeys(newKeys(),a);(leadsByAcct.get(a.id)||[]).forEach(l=>addRecordKeys(k,l));(recsByAcct.get(a.id)||[]).forEach(r=>addRecordKeys(k,r));reg({kind:'account',id:a.id,label:a.name},k);});
+  allAccounts.forEach(a=>{const k=addRecordKeys(newKeys(),a);(leadsByAcct.get(a.id)||[]).forEach(l=>addRecordKeys(k,l));(recsByAcct.get(a.id)||[]).forEach(r=>addRecordKeys(k,r));(connsByAcct.get(a.id)||[]).forEach(c=>addRecordKeys(k,c));reg({kind:'account',id:a.id,label:a.name},k);});
   return{byPhone,byEmail};
 }
 function profilesForComm(c,idx){
@@ -3575,6 +3598,7 @@ function viewConnection(id){
       <div class="record-field"><div class="lbl">Phone</div><div class="val">${c.phone||'—'}</div></div>
       <div class="record-field"><div class="lbl">Email</div><div class="val">${c.email||'—'}</div></div>
       <div class="record-field"><div class="lbl">Last contact</div><div class="val"><div id="conn-lc-val">${lastContactCell(connLastContact(c,buildLastContactIndex()),false)}</div><button class="btn btn-sm" style="margin-top:6px;" onclick="logConnectionContact('${c.id}')"><i class="ti ti-phone-check"></i> Log contact today</button></div></div>
+      <div class="record-field"><div class="lbl">Account</div><div class="val"><div id="conn-acct-val">${connAcctHtml(c)}</div></div></div>
       <div class="record-field"><div class="lbl">Referral partner</div><div class="val">${c.is_referral_partner?'✅ Yes':'No'}</div></div>
       <div class="record-field"><div class="lbl">Jobs referred</div><div class="val" style="font-weight:600;color:var(--teal-500);">${jobsReferred}</div></div>
       ${c.is_referral_partner?`<div class="record-field"><div class="lbl">Current tier</div><div class="val">${tierInfo.label}</div></div><div class="record-field"><div class="lbl">Bonuses paid</div><div class="val">${$m(c.bonuses_paid)}</div></div>`:''}
@@ -3611,7 +3635,7 @@ function renderConnections(){
   else if(sortBy==='newest')rows.sort((a,b)=>(b.lc?b.lc.ts:0)-(a.lc?a.lc.ts:0));
   document.getElementById('connections-body').innerHTML=rows.length?rows.map(({c,lc})=>{
     const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
-    return`<tr><td style="font-weight:500;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</td><td>${esc(c.company)||'—'}</td><td><span class="badge badge-lead">${esc(c.contact_type)||'—'}</span></td><td>${esc(c.phone)||'—'}</td><td style="font-size:12px;">${esc(c.email)||'—'}</td><td>${lastContactCell(lc,true)}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;
+    return`<tr><td style="font-weight:500;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</td><td>${esc(c.company)||'—'}${c.account_id&&allAccounts.find(a=>a.id===c.account_id)?`<div class="td-muted">Account: ${esc(allAccounts.find(a=>a.id===c.account_id).name)}</div>`:''}</td><td><span class="badge badge-lead">${esc(c.contact_type)||'—'}</span></td><td>${esc(c.phone)||'—'}</td><td style="font-size:12px;">${esc(c.email)||'—'}</td><td>${lastContactCell(lc,true)}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--ink-3);padding:30px;">No contacts yet.</td></tr>';
 }
 
@@ -3927,6 +3951,90 @@ async function outreachImportRun(){
     closeModal('outreach-import');renderOutreach();outToast(`Imported ${rows.length} contact${rows.length===1?'':'s'}.`);
   }catch(e){alert('Import stopped: '+outPermMsg(e)+'\n\nAnything already imported before the error is saved; run the import again to add the rest (repeats are skipped).');renderOutreach();}
   go.disabled=false;go.innerHTML='<i class="ti ti-check"></i> Import';
+}
+
+// ── Connection <-> Account link ─────────────────────────────────────────────
+window._pendingConnAcctLink=null;
+function connAccount(c){return c&&c.account_id?(allAccounts.find(a=>a.id===c.account_id)||null):null;}
+function connAcctHtml(c){
+  const a=connAccount(c);
+  const btn=(label,icon,fn,cls)=>`<button class="btn btn-sm ${cls||''}" style="margin:6px 6px 0 0;" onclick="${fn}">${icon?`<i class="ti ${icon}"></i> `:''}${label}</button>`;
+  if(a)return`<div><a style="color:var(--teal-600);font-weight:500;cursor:pointer;" onclick="closeModal('view-conn');viewAccount('${a.id}')">${esc(a.name)}</a></div>`+btn('Change','',`openConnAcctLink('${c.id}')`)+btn('Unlink','',`unlinkConnAccount('${c.id}')`);
+  return`<div style="color:var(--ink-3);font-size:12px;">Not linked to an account</div>`+btn('Create account for this contact','ti-building',`createAccountFromConnection('${c.id}')`,'btn-primary')+btn('Link to existing account','ti-link',`openConnAcctLink('${c.id}')`);
+}
+function refreshConnAcct(id){
+  const c=allConnections.find(x=>x.id===id);if(!c)return;
+  const el=document.getElementById('conn-acct-val');if(el)el.innerHTML=connAcctHtml(c);
+  try{renderConnections();}catch(e){}
+  try{renderAccounts();}catch(e){}
+}
+async function setConnectionAccount(connId,acctId){
+  const{data,error}=await sb.from('connections').update({account_id:acctId||null,updated_at:new Date().toISOString()}).eq('id',connId).select();
+  if(error){alert(/account_id/i.test(error.message||'')?'Connections can\'t store an account link yet. Run the "Connection to Account link" SQL step in Supabase, then try again.':'Could not save the link: '+error.message);return false;}
+  if(!data||!data.length){alert('The database blocked that update.');return false;}
+  const i=allConnections.findIndex(x=>x.id===connId);if(i>-1)allConnections[i]=data[0];
+  refreshConnAcct(connId);
+  return true;
+}
+async function unlinkConnAccount(connId){
+  const c=allConnections.find(x=>x.id===connId);const a=connAccount(c);
+  if(!confirm(`Unlink ${c?`${c.first_name} ${c.last_name}`.trim():'this contact'} from ${a?a.name:'the account'}?\n\nNeither the contact nor the account is deleted.`))return;
+  if(await setConnectionAccount(connId,null))outToast('Unlinked.');
+}
+function connAccountMatch(c){
+  const name=String(c.company||'').trim().toLowerCase(),ph=lastTen(c.phone),em=String(c.email||'').trim().toLowerCase();
+  return allAccounts.find(a=>(name&&String(a.name||'').trim().toLowerCase()===name)||(ph&&lastTen(a.phone)===ph)||(em&&String(a.email||'').trim().toLowerCase()===em))||null;
+}
+async function createAccountFromConnection(connId){
+  const c=allConnections.find(x=>x.id===connId);if(!c)return;
+  const hit=connAccountMatch(c);
+  if(hit&&confirm(`You already have an account called "${hit.name}" that matches this contact.\n\nLink to it instead of creating a new one?`)){
+    if(await setConnectionAccount(connId,hit.id))outToast(`Linked to ${hit.name}.`);
+    return;
+  }
+  const full=`${c.first_name||''} ${c.last_name||''}`.trim();
+  const ct=String(c.contact_type||'');
+  const industry=/hoa/i.test(ct)?'HOA / Community':(/property/i.test(ct)?'Property Management':'');
+  closeModal('view-conn');
+  openAddAccount({name:c.company||'',industry});
+  document.getElementById('acct-contact').value=full;
+  document.getElementById('acct-phone').value=c.phone||'';
+  document.getElementById('acct-email').value=c.email||'';
+  document.getElementById('acct-notes').value=`Main contact: ${full}${ct?' ('+ct+')':''}.`;
+  window._pendingConnAcctLink={connId};
+}
+async function consumePendingConnAcctLink(acctId){
+  const p=window._pendingConnAcctLink;if(!p)return null;
+  window._pendingConnAcctLink=null;
+  const ok=await setConnectionAccount(p.connId,acctId);
+  if(ok)outToast('Account created and linked.');
+  return p.connId;
+}
+function openConnAcctLink(connId){
+  const c=allConnections.find(x=>x.id===connId);if(!c)return;
+  window._linkConnId=connId;
+  document.getElementById('cal-search').value='';
+  document.getElementById('cal-summary').textContent=`Choose the account that ${`${c.first_name||''} ${c.last_name||''}`.trim()} works with.`;
+  renderConnAcctLinkList();openModal('conn-acct-link');
+}
+function renderConnAcctLinkList(){
+  const q=(document.getElementById('cal-search').value||'').toLowerCase();
+  const opts=allAccounts.filter(a=>!q||`${a.name||''} ${a.industry||''} ${a.contact||''} ${a.phone||''}`.toLowerCase().includes(q)).slice(0,200);
+  window._calOpts=opts;
+  document.getElementById('cal-list').innerHTML=opts.length
+    ?opts.map((a,i)=>`<div class="profile-pick" onclick="pickConnAcct(${i})"><div style="font-weight:500;font-size:13px;">${esc(a.name)}</div><div style="font-size:12px;color:var(--ink-3);">${esc([a.industry,a.contact,a.phone].filter(Boolean).join(' · '))}</div></div>`).join('')
+    :'<div style="padding:20px;text-align:center;color:var(--ink-3);font-size:13px;">No accounts found. Use "Create account for this contact" instead.</div>';
+}
+async function pickConnAcct(i){
+  const a=(window._calOpts||[])[i];const id=window._linkConnId;if(!a||!id)return;
+  if(await setConnectionAccount(id,a.id)){closeModal('conn-acct-link');outToast(`Linked to ${a.name}.`);}
+}
+function acctContactsHtml(acctId){
+  const list=allConnections.filter(c=>c.account_id===acctId);
+  return`<div style="margin-top:20px;"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">👤 Contacts (${list.length})</div>`
+    +(list.length?list.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeModal('view-account');viewConnection('${c.id}')"><div><div style="font-weight:500;font-size:13px;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</div><div style="font-size:12px;color:var(--ink-3);">${esc([c.contact_type,c.phone,c.email].filter(Boolean).join(' · '))}</div></div><i class="ti ti-chevron-right" style="color:var(--ink-3);"></i></div>`).join('')
+      :'<div style="color:var(--ink-3);font-size:13px;padding:6px 0;">No contacts linked yet. Open a Connection and choose "Link to existing account."</div>')
+    +'</div>';
 }
 
 // ── Referrals ──────────────────────────────────────────────────────────────
@@ -6791,8 +6899,10 @@ async function saveAccount(){
     const idx=allAccounts.findIndex(a=>a.id===id);
     if(idx>-1)allAccounts[idx]=saved;else allAccounts.push(saved);
     await consumePendingCommLink('account',saved.id);
+    const reopenConn=await consumePendingConnAcctLink(saved.id);
     closeModal('account');
     renderAccounts();
+    if(reopenConn)viewConnection(reopenConn);
     return saved;
   }catch(e){alert('Save failed: '+e.message);}
 }
@@ -6838,6 +6948,7 @@ function viewAccount(id){
     <div style="margin-top:12px;">
       <button class="btn btn-sm" onclick="openAssignLocation('${id}')"><i class="ti ti-plus"></i> Assign existing lead or recurring</button>
     </div>
+    ${acctContactsHtml(id)}
     ${profileCommsHtml(accountKeys(id),'acct-comms-section')}
   `;
   document.getElementById('acct-edit-btn').onclick=()=>{
