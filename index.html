@@ -284,7 +284,7 @@ tbody tr:hover td{background:#faf9f6;}
   td:nth-child(5),th:nth-child(5){display:none;}
   /* Leads filter row — compact + flexible instead of 7 stacked full rows */
   #search{min-width:0;width:100%;flex-basis:100%;}
-  #f-status,#f-source,#f-ptype,#f-service,#f-sort{flex:1 1 150px;min-width:0;font-size:12px!important;padding:6px 8px!important;}
+  #f-status,#f-source,#f-ptype,#f-account,#f-service,#f-sort{flex:1 1 150px;min-width:0;font-size:12px!important;padding:6px 8px!important;}
 }
 @media(max-width:480px){
   .metrics{grid-template-columns:1fr;}
@@ -406,6 +406,9 @@ tbody tr:hover td{background:#faf9f6;}
           </select>
           <select id="f-ptype" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All properties</option><option>Residential</option><option>Commercial</option>
+          </select>
+          <select id="f-account" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
+            <option value="">All accounts</option>
           </select>
           <select id="f-service" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All services</option>
@@ -1103,6 +1106,11 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field span2" id="referral-link-field" style="display:none;">
         <label>Referred by (link to contact)</label>
         <select id="f-referrer-id"><option value="">Select referrer...</option></select>
+      </div>
+      <div class="field span2" id="lead-account-field">
+        <label>Account (optional)</label>
+        <select id="f-account-id" onchange="leadAccountChanged()"><option value="">None</option></select>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">Use this when the job is for a paying business or property group. Leave it as None for regular residential and referral jobs.</div>
       </div>
       <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option><option>Door-to-door</option></select></div>
       <div class="field"><label>Quote ($)</label><input id="f-quote" type="number" step="0.01" placeholder="0.00"></div>
@@ -2336,7 +2344,7 @@ function closeModal(name){
   const el=document.getElementById('modal-'+name);const wasOpen=el.classList.contains('open');
   el.classList.remove('open');
   if(name==='lead'||name==='connection'||name==='account')window._pendingCommLink=null;
-  if(name==='account')window._pendingConnAcctLink=null;
+  if(name==='account'){window._pendingConnAcctLink=null;window._leadAcctPending=false;}
   if(!wasOpen)return;
   _modalDepth=Math.max(0,_modalDepth-1);
   if(_modalDepth===0){
@@ -2372,6 +2380,7 @@ function openAddLead(){
   document.getElementById('f-sched-partner').value='';
   document.getElementById('f-sched-duration').value='';
   populateReferrerDropdown('');
+  populateLeadAccountSelect('');
   openModal('lead');
 }
 
@@ -2401,6 +2410,7 @@ function editLeadModal(lead){
   const sdu=document.getElementById('f-sched-duration'); if(sdu) sdu.value=lead.sched_duration||'';
   const sn=document.getElementById('f-sched-notes'); if(sn) sn.value=lead.sched_notes||'';
   populateReferrerDropdown(lead.referrer_id||'');
+  populateLeadAccountSelect(lead.account_id||'');
   const showRef=['Referral','Realtor','HOA','Property Manager'].includes(lead.source);
   document.getElementById('referral-link-field').style.display=showRef?'block':'none';
   // Commercial fields
@@ -2600,6 +2610,7 @@ async function saveLead(){
     chemicals:document.getElementById('f-chemicals').value||null,
     job_line_items:jobLineItemsOut,tip:tipOut,
     referrer_id:document.getElementById('f-referrer-id').value||null,
+    account_id:document.getElementById('f-account-id').value||null,
     sched_date:document.getElementById('f-sched-date').value||null,
     sched_time:document.getElementById('f-sched-time').value||null,
     sched_partner:document.getElementById('f-sched-partner').value||null,
@@ -2664,7 +2675,8 @@ function viewLead(id){
       <div class="record-field"><div class="lbl">Job date</div><div class="val">${l.job_date||'—'}</div></div>
       <div class="record-field"><div class="lbl">Quote</div><div class="val">${$m(l.quote)}</div></div>
       <div class="record-field"><div class="lbl">Added by</div><div class="val" style="font-size:12px;">${l.added_by||'—'}</div></div>
-      ${l.referrer_id?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Referred by</div><div class="val" style="color:var(--teal-500);font-weight:500;">${(()=>{const ref=allConnections.find(c=>c.id===l.referrer_id);return ref?ref.first_name+' '+ref.last_name+(ref.company?' ('+ref.company+')':''):'—';})()}</div></div>`:''}
+      ${l.account_id&&leadAccountName(l)?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Account</div><div class="val"><a style="color:var(--teal-600);font-weight:500;cursor:pointer;" onclick="closeModal('view');viewAccount('${l.account_id}')">${esc(leadAccountName(l))}</a></div></div>`:''}
+       ${l.referrer_id?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Referred by</div><div class="val" style="color:var(--teal-500);font-weight:500;">${(()=>{const ref=allConnections.find(c=>c.id===l.referrer_id);return ref?ref.first_name+' '+ref.last_name+(ref.company?' ('+ref.company+')':''):'—';})()}</div></div>`:''}
     </div></div>
     ${l.status==='Booked'&&l.sched_date?`
     <div class="record-section"><div class="record-section-title" style="color:var(--blue-600);">📅 Booked job</div><div class="record-grid">
@@ -3432,6 +3444,16 @@ function renderLeads(){
     svcSel.innerHTML='<option value="">All services</option>'+QUOTE_SERVICES.map(s=>`<option>${s.name}</option>`).join('');
   }
 
+  // Account dropdown: rebuilt whenever the number of accounts changes
+  const accSel=document.getElementById('f-account');
+  if(accSel&&accSel.dataset.n!==String(allAccounts.length)){
+    const cur=accSel.value;
+    accSel.innerHTML='<option value="">All accounts</option><option value="__any">Any account</option><option value="__none">No account</option>'
+      +allAccounts.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    accSel.value=cur;accSel.dataset.n=String(allAccounts.length);
+  }
+  const fAcct=accSel?accSel.value:'';
+
   const STALE_MS=7*24*60*60*1000;
   const isStale=l=>(l.status==='Lead'||l.status==='Quoted')&&(Date.now()-new Date(l.last_viewed_at||l.created_at).getTime())>STALE_MS;
   const isNewLead=l=>l.source==='Website Form'&&!l.last_viewed_at;
@@ -3449,6 +3471,7 @@ function renderLeads(){
     return (!search||t.includes(search))&&statusMatch(l)&&(!fSrc||l.source===fSrc)
       &&(!fPtype||(l.property_type||'Residential')===fPtype)
       &&(!fService||(l.service||'').includes(fService))
+      &&leadAccountMatch(l,fAcct)
       &&(!fStaleOnly||isStale(l));
   });
 
@@ -3484,7 +3507,7 @@ function renderLeads(){
       return`<tr${rowBg?` style="background:${rowBg};"`:''}>
         <td><div style="font-weight:500;">${name}</div>${l.business_name?`<div class="td-muted">${l.business_name}</div>`:''}<div class="td-muted">${l.phone||''}</div></td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
-        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address}${accountTag(l)}</td>
         <td style="font-size:12px;">${l.service}</td>
         <td>${badge(l.status)}</td>
         <td>${l.source||'—'}</td>
@@ -3513,7 +3536,7 @@ function renderLeads(){
       const lp=priority(l);
       const subBg=lp===0?'var(--green-light)':lp===1?'var(--amber-light)':'#f8fcfd';
       return`<tr class="${groupId}" style="display:none;background:${subBg};">
-        <td style="padding-left:32px;"><div style="font-size:12px;color:var(--ink-3);">📍 ${l.address||'No address'}</div></td>
+        <td style="padding-left:32px;"><div style="font-size:12px;color:var(--ink-3);">📍 ${l.address||'No address'}</div>${accountTag(l)}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
         <td style="font-size:12px;">${l.service}</td>
         <td>${badge(l.status)}</td>
@@ -3539,7 +3562,7 @@ function toggleLeadGroup(id){
 // ── Pipeline ───────────────────────────────────────────────────────────────
 function renderPipeline(){
   const stages=['Lead','Quoted','Booked','Completed','Lost'];
-  document.getElementById('pipeline-board').innerHTML=stages.map(stage=>{const items=allLeads.filter(l=>l.status===stage);return`<div class="pipe-col"><div class="pipe-head">${stage}<span class="pipe-count">${items.length}</span></div>${items.map(l=>`<div class="pipe-card" onclick="viewLead('${l.id}')"><div class="pipe-card-name">${l.first_name} ${l.last_name}</div><div class="pipe-card-detail">${l.service}</div><div class="pipe-card-detail">${l.quote?$m(l.quote):''}</div></div>`).join('')}</div>`;}).join('');
+  document.getElementById('pipeline-board').innerHTML=stages.map(stage=>{const items=allLeads.filter(l=>l.status===stage);return`<div class="pipe-col"><div class="pipe-head">${stage}<span class="pipe-count">${items.length}</span></div>${items.map(l=>`<div class="pipe-card" onclick="viewLead('${l.id}')"><div class="pipe-card-name">${l.first_name} ${l.last_name}</div><div class="pipe-card-detail">${l.service}</div><div class="pipe-card-detail">${l.quote?$m(l.quote):''}</div>${accountTag(l)}</div>`).join('')}</div>`;}).join('');
 }
 
 // ── Jobs ───────────────────────────────────────────────────────────────────
@@ -4035,6 +4058,34 @@ function acctContactsHtml(acctId){
     +(list.length?list.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeModal('view-account');viewConnection('${c.id}')"><div><div style="font-weight:500;font-size:13px;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</div><div style="font-size:12px;color:var(--ink-3);">${esc([c.contact_type,c.phone,c.email].filter(Boolean).join(' · '))}</div></div><i class="ti ti-chevron-right" style="color:var(--ink-3);"></i></div>`).join('')
       :'<div style="color:var(--ink-3);font-size:13px;padding:6px 0;">No contacts linked yet. Open a Connection and choose "Link to existing account."</div>')
     +'</div>';
+}
+
+// ── Lead <-> Account ────────────────────────────────────────────────────────
+function leadAccountName(l){const a=l&&l.account_id?allAccounts.find(x=>x.id===l.account_id):null;return a?a.name:'';}
+function accountTag(l){const n=leadAccountName(l);return n?`<div class="td-muted" style="font-size:11px;">Account: ${esc(n)}</div>`:'';}
+function leadAccountMatch(l,f){if(!f)return true;if(f==='__any')return !!l.account_id;if(f==='__none')return !l.account_id;return l.account_id===f;}
+function populateLeadAccountSelect(selectedId){
+  const sel=document.getElementById('f-account-id');if(!sel)return;
+  const list=allAccounts.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  let html='<option value="">None</option>'+list.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  // keep an existing link even if the accounts list hasn't loaded, so saving never silently unlinks
+  if(selectedId&&!list.some(a=>a.id===selectedId))html+=`<option value="${esc(selectedId)}">(linked account)</option>`;
+  html+='<option value="__new__">+ Create new account…</option>';
+  sel.innerHTML=html;sel.value=selectedId||'';
+  window._leadAcctPrev=sel.value;
+}
+function leadAccountChanged(){
+  const sel=document.getElementById('f-account-id');
+  if(sel.value!=='__new__'){window._leadAcctPrev=sel.value;return;}
+  sel.value=window._leadAcctPrev||'';
+  const val=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const biz=val('f-business-name').trim();
+  const who=`${val('f-first')} ${val('f-last')}`.trim();
+  window._leadAcctPending=true;
+  openAddAccount({name:biz});
+  document.getElementById('acct-contact').value=who;
+  document.getElementById('acct-phone').value=val('f-phone');
+  document.getElementById('acct-email').value=val('f-email');
 }
 
 // ── Referrals ──────────────────────────────────────────────────────────────
@@ -6900,6 +6951,7 @@ async function saveAccount(){
     if(idx>-1)allAccounts[idx]=saved;else allAccounts.push(saved);
     await consumePendingCommLink('account',saved.id);
     const reopenConn=await consumePendingConnAcctLink(saved.id);
+    if(window._leadAcctPending){window._leadAcctPending=false;populateLeadAccountSelect(saved.id);}
     closeModal('account');
     renderAccounts();
     if(reopenConn)viewConnection(reopenConn);
