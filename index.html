@@ -652,6 +652,8 @@ tbody tr:hover td{background:#faf9f6;}
           <select id="quote-lead-select" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:240px;" onchange="prefillQuote()">
             <option value="">— Pre-fill from existing lead (optional) —</option>
           </select>
+          <select id="quote-account-select" onchange="quoteAccountChanged()" title="The account (business) paying for this job" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:190px;"><option value="">Account (optional)</option></select>
+          <select id="quote-referrer-select" title="The connection who referred this job" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:190px;"><option value="">Referred by (optional)</option></select>
           <button class="btn btn-primary" onclick="printQuote()"><i class="ti ti-printer"></i> Print / Save PDF</button>
           <button class="btn" onclick="saveQuoteToCRM()"><i class="ti ti-device-floppy"></i> Save to customer record</button>
           <button class="btn" onclick="clearQuote()"><i class="ti ti-refresh"></i> Clear</button>
@@ -3355,6 +3357,7 @@ async function editSavedQuote(leadId,filename){
   document.getElementById('q-notes').value=q.notes||'';
   document.getElementById('q-discount').value=q.discPct||0;
   document.getElementById('quote-lead-select').value=leadId;
+  syncQuoteLinksFromLead(leadId);
 
   document.getElementById('calc-rows').innerHTML='';
   calcRows=[];calcRowId=0;
@@ -4088,6 +4091,49 @@ function leadAccountChanged(){
   document.getElementById('acct-email').value=val('f-email');
 }
 
+// ── Quote Builder: link to Account / Connection ─────────────────────────────
+function quoteLeadOptionsHtml(accountId,selectedId){
+  const opt=l=>`<option value="${l.id}">${esc(l.first_name)} ${esc(l.last_name)} — ${esc(l.address)}</option>`;
+  const base='<option value="">— Pre-fill from existing lead (optional) —</option>';
+  if(!accountId)return base+allLeads.map(opt).join('');
+  const mine=allLeads.filter(l=>l.account_id===accountId),others=allLeads.filter(l=>l.account_id!==accountId);
+  return base+(mine.length?`<optgroup label="Jobs at this account">${mine.map(opt).join('')}</optgroup>`:'')
+    +`<optgroup label="${mine.length?'All other leads':'All leads'}">${others.map(opt).join('')}</optgroup>`;
+}
+function populateQuoteLinks(){
+  const as=document.getElementById('quote-account-select'),rs=document.getElementById('quote-referrer-select'),ls=document.getElementById('quote-lead-select');
+  if(as){const cur=as.value;as.innerHTML='<option value="">Account (optional)</option>'+allAccounts.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');as.value=cur;}
+  if(rs){const cur=rs.value;rs.innerHTML='<option value="">Referred by (optional)</option>'+allConnections.slice().sort((a,b)=>`${a.first_name||''} ${a.last_name||''}`.localeCompare(`${b.first_name||''} ${b.last_name||''}`)).map(c=>`<option value="${c.id}">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}${c.company?' — '+esc(c.company):''}</option>`).join('');rs.value=cur;}
+  if(ls){const cur=ls.value;ls.innerHTML=quoteLeadOptionsHtml(as?as.value:'',cur);ls.value=cur;}
+}
+function syncQuoteLinksFromLead(leadId){
+  const l=allLeads.find(x=>x.id===leadId);
+  const as=document.getElementById('quote-account-select'),rs=document.getElementById('quote-referrer-select'),ls=document.getElementById('quote-lead-select');
+  if(as)as.value=l&&l.account_id?l.account_id:'';
+  if(rs)rs.value=l&&l.referrer_id?l.referrer_id:'';
+  if(ls){ls.innerHTML=quoteLeadOptionsHtml(as?as.value:'',leadId);ls.value=leadId||'';}
+}
+function quoteAccountChanged(){
+  const as=document.getElementById('quote-account-select'),ls=document.getElementById('quote-lead-select');
+  const cur=ls.value;ls.innerHTML=quoteLeadOptionsHtml(as.value,cur);ls.value=cur;
+  const a=as.value?allAccounts.find(x=>x.id===as.value):null;
+  if(a&&!ls.value){ // no job picked yet: start the quote from the account's details, without overwriting anything already typed
+    const nm=document.getElementById('q-name'),ph=document.getElementById('q-phone');
+    if(!nm.value)nm.value=a.name||'';
+    if(!ph.value)ph.value=a.phone||'';
+  }
+}
+function draftLeadFromQuote(name,phone,addr,acct,ref){
+  const n=String(name||'').trim();
+  const sameAsAccount=acct&&n.toLowerCase()===String(acct.name||'').trim().toLowerCase();
+  const parts=n.split(/\s+/);
+  return{id:uid(),first_name:sameAsAccount?acct.name:(parts[0]||n),last_name:sameAsAccount?'':parts.slice(1).join(' '),
+    phone:fmtPhoneNum(phone||''),email:'',address:addr,service:'',source:ref?'Referral':'Direct Outreach',status:'Quoted',
+    property_type:acct?'Commercial':'Residential',business_name:acct?acct.name:null,industry:acct&&acct.industry?acct.industry:null,
+    contacts:'[]',notes:'',referrer_id:ref?ref.id:null,account_id:acct?acct.id:null,
+    added_by:currentUser?currentUser.email:null};
+}
+
 // ── Referrals ──────────────────────────────────────────────────────────────
 function getReferralTier(jobs){if(jobs>=20)return{label:'🏆 Elite Partner',elite:true};if(jobs>=10)return{label:'⭐ Tier 3 (10 jobs)',elite:false};if(jobs>=5)return{label:'🥈 Tier 2 (5 jobs)',elite:false};if(jobs>=1)return{label:'🥉 Tier 1 (1 job)',elite:false};return{label:'Not started',elite:false};}
 function getBonusEarned(jobs){if(jobs>=20)return 1950;if(jobs>=10)return 700;if(jobs>=5)return 200;if(jobs>=1)return 50;return 0;}
@@ -4366,9 +4412,7 @@ let calcRows=[];
 let calcRowId=0;
 
 function initQuotePage(){
-  const sel=document.getElementById('quote-lead-select');
-  sel.innerHTML='<option value="">— Pre-fill from existing lead (optional) —</option>'+
-    allLeads.map(l=>`<option value="${l.id}">${l.first_name} ${l.last_name} — ${l.address}</option>`).join('');
+  populateQuoteLinks();
   document.getElementById('q-date').value=new Date().toISOString().split('T')[0];
   const valid=new Date(); valid.setDate(valid.getDate()+30);
   document.getElementById('q-valid').value=valid.toISOString().split('T')[0];
@@ -4500,6 +4544,7 @@ function prefillQuote(){
   document.getElementById('q-name').value=`${l.first_name} ${l.last_name}`;
   document.getElementById('q-phone').value=l.phone||'';
   document.getElementById('q-addr').value=l.address||'';
+  syncQuoteLinksFromLead(id);
 }
 
 function clearQuote(){
@@ -4508,6 +4553,9 @@ function clearQuote(){
   calcRows=[];calcRowId=0;
   addCalcRow();
   document.getElementById('quote-lead-select').value='';
+  const _qa=document.getElementById('quote-account-select'),_qr=document.getElementById('quote-referrer-select');
+  if(_qa)_qa.value='';if(_qr)_qr.value='';
+  populateQuoteLinks();
   document.getElementById('quote-edit-filename').value='';
   document.getElementById('quote-edit-leadid').value='';
   document.getElementById('quote-edit-banner').style.display='none';
@@ -4691,13 +4739,29 @@ ${notes?`<div class="notes-box"><div class="section-label">Notes &amp; Scope of 
 }
 
 async function saveQuoteToCRM(){
-  const leadId=document.getElementById('quote-lead-select').value;
-  if(!leadId){alert('Please select a lead from the dropdown first.');return;}
+  let leadId=document.getElementById('quote-lead-select').value;
+  const acctId=(document.getElementById('quote-account-select')||{}).value||'';
+  const refId=(document.getElementById('quote-referrer-select')||{}).value||'';
+  if(!leadId&&!acctId&&!refId){alert('Please select a lead, or choose an Account or "Referred by" contact to create a new job from this quote.');return;}
   const total=document.getElementById('q-total-display').textContent;
   const amount=parseFloat(total.replace('$','').replace(',',''))||0;
   if(amount===0){alert('Please add services and measurements first.');return;}
-  const lead=allLeads.find(l=>l.id===leadId);
-  if(!lead) return;
+  let lead=leadId?allLeads.find(l=>l.id===leadId):null;
+  if(leadId&&!lead) return;
+  const acct=acctId?allAccounts.find(a=>a.id===acctId):null;
+  const ref=refId?allConnections.find(c=>c.id===refId):null;
+  const refName=ref?`${ref.first_name||''} ${ref.last_name||''}`.trim():'';
+  let isNew=false;
+  if(!lead){
+    const qn=document.getElementById('q-name').value.trim(),qa=document.getElementById('q-addr').value.trim();
+    if(!qn||!qa){alert('To create a new job from this quote, fill in the customer name and address first.');return;}
+    if(!confirm(`This quote isn't attached to a job yet.\n\nCreate a new job for "${qn}" at ${qa}${acct?`, under ${acct.name}`:''}${ref?`, referred by ${refName}`:''}, and save the quote to it?`))return;
+    lead=draftLeadFromQuote(qn,document.getElementById('q-phone').value,qa,acct,ref);
+    leadId=lead.id;isNew=true;
+  }else{
+    if(acct&&lead.account_id&&lead.account_id!==acct.id){const cur=allAccounts.find(a=>a.id===lead.account_id);if(!confirm(`This job is currently linked to the account "${cur?cur.name:'(unknown)'}".\n\nChange it to "${acct.name}"?`))return;}
+    if(ref&&lead.referrer_id&&lead.referrer_id!==ref.id){const cur=allConnections.find(c=>c.id===lead.referrer_id);if(!confirm(`This job is currently referred by ${cur?`${cur.first_name||''} ${cur.last_name||''}`.trim():'someone else'}.\n\nChange it to ${refName}?`))return;}
+  }
 
   // Capture all quote values
   const quoteNum=document.getElementById('q-num').value||'—';
@@ -4781,10 +4845,11 @@ async function saveQuoteToCRM(){
 
     // Also save the quote amount to the lead record
     const quoteLineItemsForLead=lineItems.map(li=>({service:li.name,qty:li.qty,unit:li.unit,quoted_amount:li.total,actual_amount:null}));
-    const updated={...lead,quote:grandTotal,job_line_items:JSON.stringify(quoteLineItemsForLead),updated_at:new Date().toISOString()};
+    const updated={...lead,...(acct?{account_id:acct.id}:{}),...(ref?{referrer_id:ref.id}:{}),...(isNew?{service:lineItems.map(i=>i.name).join(', ')}:{}),quote:grandTotal,job_line_items:JSON.stringify(quoteLineItemsForLead),updated_at:new Date().toISOString()};
     const saved=await upsertLead(updated);
     const idx=allLeads.findIndex(l=>l.id===leadId);
-    if(idx>-1) allLeads[idx]=saved;
+    if(idx>-1) allLeads[idx]=saved; else allLeads.unshift(saved);
+    if(isNew){populateQuoteLinks();document.getElementById('quote-lead-select').value=saved.id;refreshAll();}
 
     if(editingFilename){
       alert(`Quote updated for ${lead.first_name} ${lead.last_name}!`);
@@ -4792,7 +4857,7 @@ async function saveQuoteToCRM(){
       document.getElementById('quote-edit-leadid').value='';
       document.getElementById('quote-edit-banner').style.display='none';
     } else {
-      alert(`Quote saved to ${lead.first_name} ${lead.last_name}'s record!\n\nOpen their profile → Quote PDF tab to view it.`);
+      alert(isNew?`Quote saved, and a new job was created for ${lead.first_name} ${lead.last_name}${acct?' under '+acct.name:''}.\n\nOpen the job's profile → Quote PDF tab to view it.`:`Quote saved to ${lead.first_name} ${lead.last_name}'s record!\n\nOpen their profile → Quote PDF tab to view it.`);
     }
   }catch(e){alert('Save failed: '+e.message);}
 }
