@@ -179,6 +179,25 @@ tbody tr:hover td{background:#faf9f6;}
 #out-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#16161a;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;z-index:20000;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:90vw;display:none;}
 .comm-body{flex:1;min-width:0;overflow-wrap:anywhere;}
 .comm-chip{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;display:inline-block;margin-left:4px;}
+.d2d-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;max-width:1100px;margin:0 auto;padding:0 4px 18px;}
+.d2d-card{cursor:pointer;padding:16px;transition:border-color .15s;}
+.d2d-card:hover{border-color:var(--teal-500);}
+.d2d-break{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px;}
+.d2d-break .card{padding:16px;min-width:0;overflow-x:auto;}
+.d2d-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.d2d-tbl td{padding:5px 0;border-top:1px solid var(--border);}
+.d2d-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+.d2d-actions select{padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:inherit;background:var(--surface);}
+.d2d-entry{display:flex;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;}
+.d2d-entry:last-child{border-bottom:none;}
+.d2d-entry:hover{background:var(--teal-50);}
+.d2d-checks{display:flex;flex-wrap:wrap;gap:6px 16px;}
+.d2d-check{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ink);text-transform:none;letter-spacing:0;}
+.d2d-check input{width:16px;height:16px;accent-color:var(--teal-600);}
+.d2d-svc{max-height:180px;overflow:auto;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;}
+.d2d-cond{background:var(--teal-50);border-radius:var(--r-sm);padding:10px 12px;}
+@media(min-width:600px){.d2d-form{grid-template-columns:1fr 1fr;}.d2d-form .span2{grid-column:1/-1;}}
+@media(max-width:600px){#modal-d2d-entry .modal{width:100%!important;}.d2d-entry .btn{padding:6px 8px;}}
 .comm-chip-link{cursor:pointer;}.comm-chip-link:hover{text-decoration:underline;filter:brightness(.95);}
 .nav-badge{background:#dc2626;color:#fff;font-size:10px;font-weight:600;border-radius:9px;padding:0 6px;margin-left:6px;line-height:16px;display:inline-block;}
 #comms-toolbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;background:var(--teal-50);border:1px solid var(--border);border-radius:var(--r-sm);}
@@ -353,6 +372,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="analytics" onclick="nav(this)"><i class="ti ti-chart-bar"></i><span>Analytics</span></div>
       <div class="nav-item" data-page="map" onclick="nav(this)"><i class="ti ti-map-2"></i><span>Territory Map</span></div>
       <div class="nav-item" data-page="research" onclick="nav(this)"><i class="ti ti-clipboard-list"></i><span>Research</span></div>
+      <div class="nav-item" data-page="d2d" onclick="nav(this)"><i class="ti ti-door"></i><span>Door-to-Door</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="quotes" onclick="nav(this)"><i class="ti ti-file-dollar"></i><span>Quote Builder</span></div>
       <div class="nav-item" data-page="invoices" onclick="nav(this)"><i class="ti ti-receipt"></i><span>Invoices</span></div>
@@ -401,7 +421,7 @@ tbody tr:hover td{background:#faf9f6;}
           <div style="flex:1;"></div>
           <input type="text" id="search" placeholder="Search name, address, phone..." oninput="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:220px;">
           <select id="f-status" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
-            <option value="active">All active</option><option value="">All leads</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Door-to-door</option><option>Lost</option>
+            <option value="active">All active</option><option value="">All leads</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Lost</option>
           </select>
           <select id="f-source" onchange="renderLeads()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
             <option value="">All sources</option><option>Website Form</option><option>Referral</option><option>Realtor</option>
@@ -838,6 +858,38 @@ tbody tr:hover td{background:#faf9f6;}
       </div>
 
       <!-- RESEARCH -->
+      <div id="pg-d2d" class="page-content" style="display:none;">
+        <div id="d2d-home" style="display:block;">
+          <div id="d2d-warning"></div>
+          <div style="text-align:center;padding:28px 12px 22px;">
+            <div style="font-size:26px;font-weight:700;color:var(--teal-600);margin-bottom:6px;">Door-to-Door</div>
+            <div style="font-size:14px;color:var(--ink-3);margin-bottom:20px;">Open a past session or start a new one before you knock</div>
+            <div style="max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:10px;">
+              <input type="search" id="d2d-search" placeholder="Search by date, session name, address, name, notes..." oninput="renderD2D()" style="padding:12px 14px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-size:15px;font-family:inherit;">
+              <button class="btn btn-primary" onclick="openCreateD2DSession()" style="padding:12px;font-size:14px;justify-content:center;"><i class="ti ti-plus"></i> Create new session</button>
+            </div>
+          </div>
+          <div id="d2d-session-cards" class="d2d-cards"></div>
+          <div id="d2d-overall" style="max-width:1100px;margin:8px auto 0;padding:0 4px 24px;"></div>
+        </div>
+        <div id="d2d-active" style="display:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="closeD2DSession()"><i class="ti ti-arrow-left"></i> All sessions</button>
+            <div style="min-width:0;"><div style="font-size:17px;font-weight:700;" id="d2d-active-title"></div><div style="font-size:12px;color:var(--ink-3);" id="d2d-active-desc"></div></div>
+            <button class="btn btn-sm" onclick="openEditD2DSession()"><i class="ti ti-edit"></i> Edit session</button>
+          </div>
+          <div id="d2d-session-metrics"></div>
+          <div class="d2d-actions">
+            <button class="btn btn-primary" onclick="openNewD2DEntry()"><i class="ti ti-plus"></i> New entry</button>
+            <button class="btn" onclick="openD2DImport('research')"><i class="ti ti-clipboard-list"></i> From Research</button>
+            <button class="btn" onclick="openD2DImport('outreach')"><i class="ti ti-mail-forward"></i> From Outreach</button>
+            <div style="flex:1;"></div>
+            <select id="d2d-entry-filter" onchange="renderD2DSession()"><option value="">All statuses</option><option>No one home</option><option>Not interested</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select>
+            <input type="search" id="d2d-entry-search" placeholder="Search this session..." oninput="renderD2DSession()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:inherit;min-width:0;">
+          </div>
+          <div id="d2d-entries" class="card" style="padding:6px 14px;"></div>
+        </div>
+      </div>
       <div id="pg-research" class="page-content" style="display:none;">
         <!-- List selector view -->
         <div id="research-home" style="display:block;">
@@ -1117,9 +1169,12 @@ tbody tr:hover td{background:#faf9f6;}
         <select id="f-account-id" onchange="leadAccountChanged()"><option value="">None</option></select>
         <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">Use this when the job is for a paying business or property group. Leave it as None for regular residential and referral jobs.</div>
       </div>
-      <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option><option>Door-to-door</option></select></div>
+      <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select></div>
       <div class="field"><label>Quote ($)</label><input id="f-quote" type="number" step="0.01" placeholder="0.00"></div>
       <div class="field"><label>Job date</label><input id="f-date" type="date"></div>
+      <div class="field"><label>Neighborhood</label><input id="f-hood" placeholder="e.g. Byrnes Downs"></div>
+      <div class="field"><label>Follow up on</label><input id="f-followup" type="date"><div style="font-size:11px;color:var(--ink-3);">Lead turns yellow on this date.</div></div>
+      <div class="field span2"><label>Lead reason</label><div class="d2d-checks"><label class="d2d-check"><input type="checkbox" id="f-lr-future"> Future date</label><label class="d2d-check"><input type="checkbox" id="f-lr-reach"> Will reach back out to us</label></div></div>
       <div class="field span2"><label>Notes</label><textarea id="f-notes" placeholder="Property details, access info, referral name..."></textarea></div>
     </div>
 
@@ -1287,6 +1342,61 @@ tbody tr:hover td{background:#faf9f6;}
     <div class="np-card" onclick="startNewProfileFromComm('connection')"><i class="ti ti-address-book"></i><div><div style="font-weight:600;font-size:13px;">Connection</div><div style="font-size:12px;color:var(--ink-3);">A realtor, property manager, HOA or other referral contact.</div></div></div>
     <div class="np-card" onclick="startNewProfileFromComm('account')"><i class="ti ti-building"></i><div><div style="font-weight:600;font-size:13px;">Account</div><div style="font-size:12px;color:var(--ink-3);">A business or property group with multiple locations.</div></div></div>
     <div class="modal-foot"><button class="btn" onclick="closeModal('comm-newprofile')">Cancel</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-d2d-session">
+  <div class="modal" style="width:520px;">
+    <div class="modal-head"><h2 id="d2ds-title">New door-to-door session</h2><button class="btn btn-sm" onclick="closeModal('d2d-session')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="d2ds-id">
+    <div class="form-grid">
+      <div class="field"><label>Session name *</label><input id="d2ds-name" placeholder="e.g. Byrnes Downs, Saturday morning"></div>
+      <div class="field"><label>Session date *</label><input id="d2ds-date" type="date"></div>
+      <div class="field"><label>Who's knocking</label><div id="d2ds-knockers" class="d2d-checks"></div><div style="font-size:11px;color:var(--ink-3);">New doors in this session start with these names checked.</div></div>
+      <div class="field"><label>Notes</label><textarea id="d2ds-notes" placeholder="Area, weather, flyer used..."></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-danger" id="d2ds-delete" onclick="deleteD2DSession()" style="display:none;margin-right:auto;"><i class="ti ti-trash"></i> Delete session</button><button class="btn" onclick="closeModal('d2d-session')">Cancel</button><button class="btn btn-primary" id="d2ds-save" onclick="saveD2DSession()"><i class="ti ti-check"></i> Save session</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-d2d-entry">
+  <div class="modal" style="width:640px;">
+    <div class="modal-head"><h2 id="d2de-title">New door</h2><button class="btn btn-sm" onclick="closeModal('d2d-entry')"><i class="ti ti-x"></i></button></div>
+    <div id="d2de-source-note" style="font-size:12px;color:var(--teal-600);margin:-4px 0 10px;"></div>
+    <div id="d2de-lead-link"></div>
+    <div class="form-grid d2d-form">
+      <div class="field span2"><label>Address *</label><div class="addr-wrap"><input id="d2de-addr" placeholder="123 King St, Charleston SC 29401" oninput="addrAutocomplete(this,'d2de-addr-suggestions')" onkeydown="addrKeydown(event,'d2de-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="d2de-addr-suggestions"></div></div></div>
+      <div class="field span2"><label>Status *</label><select id="d2de-status" onchange="d2dToggleEntryFields()"><option value="">— Pick what happened at the door —</option><option>No one home</option><option>Not interested</option><option>Lead</option><option>Quoted</option><option>Booked</option></select><div id="d2de-lead-note" style="font-size:11px;color:var(--teal-600);"></div></div>
+
+      <div class="field span2 d2d-cond" id="d2de-sec-noh"><label class="d2d-check" style="font-size:14px;"><input type="checkbox" id="d2de-card"> Left a card</label></div>
+      <div class="field span2 d2d-cond" id="d2de-sec-ni"><label>Reason</label><select id="d2de-ni-reason" onchange="d2dToggleEntryFields()"><option>N/A</option><option>Use another company</option><option>Do it themselves</option><option>Other</option></select>
+        <div id="d2de-ni-other-wrap" style="margin-top:8px;"><label>Name other reason *</label><input id="d2de-ni-other" placeholder="What did they say?"></div></div>
+      <div class="field span2 d2d-cond" id="d2de-sec-lead"><label>Why it's a lead</label>
+        <div class="d2d-checks"><label class="d2d-check"><input type="checkbox" id="d2de-lr-future" onchange="d2dToggleEntryFields()"> Future date</label><label class="d2d-check"><input type="checkbox" id="d2de-lr-reach"> Will reach back out to us</label></div>
+        <div id="d2de-followup-wrap" style="margin-top:8px;"><label>Future date *</label><input id="d2de-followup" type="date"><div style="font-size:11px;color:var(--ink-3);">The lead turns yellow in the Leads tab on this date.</div></div></div>
+      <div class="field span2 d2d-cond" id="d2de-sec-svc"><label>Service *</label><div id="d2de-services" class="d2d-checks d2d-svc"></div></div>
+      <div class="field d2d-cond" id="d2de-sec-booked"><label>Job date *</label><input id="d2de-sched-date" type="date"><label style="margin-top:8px;">Time</label><input id="d2de-sched-time" type="time"></div>
+
+      <div class="field"><label>First name</label><input id="d2de-first" placeholder="John"></div>
+      <div class="field"><label>Last name</label><input id="d2de-last" placeholder="Smith"></div>
+      <div class="field"><label>Phone</label><input id="d2de-phone" placeholder="(843) 555-0100" oninput="formatPhone(this)" inputmode="tel"></div>
+      <div class="field"><label>Email</label><input id="d2de-email" type="email" placeholder="john@email.com" inputmode="email"></div>
+      <div class="field"><label>Neighborhood</label><input id="d2de-hood" list="d2de-hood-list" placeholder="e.g. Byrnes Downs"><datalist id="d2de-hood-list"></datalist></div>
+      <div class="field"><label>Property type<span id="d2de-ptype-req"></span></label><select id="d2de-ptype"><option value="Residential">Residential</option><option value="Commercial">Commercial</option></select></div>
+      <div class="field span2"><label>Knocked by</label><div id="d2de-knockers" class="d2d-checks"></div></div>
+      <div class="field span2"><label>Notes</label><textarea id="d2de-notes" placeholder="Dog in yard, mildew on north side, talk to wife..."></textarea></div>
+    </div>
+    <div id="d2de-err" style="color:var(--red-600);font-size:13px;margin-top:10px;" role="alert"></div>
+    <div class="modal-foot"><button class="btn btn-danger" id="d2de-delete" onclick="deleteD2DEntry()" style="display:none;margin-right:auto;"><i class="ti ti-trash"></i> Delete</button><button class="btn" onclick="closeModal('d2d-entry')">Cancel</button><button class="btn btn-primary" id="d2de-save" onclick="saveD2DEntry()"><i class="ti ti-check"></i> Save door</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-d2d-import">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2 id="d2di-title">Fill from Research</h2><button class="btn btn-sm" onclick="closeModal('d2d-import')"><i class="ti ti-x"></i></button></div>
+    <input type="search" id="d2di-search" placeholder="Search name, address, phone..." oninput="renderD2DImport()" style="width:100%;padding:9px 12px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:14px;font-family:inherit;margin-bottom:10px;">
+    <div id="d2di-list" style="max-height:55vh;overflow:auto;"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('d2d-import')">Cancel</button></div>
   </div>
 </div>
 
@@ -1972,6 +2082,7 @@ async function handleAuthSession(event,session){
     await loadAccounts();
     await loadTodos();
     await loadOutreach();
+    await loadD2D();
     applySettingsOnLoad();
     document.getElementById('dash-metrics').innerHTML='<div style="padding:20px;font-size:13px;color:#666;">All loaded. Leads: '+allLeads.length+', Comms: '+allComms.length+'</div>';
     renderDashboard();
@@ -2308,8 +2419,449 @@ async function upsertLead(lead){const{data,error}=await sb.from('leads').upsert(
 async function upsertConnection(conn){const{data,error}=await sb.from('connections').upsert([conn],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 async function upsertComm(comm){const{data,error}=await sb.from('communications').upsert([comm],{onConflict:'id'}).select();if(error)throw error;return data[0];}
 
+// ── Door-to-Door ─────────────────────────────────────────────────────────
+// Sessions (one per outing) hold entries (one per door). Lead/Quoted/Booked entries
+// create or link a Leads profile; that lead's status is the live status shown here.
+const D2D_TEAM=['Jack','Charlie','Tanner'];
+const D2D_STATUSES=['No one home','Not interested','Lead','Quoted','Booked'];
+const D2D_NI_REASONS=['N/A','Use another company','Do it themselves','Other'];
+const D2D_LEAD_STATUSES=['Lead','Quoted','Booked'];
+let allD2DSessions=[],allD2DEntries=[],d2dMissing=false,leadsHasD2DCols=false;
+let d2dActiveSessionId=null,d2dEditingEntryId=null,d2dPrefill=null;
+
+async function loadD2D(){
+  try{
+    const[s,e]=await Promise.all([
+      sb.from('d2d_sessions').select('*').order('session_date',{ascending:false}),
+      sb.from('d2d_entries').select('*').order('created_at',{ascending:false})
+    ]);
+    if(s.error||e.error){const err=s.error||e.error;console.error('d2d load error:',err);d2dMissing=/does not exist|relation|schema cache|could not find/i.test(err.message||'');}
+    else{d2dMissing=false;allD2DSessions=s.data||[];allD2DEntries=e.data||[];}
+  }catch(err){console.error('loadD2D failed:',err);}
+  try{const{error}=await sb.from('leads').select('neighborhood,followup_date,lead_reasons,d2d_entry_id').limit(1);leadsHasD2DCols=!error;}catch(err){leadsHasD2DCols=false;}
+}
+
+// ── helpers ──
+function d2dNormAddr(a){return String(a||'').toLowerCase().replace(/,?\s*(usa|united states)\s*$/,'').replace(/\b(street)\b/g,'st').replace(/\b(road)\b/g,'rd').replace(/\b(drive)\b/g,'dr').replace(/\b(avenue)\b/g,'ave').replace(/\b(lane)\b/g,'ln').replace(/\b(court)\b/g,'ct').replace(/[^a-z0-9]/g,'');}
+function d2dLeadFor(entry){return entry&&entry.lead_id?allLeads.find(l=>l.id===entry.lead_id)||null:null;}
+// Status shown for an entry: the door outcome, unless a linked lead has moved on since
+function d2dLiveStatus(entry){
+  const l=d2dLeadFor(entry);
+  if(!l)return entry.status;
+  if(entry.status==='Not interested'&&l.status==='Lost')return 'Not interested';
+  return l.status||entry.status;
+}
+function d2dBadge(s){
+  const map={'No one home':['#f1f0ee','#5f5e5a'],'Not interested':['#fcebeb','#a32d2d'],'Door-to-door':['#f0e6fb','#6b21a8']};
+  if(map[s])return`<span class="badge" style="background:${map[s][0]};color:${map[s][1]};">${esc(s)}</span>`;
+  return badge(s);
+}
+function d2dList(v){return String(v||'').split(',').map(x=>x.trim()).filter(Boolean);}
+function d2dFmtDate(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function d2dEntriesFor(sid){return allD2DEntries.filter(e=>e.session_id===sid);}
+function d2dToday(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+// ── stats ──
+function d2dStats(entries){
+  const n=entries.length;
+  const by=s=>entries.filter(e=>e.status===s).length;
+  const noOne=by('No one home'),ni=by('Not interested'),lead=by('Lead'),quoted=by('Quoted'),booked=by('Booked');
+  const answered=n-noOne;
+  const converted=lead+quoted+booked;
+  const cards=entries.filter(e=>e.card_left).length;
+  const leads=entries.map(d2dLeadFor).filter(Boolean);
+  const uniqLeads=[...new Map(leads.map(l=>[l.id,l])).values()];
+  const completed=uniqLeads.filter(l=>l.status==='Completed');
+  const revenue=completed.reduce((s,l)=>s+(parseFloat(l.revenue)||0),0);
+  const bookedNow=uniqLeads.filter(l=>l.status==='Booked'||l.status==='Completed').length;
+  return{n,noOne,ni,lead,quoted,booked,answered,converted,cards,completed:completed.length,revenue,bookedNow,
+    answerRate:n?answered/n*100:0,convRate:answered?converted/answered*100:0,closeRate:n?bookedNow/n*100:0};
+}
+function d2dMetricsHtml(st){
+  const p=v=>v.toFixed(0)+'%';
+  return`<div class="metrics" style="margin-bottom:16px;">
+    <div class="metric"><div class="metric-label">Doors knocked</div><div class="metric-value">${st.n}</div><div class="metric-sub">${st.cards} card${st.cards===1?'':'s'} left</div></div>
+    <div class="metric"><div class="metric-label">Answered</div><div class="metric-value">${p(st.answerRate)}</div><div class="metric-sub">${st.answered} talked to · ${st.noOne} no one home</div></div>
+    <div class="metric teal"><div class="metric-label">Became leads</div><div class="metric-value">${st.converted}</div><div class="metric-sub">${p(st.convRate)} of doors answered</div></div>
+    <div class="metric amber"><div class="metric-label">Quoted at door</div><div class="metric-value">${st.quoted}</div><div class="metric-sub">${st.lead} lead · ${st.booked} booked at door</div></div>
+    <div class="metric green"><div class="metric-label">Booked or done now</div><div class="metric-value">${st.bookedNow}</div><div class="metric-sub">${p(st.closeRate)} of all doors</div></div>
+    <div class="metric green"><div class="metric-label">Revenue</div><div class="metric-value">${$m(st.revenue)}</div><div class="metric-sub">${st.completed} completed job${st.completed===1?'':'s'}</div></div>
+  </div>`;
+}
+function d2dBreakdownHtml(entries){
+  const reasons={};entries.filter(e=>e.status==='Not interested').forEach(e=>{const r=e.ni_reason==='Other'?(e.ni_reason_other?'Other: '+e.ni_reason_other:'Other'):(e.ni_reason||'N/A');reasons[r]=(reasons[r]||0)+1;});
+  const people={};D2D_TEAM.forEach(p=>people[p]={doors:0,leads:0,booked:0});
+  entries.forEach(e=>d2dList(e.knocked_by).forEach(p=>{if(!people[p])people[p]={doors:0,leads:0,booked:0};people[p].doors++;if(D2D_LEAD_STATUSES.includes(e.status))people[p].leads++;const l=d2dLeadFor(e);if(l&&(l.status==='Booked'||l.status==='Completed'))people[p].booked++;}));
+  const hoods={};entries.forEach(e=>{const h=(e.neighborhood||'').trim()||'No neighborhood';if(!hoods[h])hoods[h]={doors:0,leads:0};hoods[h].doors++;if(D2D_LEAD_STATUSES.includes(e.status))hoods[h].leads++;});
+  const rRows=Object.entries(reasons).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td style="text-align:right;">${c}</td></tr>`).join('')||'<tr><td colspan="2" style="color:var(--ink-3);">No "Not interested" doors yet</td></tr>';
+  const pRows=Object.entries(people).filter(([,v])=>v.doors).map(([p,v])=>`<tr><td>${esc(p)}</td><td style="text-align:right;">${v.doors}</td><td style="text-align:right;">${v.leads}</td><td style="text-align:right;">${v.booked}</td><td style="text-align:right;">${v.doors?(v.leads/v.doors*100).toFixed(0):0}%</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--ink-3);">No doors logged yet</td></tr>';
+  const hRows=Object.entries(hoods).sort((a,b)=>b[1].leads-a[1].leads||b[1].doors-a[1].doors).slice(0,8).map(([h,v])=>`<tr><td>${esc(h)}</td><td style="text-align:right;">${v.doors}</td><td style="text-align:right;">${v.leads}</td><td style="text-align:right;">${v.doors?(v.leads/v.doors*100).toFixed(0):0}%</td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--ink-3);">No doors logged yet</td></tr>';
+  const th='style="text-align:left;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;font-weight:500;padding:4px 0;"';
+  const thr='style="text-align:right;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;font-weight:500;padding:4px 0;"';
+  return`<div class="d2d-break">
+    <div class="card"><div style="font-weight:600;margin-bottom:8px;">By person</div><table class="d2d-tbl"><tr><th ${th}>Who</th><th ${thr}>Doors</th><th ${thr}>Leads</th><th ${thr}>Booked</th><th ${thr}>Lead %</th></tr>${pRows}</table><div style="font-size:11px;color:var(--ink-3);margin-top:6px;">A door knocked by two people counts for both.</div></div>
+    <div class="card"><div style="font-weight:600;margin-bottom:8px;">By neighborhood</div><table class="d2d-tbl"><tr><th ${th}>Neighborhood</th><th ${thr}>Doors</th><th ${thr}>Leads</th><th ${thr}>Lead %</th></tr>${hRows}</table></div>
+    <div class="card"><div style="font-weight:600;margin-bottom:8px;">Why "Not interested"</div><table class="d2d-tbl"><tr><th ${th}>Reason</th><th ${thr}>Doors</th></tr>${rRows}</table></div>
+  </div>`;
+}
+
+// ── home view ──
+function renderD2D(){
+  const home=document.getElementById('d2d-home'),active=document.getElementById('d2d-active');
+  if(!home)return;
+  if(d2dActiveSessionId&&allD2DSessions.some(s=>s.id===d2dActiveSessionId)){home.style.display='none';active.style.display='block';renderD2DSession();return;}
+  d2dActiveSessionId=null;home.style.display='block';active.style.display='none';
+  const warn=document.getElementById('d2d-warning');
+  if(d2dMissing)warn.innerHTML='<div style="background:var(--amber-light);color:var(--amber-600);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;margin-bottom:16px;">The Door-to-Door tables don\'t exist yet. Run the setup SQL in Supabase, then reload the CRM.</div>';
+  else if(!leadsHasD2DCols)warn.innerHTML='<div style="background:var(--amber-light);color:var(--amber-600);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;margin-bottom:16px;">The Leads table is missing the new door-to-door columns, so neighborhood and follow-up dates won\'t copy to leads. Run the setup SQL in Supabase, then reload.</div>';
+  else warn.innerHTML='';
+  const q=(document.getElementById('d2d-search').value||'').trim().toLowerCase();
+  let sessions=allD2DSessions.slice().sort((a,b)=>String(b.session_date).localeCompare(String(a.session_date))||String(b.created_at).localeCompare(String(a.created_at)));
+  const hits={};
+  if(q){
+    sessions=sessions.filter(s=>{
+      const dateTxt=(s.session_date+' '+d2dFmtDate(s.session_date)).toLowerCase();
+      if((s.name||'').toLowerCase().includes(q)||dateTxt.includes(q)||(s.notes||'').toLowerCase().includes(q)||(s.knockers||'').toLowerCase().includes(q))return true;
+      const m=d2dEntriesFor(s.id).filter(e=>[e.first_name,e.last_name,e.address,e.phone,e.email,e.neighborhood,e.notes,e.status,e.ni_reason_other,e.service].join(' ').toLowerCase().includes(q));
+      if(m.length){hits[s.id]=m;return true;}
+      return false;
+    });
+  }
+  const cards=document.getElementById('d2d-session-cards');
+  cards.innerHTML=sessions.length?sessions.map(s=>{
+    const es=d2dEntriesFor(s.id);const st=d2dStats(es);
+    const hit=hits[s.id]?`<div style="font-size:12px;color:var(--teal-600);margin-top:8px;">Matches: ${hits[s.id].slice(0,3).map(e=>esc(e.address||'')).join(' · ')}${hits[s.id].length>3?` +${hits[s.id].length-3} more`:''}</div>`:'';
+    return`<div class="card d2d-card" onclick="openD2DSession('${s.id}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div style="font-weight:600;font-size:15px;">${esc(s.name)}</div><span style="font-size:12px;color:var(--ink-3);white-space:nowrap;">${d2dFmtDate(s.session_date)}</span></div>
+      ${s.knockers?`<div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${esc(d2dList(s.knockers).join(', '))}</div>`:''}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px;"><span><b>${st.n}</b> doors</span><span><b>${st.converted}</b> leads</span><span><b>${st.bookedNow}</b> booked</span><span style="color:var(--ink-3);">${st.noOne} no one home</span></div>${hit}
+    </div>`;
+  }).join(''):`<div class="empty" style="grid-column:1/-1;padding:30px;">${q?'No sessions match that search.':'No sessions yet. Create one before you start knocking.'}</div>`;
+  const allE=allD2DEntries.filter(e=>allD2DSessions.some(s=>s.id===e.session_id));
+  document.getElementById('d2d-overall').innerHTML=allE.length?`<div style="font-size:15px;font-weight:600;margin:6px 0 10px;">All door-to-door</div>${d2dMetricsHtml(d2dStats(allE))}${d2dBreakdownHtml(allE)}`:'';
+}
+function openD2DSession(id){d2dActiveSessionId=id;document.getElementById('d2d-entry-search').value='';renderD2D();window.scrollTo(0,0);}
+function closeD2DSession(){d2dActiveSessionId=null;renderD2D();}
+
+// ── session view ──
+function renderD2DSession(){
+  const s=allD2DSessions.find(x=>x.id===d2dActiveSessionId);if(!s)return closeD2DSession();
+  document.getElementById('d2d-active-title').textContent=s.name;
+  document.getElementById('d2d-active-desc').textContent=d2dFmtDate(s.session_date)+(s.knockers?' · '+d2dList(s.knockers).join(', '):'')+(s.notes?' · '+s.notes:'');
+  const all=d2dEntriesFor(s.id);
+  document.getElementById('d2d-session-metrics').innerHTML=d2dMetricsHtml(d2dStats(all));
+  const q=(document.getElementById('d2d-entry-search').value||'').trim().toLowerCase();
+  const fs=document.getElementById('d2d-entry-filter').value;
+  const list=all.filter(e=>(!fs||e.status===fs||d2dLiveStatus(e)===fs)&&(!q||[e.first_name,e.last_name,e.address,e.phone,e.email,e.neighborhood,e.notes].join(' ').toLowerCase().includes(q)));
+  document.getElementById('d2d-entries').innerHTML=list.length?list.map(e=>{
+    const live=d2dLiveStatus(e);const l=d2dLeadFor(e);
+    const name=[e.first_name,e.last_name].filter(Boolean).join(' ');
+    const det=[];
+    if(e.status==='No one home')det.push(e.card_left?'Card left':'No card left');
+    if(e.status==='Not interested')det.push('Reason: '+(e.ni_reason==='Other'?(e.ni_reason_other||'Other'):(e.ni_reason||'N/A')));
+    if(e.status==='Lead'){const r=d2dList(e.lead_reasons);if(r.length)det.push(r.join(', '));if(e.followup_date)det.push('Follow up '+d2dFmtDate(e.followup_date));}
+    if(e.service)det.push(e.service);
+    if(e.status==='Booked'&&e.sched_date)det.push('Job '+d2dFmtDate(e.sched_date)+(e.sched_time?' at '+e.sched_time:''));
+    return`<div class="d2d-entry" onclick="openD2DEntry('${e.id}')">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span style="font-weight:600;font-size:14px;">${esc(e.address)}</span>${d2dBadge(e.status)}${live!==e.status?`<span style="font-size:11px;color:var(--ink-3);">now</span>${d2dBadge(live)}`:''}</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${[name,e.phone,e.neighborhood,e.knocked_by?'Knocked by '+d2dList(e.knocked_by).join(' & '):''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div>
+        ${det.length?`<div style="font-size:12px;color:var(--ink-2);margin-top:4px;">${det.map(esc).join(' · ')}</div>`:''}
+        ${e.notes?`<div style="font-size:12px;color:var(--ink-2);margin-top:4px;">${esc(e.notes)}</div>`:''}
+      </div>
+      ${l?`<button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${l.id}')"><i class="ti ti-user"></i> Open lead</button>`:''}
+    </div>`;
+  }).join(''):`<div class="empty" style="padding:30px;">${all.length?'No entries match.':'No doors logged in this session yet. Tap "New entry" at the first house.'}</div>`;
+}
+
+// ── sessions: create / edit / delete ──
+function d2dKnockerBoxes(containerId,selected){
+  const sel=d2dList(selected);
+  document.getElementById(containerId).innerHTML=D2D_TEAM.map(p=>`<label class="d2d-check"><input type="checkbox" value="${p}" ${sel.includes(p)?'checked':''}> ${p}</label>`).join('');
+}
+function d2dReadKnockers(containerId){return [...document.querySelectorAll('#'+containerId+' input:checked')].map(i=>i.value).join(', ');}
+function openCreateD2DSession(){
+  if(d2dMissing){alert('Run the Door-to-Door setup SQL in Supabase first, then reload the CRM.');return;}
+  document.getElementById('d2ds-title').textContent='New door-to-door session';
+  document.getElementById('d2ds-id').value='';
+  document.getElementById('d2ds-name').value='';
+  document.getElementById('d2ds-date').value=d2dToday();
+  document.getElementById('d2ds-notes').value='';
+  d2dKnockerBoxes('d2ds-knockers','');
+  document.getElementById('d2ds-delete').style.display='none';
+  openModal('d2d-session');
+  setTimeout(()=>document.getElementById('d2ds-name').focus(),50);
+}
+function openEditD2DSession(){
+  const s=allD2DSessions.find(x=>x.id===d2dActiveSessionId);if(!s)return;
+  document.getElementById('d2ds-title').textContent='Edit session';
+  document.getElementById('d2ds-id').value=s.id;
+  document.getElementById('d2ds-name').value=s.name||'';
+  document.getElementById('d2ds-date').value=s.session_date||'';
+  document.getElementById('d2ds-notes').value=s.notes||'';
+  d2dKnockerBoxes('d2ds-knockers',s.knockers);
+  document.getElementById('d2ds-delete').style.display='inline-flex';
+  openModal('d2d-session');
+}
+async function saveD2DSession(){
+  const name=document.getElementById('d2ds-name').value.trim();
+  const date=document.getElementById('d2ds-date').value;
+  if(!name||!date){alert('Session name and date are both required.');return;}
+  const id=document.getElementById('d2ds-id').value||uid();
+  const existing=allD2DSessions.find(s=>s.id===id);
+  const row={id,name,session_date:date,knockers:d2dReadKnockers('d2ds-knockers')||null,notes:document.getElementById('d2ds-notes').value.trim()||null,updated_at:new Date().toISOString()};
+  if(!existing)row.created_by=currentUser?.email||null;
+  const btn=document.getElementById('d2ds-save');btn.disabled=true;
+  try{
+    const{data,error}=await sb.from('d2d_sessions').upsert([row],{onConflict:'id'}).select();if(error)throw error;
+    const saved=data[0];const i=allD2DSessions.findIndex(s=>s.id===id);if(i>-1)allD2DSessions[i]=saved;else allD2DSessions.unshift(saved);
+    closeModal('d2d-session');d2dActiveSessionId=saved.id;renderD2D();
+  }catch(e){alert('Save failed: '+e.message);}
+  btn.disabled=false;
+}
+async function deleteD2DSession(){
+  const s=allD2DSessions.find(x=>x.id===d2dActiveSessionId);if(!s)return;
+  const n=d2dEntriesFor(s.id).length;
+  if(!confirm(`Delete "${s.name}" and its ${n} door${n===1?'':'s'}? Leads it created stay in the Leads tab.`))return;
+  try{
+    const{error}=await sb.from('d2d_sessions').delete().eq('id',s.id);if(error)throw error;
+    allD2DSessions=allD2DSessions.filter(x=>x.id!==s.id);allD2DEntries=allD2DEntries.filter(e=>e.session_id!==s.id);
+    closeModal('d2d-session');d2dActiveSessionId=null;renderD2D();
+  }catch(e){alert('Delete failed: '+e.message);}
+}
+
+// ── entries: form ──
+function d2dServiceBoxes(selected){
+  const sel=d2dList(selected);
+  const svcs=(getSettings().services||[]);
+  document.getElementById('d2de-services').innerHTML=svcs.map(s=>`<label class="d2d-check"><input type="checkbox" value="${esc(s)}" ${sel.includes(s)?'checked':''}> ${esc(s)}</label>`).join('');
+}
+function d2dHoodList(){
+  const hs=[...new Set(allD2DEntries.map(e=>(e.neighborhood||'').trim()).filter(Boolean))].sort();
+  document.getElementById('d2de-hood-list').innerHTML=hs.map(h=>`<option value="${esc(h)}">`).join('');
+}
+function d2dFillEntryForm(e,s){
+  const v=(id,val)=>{document.getElementById(id).value=val==null?'':val;};
+  v('d2de-first',e.first_name);v('d2de-last',e.last_name);v('d2de-phone',e.phone);v('d2de-email',e.email);
+  v('d2de-addr',e.address);v('d2de-hood',e.neighborhood);v('d2de-notes',e.notes);
+  document.getElementById('d2de-ptype').value=e.property_type||'Residential';
+  document.getElementById('d2de-status').value=e.status||'';
+  document.getElementById('d2de-card').checked=!!e.card_left;
+  document.getElementById('d2de-ni-reason').value=e.ni_reason||'N/A';
+  v('d2de-ni-other',e.ni_reason_other);
+  const lr=d2dList(e.lead_reasons);
+  document.getElementById('d2de-lr-future').checked=lr.includes('Future date');
+  document.getElementById('d2de-lr-reach').checked=lr.includes('Will reach back out to us');
+  v('d2de-followup',e.followup_date);v('d2de-sched-date',e.sched_date);v('d2de-sched-time',e.sched_time);
+  d2dServiceBoxes(e.service);
+  d2dKnockerBoxes('d2de-knockers',e.knocked_by!=null?e.knocked_by:(s&&s.knockers)||'');
+  d2dHoodList();
+  document.getElementById('d2de-err').textContent='';
+  d2dToggleEntryFields();
+}
+function openNewD2DEntry(prefill){
+  const s=allD2DSessions.find(x=>x.id===d2dActiveSessionId);if(!s)return;
+  d2dEditingEntryId=null;d2dPrefill=prefill||null;
+  document.getElementById('d2de-title').textContent='New door';
+  document.getElementById('d2de-source-note').textContent=prefill&&prefill._label?prefill._label:'';
+  document.getElementById('d2de-delete').style.display='none';
+  document.getElementById('d2de-lead-link').innerHTML='';
+  d2dFillEntryForm(Object.assign({status:''},prefill||{}),s);
+  closeModal('d2d-import');openModal('d2d-entry');
+  setTimeout(()=>document.getElementById(prefill&&prefill.address?'d2de-status':'d2de-addr').focus(),50);
+}
+function openD2DEntry(id){
+  const e=allD2DEntries.find(x=>x.id===id);if(!e)return;
+  const s=allD2DSessions.find(x=>x.id===e.session_id);
+  d2dEditingEntryId=id;d2dPrefill=null;
+  document.getElementById('d2de-title').textContent='Edit door';
+  document.getElementById('d2de-source-note').textContent=e.source_type?`Filled from ${e.source_type==='research'?'Research':'Outreach'}`:'';
+  document.getElementById('d2de-delete').style.display='inline-flex';
+  const l=d2dLeadFor(e);
+  document.getElementById('d2de-lead-link').innerHTML=l?`<div style="background:var(--teal-50);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span>Linked to lead <b>${esc([l.first_name,l.last_name].filter(Boolean).join(' ')||l.address)}</b> · now ${badge(l.status)}</span><button class="btn btn-sm" onclick="closeModal('d2d-entry');viewLead('${l.id}')">Open lead</button></div>`:'';
+  d2dFillEntryForm(e,s);
+  openModal('d2d-entry');
+}
+function d2dToggleEntryFields(){
+  const st=document.getElementById('d2de-status').value;
+  const show=(id,on)=>{document.getElementById(id).style.display=on?'':'none';};
+  show('d2de-sec-noh',st==='No one home');
+  show('d2de-sec-ni',st==='Not interested');
+  show('d2de-ni-other-wrap',st==='Not interested'&&document.getElementById('d2de-ni-reason').value==='Other');
+  show('d2de-sec-lead',st==='Lead');
+  show('d2de-followup-wrap',st==='Lead'&&document.getElementById('d2de-lr-future').checked);
+  show('d2de-sec-svc',st==='Quoted'||st==='Booked');
+  show('d2de-sec-booked',st==='Booked');
+  document.getElementById('d2de-ptype-req').textContent=(st==='Quoted'||st==='Booked')?' *':'';
+  document.getElementById('d2de-lead-note').textContent=D2D_LEAD_STATUSES.includes(st)?`Saving creates a ${st} profile in the Leads tab, or updates the existing lead at this address.`:'';
+}
+
+// Find a lead already at this address (or with this phone) so a revisit doesn't duplicate it
+function d2dFindExistingLead(addr,phone,excludeId){
+  const na=d2dNormAddr(addr);const ph=lastTen(phone);
+  return allLeads.find(l=>l.id!==excludeId&&((na&&d2dNormAddr(l.address)===na)||(ph&&lastTen(l.phone)===ph)))||null;
+}
+
+async function saveD2DEntry(){
+  const err=document.getElementById('d2de-err');err.textContent='';
+  const g=id=>document.getElementById(id).value.trim();
+  const status=document.getElementById('d2de-status').value;
+  const address=g('d2de-addr');
+  const fail=m=>{err.textContent=m;return false;};
+  if(!address)return fail('Enter the address.');
+  if(!status)return fail('Pick a status.');
+  const services=[...document.querySelectorAll('#d2de-services input:checked')].map(i=>i.value).join(', ');
+  const ptype=document.getElementById('d2de-ptype').value;
+  const niReason=document.getElementById('d2de-ni-reason').value;
+  const niOther=g('d2de-ni-other');
+  const lrFuture=document.getElementById('d2de-lr-future').checked,lrReach=document.getElementById('d2de-lr-reach').checked;
+  const followup=document.getElementById('d2de-followup').value;
+  const schedDate=document.getElementById('d2de-sched-date').value,schedTime=document.getElementById('d2de-sched-time').value;
+  if(status==='Not interested'&&niReason==='Other'&&!niOther)return fail('Name the other reason.');
+  if(status==='Lead'&&lrFuture&&!followup)return fail('Pick the future date for this lead.');
+  if((status==='Quoted'||status==='Booked')&&!ptype)return fail('Pick a property type.');
+  if((status==='Quoted'||status==='Booked')&&!services)return fail('Pick at least one service.');
+  if(status==='Booked'&&!schedDate)return fail('Pick the job date.');
+  const existing=d2dEditingEntryId?allD2DEntries.find(e=>e.id===d2dEditingEntryId):null;
+  const sessionId=existing?existing.session_id:d2dActiveSessionId;
+  const now=new Date().toISOString();
+  const entry={
+    id:existing?existing.id:uid(),session_id:sessionId,
+    first_name:g('d2de-first')||null,last_name:g('d2de-last')||null,
+    phone:fmtPhoneNum(g('d2de-phone'))||null,email:g('d2de-email')||null,
+    address,neighborhood:g('d2de-hood')||null,notes:g('d2de-notes')||null,
+    property_type:ptype||null,status,
+    card_left:status==='No one home'?document.getElementById('d2de-card').checked:false,
+    ni_reason:status==='Not interested'?niReason:null,
+    ni_reason_other:status==='Not interested'&&niReason==='Other'?niOther:null,
+    lead_reasons:status==='Lead'?[lrFuture?'Future date':'',lrReach?'Will reach back out to us':''].filter(Boolean).join(', ')||null:null,
+    followup_date:status==='Lead'&&lrFuture?followup:null,
+    service:(status==='Quoted'||status==='Booked')?services:(existing&&existing.service)||null,
+    sched_date:status==='Booked'?schedDate:null,sched_time:status==='Booked'?(schedTime||null):null,
+    knocked_by:d2dReadKnockers('d2de-knockers')||null,
+    lead_id:existing?existing.lead_id:null,
+    source_type:existing?existing.source_type:(d2dPrefill&&d2dPrefill.source_type)||null,
+    source_id:existing?existing.source_id:(d2dPrefill&&d2dPrefill.source_id)||null,
+    lat:existing&&d2dNormAddr(existing.address)===d2dNormAddr(address)?existing.lat:null,
+    lng:existing&&d2dNormAddr(existing.address)===d2dNormAddr(address)?existing.lng:null,
+    updated_at:now
+  };
+  if(!existing)entry.created_by=currentUser?.email||null;
+  const btn=document.getElementById('d2de-save');btn.disabled=true;btn.textContent='Saving...';
+  try{
+    if(entry.lat==null){const c=await geocodeAddress(address);if(c){entry.lat=c.lat;entry.lng=c.lng;}}
+    // Create, link or update the Leads profile
+    let lead=entry.lead_id?allLeads.find(l=>l.id===entry.lead_id):null;
+    if(!lead&&D2D_LEAD_STATUSES.includes(status))lead=d2dFindExistingLead(address,entry.phone,null);
+    if(D2D_LEAD_STATUSES.includes(status)||(lead&&status==='Not interested')){
+      const session=allD2DSessions.find(s=>s.id===sessionId);
+      const d2dNote=`Door-to-door: ${session?session.name+' ('+session.session_date+')':''}${entry.knocked_by?' · knocked by '+entry.knocked_by:''}`;
+      let row;
+      if(lead){
+        row={id:lead.id,status:status==='Not interested'?'Lost':status,updated_at:now};
+        if(!lead.first_name&&entry.first_name)row.first_name=entry.first_name;
+        if(!lead.last_name&&entry.last_name)row.last_name=entry.last_name;
+        if(!lead.phone&&entry.phone)row.phone=entry.phone;
+        if(!lead.email&&entry.email)row.email=entry.email;
+        if(entry.property_type&&(status==='Quoted'||status==='Booked'))row.property_type=entry.property_type;
+        if(entry.service&&(status==='Quoted'||status==='Booked'))row.service=entry.service;
+        if(status==='Booked'){row.sched_date=entry.sched_date;row.sched_time=entry.sched_time;}
+        if(!lead.lat&&entry.lat){row.lat=entry.lat;row.lng=entry.lng;}
+        if(leadsHasD2DCols){if(entry.neighborhood)row.neighborhood=entry.neighborhood;if(status==='Lead'){row.followup_date=entry.followup_date;row.lead_reasons=entry.lead_reasons;}if(!lead.d2d_entry_id)row.d2d_entry_id=entry.id;}
+        const{data,error}=await sb.from('leads').update(row).eq('id',lead.id).select();if(error)throw error;
+        const i=allLeads.findIndex(l=>l.id===lead.id);if(i>-1&&data&&data[0])allLeads[i]=data[0];
+      }else{
+        row={id:uid(),first_name:entry.first_name||'',last_name:entry.last_name||'',phone:entry.phone||'',email:entry.email||'',
+          address,service:entry.service||'',source:'Door-to-door',status,property_type:entry.property_type||'Residential',
+          notes:[d2dNote,entry.notes].filter(Boolean).join('\n'),contacts:'[]',
+          sched_date:entry.sched_date,sched_time:entry.sched_time,lat:entry.lat,lng:entry.lng,
+          added_by:currentUser?.email,updated_at:now};
+        if(leadsHasD2DCols){row.neighborhood=entry.neighborhood;row.followup_date=entry.followup_date;row.lead_reasons=entry.lead_reasons;row.d2d_entry_id=entry.id;}
+        const saved=await upsertLead(row);allLeads.unshift(saved);lead=saved;
+      }
+      entry.lead_id=lead.id;
+    }
+    const{data,error}=await sb.from('d2d_entries').upsert([entry],{onConflict:'id'}).select();if(error)throw error;
+    const saved=data[0];const i=allD2DEntries.findIndex(e=>e.id===saved.id);if(i>-1)allD2DEntries[i]=saved;else allD2DEntries.unshift(saved);
+    closeModal('d2d-entry');renderD2D();
+    try{if(typeof renderLeads==='function')renderLeads();renderDashboard();}catch(e){}
+  }catch(e){err.textContent='Save failed: '+e.message;}
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save door';
+}
+async function deleteD2DEntry(){
+  const e=allD2DEntries.find(x=>x.id===d2dEditingEntryId);if(!e)return;
+  if(!confirm(`Delete the door at ${e.address}?${e.lead_id?' The lead it created stays in the Leads tab.':''}`))return;
+  try{
+    const{error}=await sb.from('d2d_entries').delete().eq('id',e.id);if(error)throw error;
+    allD2DEntries=allD2DEntries.filter(x=>x.id!==e.id);closeModal('d2d-entry');renderD2D();
+  }catch(err){alert('Delete failed: '+err.message);}
+}
+
+// ── fill from Research / Outreach ──
+let d2dImportKind='research';
+function openD2DImport(kind){d2dImportKind=kind;document.getElementById('d2di-title').textContent=kind==='research'?'Fill from Research':'Fill from Outreach';document.getElementById('d2di-search').value='';renderD2DImport();openModal('d2d-import');setTimeout(()=>document.getElementById('d2di-search').focus(),50);}
+function renderD2DImport(){
+  const q=(document.getElementById('d2di-search').value||'').trim().toLowerCase();
+  const box=document.getElementById('d2di-list');
+  let rows=[];
+  if(d2dImportKind==='research'){
+    rows=allResearchBiz.map(b=>{
+      const lists=(Array.isArray(b.list_ids)?b.list_ids:d2dList(b.list_ids)).map(id=>(allResearchLists.find(l=>l.id===id)||{}).name).filter(Boolean);
+      return{id:b.id,title:b.name||'(no name)',sub:[b.address,b.contact,b.phone,lists.join(', ')].filter(Boolean).join(' · '),hay:[b.name,b.address,b.contact,b.phone,b.notes,lists.join(' ')].join(' ').toLowerCase()};
+    });
+  }else{
+    rows=allOutreach.map(o=>({id:o.id,title:[o.first_name,o.last_name].filter(Boolean).join(' ')||o.company||'(no name)',sub:[o.company,o.email,o.phone,o.status].filter(Boolean).join(' · '),hay:[o.first_name,o.last_name,o.company,o.email,o.phone,o.notes].join(' ').toLowerCase()}));
+  }
+  rows=rows.filter(r=>!q||r.hay.includes(q)).slice(0,100);
+  box.innerHTML=rows.length?rows.map(r=>`<div class="d2d-entry" onclick="pickD2DImport('${r.id}')"><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">${esc(r.title)}</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${esc(r.sub)||'&nbsp;'}</div></div><i class="ti ti-chevron-right" style="color:var(--ink-3);"></i></div>`).join(''):`<div class="empty" style="padding:24px;">${q?'Nothing matches that search.':'Nothing saved in '+(d2dImportKind==='research'?'Research':'Outreach')+' yet.'}</div>`;
+}
+function pickD2DImport(id){
+  let p;
+  if(d2dImportKind==='research'){
+    const b=allResearchBiz.find(x=>x.id===id);if(!b)return;
+    const n=splitPersonName(b.contact||'');
+    p={first_name:n.first,last_name:n.last,address:b.address||'',phone:b.phone||'',property_type:'Commercial',notes:b.name?`Business: ${b.name}`:'',source_type:'research',source_id:b.id,_label:`Filled from Research: ${b.name||''}`};
+  }else{
+    const o=allOutreach.find(x=>x.id===id);if(!o)return;
+    p={first_name:o.first_name||'',last_name:o.last_name||'',phone:o.phone||'',email:o.email||'',address:'',property_type:o.company?'Commercial':'Residential',notes:o.company?`Company: ${o.company}`:'',source_type:'outreach',source_id:o.id,_label:`Filled from Outreach: ${[o.first_name,o.last_name].filter(Boolean).join(' ')||o.company||''}`};
+  }
+  openNewD2DEntry(p);
+}
+
+// ── Territory Map: doors that didn't become leads ──
+function d2dLeadInfoHtml(l){
+  const out=[];
+  if(l.neighborhood)out.push(`<div class="record-field"><div class="lbl">Neighborhood</div><div class="val">${esc(l.neighborhood)}</div></div>`);
+  if(l.followup_date)out.push(`<div class="record-field"><div class="lbl">Follow up on</div><div class="val">${d2dFmtDate(l.followup_date)}</div></div>`);
+  if(l.lead_reasons)out.push(`<div class="record-field"><div class="lbl">Lead reason</div><div class="val">${esc(l.lead_reasons)}</div></div>`);
+  const doors=allD2DEntries.filter(e=>e.lead_id===l.id).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  if(doors.length)out.push(`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Door-to-door history</div><div class="val">${doors.map(e=>{const s=allD2DSessions.find(x=>x.id===e.session_id);return`<div style="padding:3px 0;"><a style="color:var(--teal-600);cursor:pointer;font-weight:500;" onclick="closeModal('view');nav(document.querySelector('.nav-item[data-page=&quot;d2d&quot;]'));d2dActiveSessionId='${e.session_id}';renderD2D();">${esc(s?s.name:'Session')}</a> <span style="color:var(--ink-3);font-size:12px;">${s?d2dFmtDate(s.session_date):''}</span> · ${d2dBadge(e.status)}${e.knocked_by?` <span style="font-size:12px;color:var(--ink-3);">by ${esc(d2dList(e.knocked_by).join(' & '))}</span>`:''}</div>`;}).join('')}</div></div>`);
+  return out.join('');
+}
+function d2dMapEntries(){
+  return allD2DEntries.filter(e=>(e.status==='No one home'||e.status==='Not interested')&&!d2dLeadFor(e)&&e.address&&allD2DSessions.some(s=>s.id===e.session_id));
+}
+async function d2dPlotMap(){
+  const on=document.getElementById('mf-door');if(on&&!on.checked)return;
+  for(const e of d2dMapEntries()){
+    let lat=e.lat,lng=e.lng;
+    if(!(lat&&lng)){const c=await geocodeAddress(e.address);if(!c)continue;lat=c.lat;lng=c.lng;
+      e.lat=lat;e.lng=lng;sb.from('d2d_entries').update({lat,lng}).eq('id',e.id).then(()=>{}).catch(()=>{});}
+    const s=allD2DSessions.find(x=>x.id===e.session_id);
+    const jlat=lat+(Math.random()-0.5)*0.0003,jlng=lng+(Math.random()-0.5)*0.0003;
+    const m=L.circleMarker([jlat,jlng],{radius:6,fillColor:'#6b21a8',color:'#fff',weight:1.5,opacity:1,fillOpacity:e.status==='No one home'?0.55:0.9});
+    m.bindTooltip(`<div style="font-family:-apple-system,sans-serif;min-width:150px;">
+      <div style="font-weight:600;font-size:12px;">${esc(e.address)}</div>
+      <div style="font-size:11px;margin-top:3px;"><span style="background:#6b21a8;color:#fff;padding:1px 6px;border-radius:10px;">Door-to-door · ${esc(e.status)}</span></div>
+      <div style="font-size:10px;color:#888;margin-top:3px;">${s?esc(s.name)+' · '+esc(s.session_date):''}${e.status==='No one home'&&e.card_left?' · card left':''}</div>
+    </div>`,{sticky:false,offset:[0,-4]});
+    m.on('click',()=>{nav(document.querySelector('.nav-item[data-page="d2d"]'));d2dActiveSessionId=e.session_id;renderD2D();openD2DEntry(e.id);});
+    m.addTo(leafletMap);mapMarkers.push(m);
+  }
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',outreach:'Outreach',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
+const pageTitles={d2d:'Door-to-Door',dashboard:'Dashboard',leads:'Leads',customers:'Customers',accounts:'Accounts',recurring:'Recurring Jobs',pipeline:'Pipeline',jobs:'Jobs & Revenue',calendar:'Calendar',comms:'All Communications',outreach:'Outreach',connections:'Connections',referrals:'Referral Tracker',analytics:'Analytics',map:'Territory Map',research:'Research',embed:'Website Form'};
 function refreshAll(){
   renderDashboard();
   const active=document.querySelector('.nav-item.active');
@@ -2383,6 +2935,8 @@ function openAddLead(){
   const cSection=document.getElementById('f-contacts-section');if(cSection)cSection.style.display='none';
   const cList=document.getElementById('f-contacts-list');if(cList)cList.innerHTML='';
   leadContactCount=0;
+  ['f-hood','f-followup'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-lr-future').checked=false;document.getElementById('f-lr-reach').checked=false;
   document.getElementById('f-sched-partner').value='';
   document.getElementById('f-sched-duration').value='';
   populateReferrerDropdown('');
@@ -2405,6 +2959,8 @@ function editLeadModal(lead){
   document.getElementById('f-mat').value=lead.materials||'';document.getElementById('f-lab').value=lead.labor||'';
   document.getElementById('f-oth').value=lead.other_exp||'';document.getElementById('f-duration').value=lead.duration||'';
   document.getElementById('f-completed-by').value=lead.completed_by||'';document.getElementById('f-chemicals').value=lead.chemicals||'';
+  document.getElementById('f-hood').value=lead.neighborhood||'';document.getElementById('f-followup').value=lead.followup_date||'';
+  {const lr=String(lead.lead_reasons||'');document.getElementById('f-lr-future').checked=lr.includes('Future date');document.getElementById('f-lr-reach').checked=lr.includes('Will reach back out');}
   document.getElementById('f-tip').value=lead.tip||'';document.getElementById('f-line-items-json').value=lead.job_line_items||'';
   document.getElementById('fin-section').style.display=lead.status==='Completed'?'block':'none';
   if(lead.status==='Completed'){renderFinServiceBoxes();calcProfit();}
@@ -2623,6 +3179,11 @@ async function saveLead(){
     sched_duration:document.getElementById('f-sched-duration').value||null,
     sched_notes:document.getElementById('f-sched-notes').value||null,
     added_by:currentUser?.email,updated_at:new Date().toISOString()};
+  if(leadsHasD2DCols){
+    lead.neighborhood=document.getElementById('f-hood').value.trim()||null;
+    lead.followup_date=document.getElementById('f-followup').value||null;
+    lead.lead_reasons=[document.getElementById('f-lr-future').checked?'Future date':'',document.getElementById('f-lr-reach').checked?'Will reach back out to us':''].filter(Boolean).join(', ')||null;
+  }
   try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);await consumePendingCommLink('lead',saved.id);closeModal('lead');refreshAll();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save lead';
@@ -2674,7 +3235,7 @@ function viewLead(id){
       ${l.contacts&&l.contacts!=='[]'?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Additional contacts</div><div class="val">${(()=>{try{return JSON.parse(l.contacts).map(c=>`<div style="display:flex;gap:16px;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-weight:500;">${c.name}</span>${c.title?`<span style="color:var(--ink-3);">${c.title}</span>`:''}${c.phone?`<span>${c.phone}</span>`:''}</div>`).join('');}catch(e){return '';}})()}</div></div>`:''}
       <div class="record-field"><div class="lbl">Phone</div><div class="val">${l.phone||'—'}</div></div>
       <div class="record-field"><div class="lbl">Email</div><div class="val">${l.email||'—'}</div></div>
-      <div class="record-field" style="grid-column:1/-1;"><div class="lbl">Address</div><div class="val">${l.address}</div></div>
+      <div class="record-field" style="grid-column:1/-1;"><div class="lbl">Address</div><div class="val">${l.address}</div></div>${d2dLeadInfoHtml(l)}
     </div></div>
     <div class="record-section"><div class="record-section-title">Job details</div><div class="record-grid">
       <div class="record-field"><div class="lbl">Service</div><div class="val">${l.service}</div></div>
@@ -3493,7 +4054,11 @@ function renderLeads(){
   const fAcct=accSel?accSel.value:'';
 
   const STALE_MS=7*24*60*60*1000;
-  const isStale=l=>(l.status==='Lead'||l.status==='Quoted')&&(Date.now()-new Date(l.last_viewed_at||l.created_at).getTime())>STALE_MS;
+  const isStale=l=>{
+    if(!(l.status==='Lead'||l.status==='Quoted'))return false;
+    if(l.followup_date){const due=new Date(l.followup_date+'T00:00:00').getTime();if(Date.now()<due)return false;const seen=l.last_viewed_at?new Date(l.last_viewed_at).getTime():0;if(seen<due)return true;}
+    return (Date.now()-new Date(l.last_viewed_at||l.created_at).getTime())>STALE_MS;
+  };
   const isNewLead=l=>l.source==='Website Form'&&!l.last_viewed_at;
   const priority=l=>isNewLead(l)?0:isStale(l)?1:2;
 
@@ -5234,7 +5799,7 @@ function nav(el){
   if(page==='connections')renderConnections();
   if(page==='referrals')renderReferrals();
   if(page==='analytics')renderAnalytics();
-  if(page==='map'){renderMap();}  if(page==='accounts'){if(allAccounts.length===0){loadAccounts().then(()=>renderAccounts());}else{renderAccounts();}}
+  if(page==='map'){renderMap();}  if(page==='d2d'){renderD2D();}  if(page==='accounts'){if(allAccounts.length===0){loadAccounts().then(()=>renderAccounts());}else{renderAccounts();}}
   if(page==='quotes'){initQuotePage();}
   if(page==='invoices'){initInvoicePage();}
   if(page==='route'){document.getElementById('route-date').value=new Date().toISOString().split('T')[0];loadRouteJobs();}
@@ -6879,6 +7444,7 @@ async function renderMap(){
 
   const counts={};
   allLeads.forEach(l=>counts[l.status]=(counts[l.status]||0)+1);
+  counts['Door-to-door']=(typeof d2dMapEntries==='function')?d2dMapEntries().length:0;
   const statsEl=document.getElementById('map-stats');
   if(statsEl) statsEl.innerHTML=`
     <div class="map-stat"><div class="map-stat-val" style="color:#185FA5;">${counts['Lead']||0}</div><div class="map-stat-lbl">Leads</div></div>
@@ -6900,6 +7466,7 @@ async function renderMap(){
     }
   }
   leafletMap.invalidateSize();
+  try{await d2dPlotMap();}catch(e){console.error('d2d map failed:',e);}
 
   // Plot active recurring contracts (orange)
   const recFilterEl=document.getElementById('mf-recurring');
