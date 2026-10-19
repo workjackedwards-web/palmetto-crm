@@ -220,6 +220,18 @@ tbody tr:hover td{background:#faf9f6;}
 .cal-event.booked { background:var(--blue-600); }
 .cal-event.booked { background:var(--teal-600); }
 .cal-event.completed { background:var(--green-600); }
+.cal-event.recurring { background:#ea580c; }
+.cal-event.d2d-sess { background:#6b21a8; }
+.cal-day.clickable, .cal-week-cell.clickable { cursor:pointer; }
+.cal-day.clickable:hover { background:#f3f8f8; }
+.cal-day.clickable:hover .cal-add { opacity:1; }
+.cal-week-cell.clickable:hover { background:#f3f8f8; }
+.cal-add { float:right; opacity:0; font-size:13px; color:var(--teal-600); line-height:1; transition:opacity .15s; }
+.cal-allday { border-right:1px solid var(--border); border-bottom:2px solid var(--border); min-height:34px; padding:2px; }
+.cal-allday .cal-event { margin-bottom:2px; }
+.cal-leg { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3); }
+.cal-leg > div { width:12px; height:12px; border-radius:3px; }
+@media (hover:none){ .cal-add{opacity:1;} }
 .cal-week-grid { display:grid; grid-template-columns:60px repeat(7,1fr); }
 .cal-week-header { text-align:center; font-size:11px; font-weight:600; color:var(--ink-3); padding:10px 4px; border-bottom:1px solid var(--border); background:#faf9f6; border-right:1px solid var(--border); }
 .cal-week-time { font-size:10px; color:var(--ink-3); text-align:right; padding:0 8px 0 0; height:50px; display:flex; align-items:flex-start; padding-top:4px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
@@ -530,11 +542,15 @@ tbody tr:hover td{background:#faf9f6;}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <select id="cal-filter" onchange="renderCalendar()" style="padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
-              <option value="">All events</option>
-              <option value="meeting">Meetings only</option>
+              <option value="">Everything</option>
               <option value="job">Jobs only</option>
+              <option value="recurring">Recurring visits only</option>
               <option value="followup">Follow-ups only</option>
+              <option value="d2d">Door-to-door only</option>
+              <option value="research">Research only</option>
+              <option value="meeting">Meetings only</option>
               <option value="personal">Personal only</option>
+              <option value="custom">Custom only</option>
             </select>
             <button class="btn btn-sm" id="cal-view-month" onclick="setCalView('month',this)" style="background:var(--teal-600);color:#fff;border-color:var(--teal-600);">Month</button>
             <button class="btn btn-sm" id="cal-view-week" onclick="setCalView('week',this)">Week</button>
@@ -547,9 +563,15 @@ tbody tr:hover td{background:#faf9f6;}
         <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#185FA5;"></div>Booked Job</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#3B6D11;"></div>Completed Job</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#6b21a8;"></div>Meeting</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#BA7517;"></div>Follow-up</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#666;"></div>Personal</div>
+          <div class="cal-leg"><div style="background:#ea580c;"></div>Recurring visit</div>
+          <div class="cal-leg"><div style="background:#1e5a8a;"></div>Job event</div>
+          <div class="cal-leg"><div style="background:#BA7517;"></div>Follow-up</div>
+          <div class="cal-leg"><div style="background:#6b21a8;"></div>Door-to-door</div>
+          <div class="cal-leg"><div style="background:#0f766e;"></div>Research</div>
+          <div class="cal-leg"><div style="background:#4f46e5;"></div>Meeting</div>
+          <div class="cal-leg"><div style="background:#666;"></div>Personal</div>
+          <div class="cal-leg"><div style="background:#444;"></div>Custom</div>
+          <div style="font-size:12px;color:var(--ink-3);">Tip: click any day to add something to it.</div>
         </div>
       </div>
 
@@ -1583,12 +1605,16 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="field span2"><label>Event title *</label><input id="ev-title" placeholder="e.g. Meeting with Sarah Johnson — Compass Realty"></div>
       <div class="field">
         <label>Event type</label>
-        <select id="ev-type">
-          <option value="meeting">Meeting</option>
+        <select id="ev-type" onchange="evTypeChanged()">
+          <option value="job">Job</option>
           <option value="followup">Follow-up</option>
+          <option value="d2d">Door-to-door session</option>
+          <option value="research">Research</option>
+          <option value="meeting">Meeting</option>
           <option value="personal">Personal</option>
-          <option value="other">Other</option>
+          <option value="custom">Custom (write in)…</option>
         </select>
+        <input id="ev-type-custom" placeholder="Type your own, e.g. Equipment pickup" style="display:none;margin-top:6px;">
       </div>
       <div class="field"><label>Date *</label><input id="ev-date" type="date"></div>
       <div class="field"><label>Start time</label><input id="ev-start" type="time"></div>
@@ -3023,20 +3049,54 @@ function calToday(){ calDate = new Date(); renderCalendar(); }
 
 function getCalFilter(){return(document.getElementById('cal-filter')||{value:''}).value;}
 
+const CAL_STD_TYPES=['job','followup','d2d','research','meeting','personal'];
+const CAL_TYPE_LABEL={job:'Job',followup:'Follow-up',d2d:'Door-to-door session',research:'Research',meeting:'Meeting',personal:'Personal',other:'Other'};
+function calTypeKey(t){return CAL_STD_TYPES.includes(t)?t:'custom';}
+function calTypeLabel(t){return CAL_TYPE_LABEL[t]||t||'Other';}
+function getCalVisits(){
+  const f=getCalFilter();
+  if(f&&f!=='recurring'&&f!=='job')return [];
+  return allVisits.filter(v=>v.visit_date&&v.status!=='Skipped'&&v.status!=='Cancelled').map(v=>({v,rec:allRecurring.find(r=>r.id===v.contract_id)})).filter(x=>x.rec);
+}
+function getCalD2DSessions(){
+  const f=getCalFilter();
+  if(f&&f!=='d2d')return [];
+  return (typeof allD2DSessions!=='undefined'?allD2DSessions:[]).filter(s=>s.session_date);
+}
+function calVisitChip(x,week){
+  const r=x.rec;const nm=r.business_name||`${r.first_name||''} ${r.last_name||''}`.trim()||r.address||'Recurring';
+  const done=x.v.status==='Completed';
+  return`<div class="cal-event recurring" ${week?'style="position:relative;"':''} onclick="event.stopPropagation();viewRecurring('${r.id}')" title="Recurring visit · ${esc(nm)} · ${esc(x.v.status||'Scheduled')}">${done?'✓ ':''}${esc(nm)}</div>`;
+}
+function calD2DChip(s){
+  return`<div class="cal-event d2d-sess" onclick="event.stopPropagation();nav(document.querySelector('.nav-item[data-page=&quot;d2d&quot;]'));openD2DSession('${s.id}')" title="Door-to-door session · ${esc(s.name)}">🚪 ${esc(s.name)}</div>`;
+}
+function calDateStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function calDayClick(e,dateStr,time){
+  if(e&&e.target&&e.target.closest('.cal-event'))return;
+  openAddEvent(dateStr,time);
+}
+function evTypeChanged(){
+  const custom=document.getElementById('ev-type').value==='custom';
+  const box=document.getElementById('ev-type-custom');
+  box.style.display=custom?'block':'none';
+  if(custom)setTimeout(()=>box.focus(),30);
+}
+
 function getBookedLeads(){
   const f=getCalFilter();
-  if(f==='meeting'||f==='followup'||f==='personal') return [];
+  if(f&&f!=='job') return [];
   return allLeads.filter(l=>l.sched_date&&['Booked','Completed'].includes(l.status));
 }
 
 function getCalEvents(){
   const f=getCalFilter();
-  if(f==='job') return [];
-  return allEvents.filter(e=>!f||e.event_type===f);
+  if(f==='recurring') return [];
+  return allEvents.filter(e=>!f||calTypeKey(e.event_type)===f||(f==='custom'&&e.event_type==='other'));
 }
 
 function getEventColor(type){
-  return {meeting:'#6b21a8',followup:'#BA7517',personal:'#666',other:'#444'}[type]||'#444';
+  return {job:'#1e5a8a',followup:'#BA7517',d2d:'#6b21a8',research:'#0f766e',meeting:'#4f46e5',personal:'#666',other:'#444'}[type]||'#444';
 }
 
 function renderCalendar(){
@@ -3055,20 +3115,24 @@ function renderCalendar(){
     for(let d=1;d<=last.getDate();d++){
       const dt=new Date(calDate.getFullYear(),calDate.getMonth(),d);
       const isToday=dt.getTime()===today.getTime();
-      const dateStr=dt.toISOString().split('T')[0];
+      const dateStr=calDateStr(dt);
       const jobs=getBookedLeads().filter(l=>l.sched_date===dateStr);
-      const evts=getCalEvents().filter(e=>e.event_date===dateStr);
-      html+=`<div class="cal-day${isToday?' today':''}">`;
-      html+=`<div class="cal-day-num">${d}</div>`;
+      const evts=getCalEvents().filter(e=>e.event_date===dateStr).sort((a,b)=>String(a.start_time||'99').localeCompare(String(b.start_time||'99')));
+      const visits=getCalVisits().filter(x=>x.v.visit_date===dateStr);
+      const sess=getCalD2DSessions().filter(x=>x.session_date===dateStr);
+      html+=`<div class="cal-day clickable${isToday?' today':''}" onclick="calDayClick(event,'${dateStr}')" title="Click to add something on this day">`;
+      html+=`<div class="cal-day-num">${d}<span class="cal-add"><i class="ti ti-plus"></i></span></div>`;
       jobs.forEach(l=>{
         const cls=l.status.toLowerCase();
         const time=l.sched_time?l.sched_time.slice(0,5)+' ':'';
-        html+=`<div class="cal-event ${cls}" onclick="viewLead('${l.id}')" title="${l.first_name} ${l.last_name} — ${l.service}">${time}${l.first_name} ${l.last_name}</div>`;
+        html+=`<div class="cal-event ${cls}" onclick="event.stopPropagation();viewLead('${l.id}')" title="${esc(l.first_name)} ${esc(l.last_name)} — ${esc(l.service)}">${time}${esc(l.first_name)} ${esc(l.last_name)}</div>`;
       });
+      visits.forEach(x=>{html+=calVisitChip(x);});
+      sess.forEach(x=>{html+=calD2DChip(x);});
       evts.forEach(e=>{
         const time=e.start_time?e.start_time.slice(0,5)+' ':'';
         const color=getEventColor(e.event_type);
-        html+=`<div class="cal-event" style="background:${color};cursor:pointer;" onclick="viewEvent('${e.id}')" title="${e.title}">${time}${e.title}</div>`;
+        html+=`<div class="cal-event" style="background:${color};cursor:pointer;" onclick="event.stopPropagation();viewEvent('${e.id}')" title="${esc(calTypeLabel(e.event_type))} · ${esc(e.title)}">${time}${esc(e.title)}</div>`;
       });
       html+=`</div>`;
     }
@@ -3094,19 +3158,31 @@ function renderCalendar(){
         ${days[i]}<br><span style="font-size:14px;font-weight:700;">${d.getDate()}</span>
       </div>`;
     }
+    // All-day row: recurring visits, door-to-door sessions, untimed jobs and events
+    html+=`<div class="cal-week-time" style="height:auto;min-height:34px;border-bottom:2px solid var(--border);">All day</div>`;
+    for(let i=0;i<7;i++){
+      const d=new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i);
+      const ds=calDateStr(d);
+      let cell='';
+      getBookedLeads().filter(l=>l.sched_date===ds&&!l.sched_time).forEach(l=>{cell+=`<div class="cal-event ${l.status.toLowerCase()}" onclick="event.stopPropagation();viewLead('${l.id}')">${esc(l.first_name)} ${esc(l.last_name)}</div>`;});
+      getCalVisits().filter(x=>x.v.visit_date===ds).forEach(x=>{cell+=calVisitChip(x);});
+      getCalD2DSessions().filter(x=>x.session_date===ds).forEach(x=>{cell+=calD2DChip(x);});
+      getCalEvents().filter(e=>e.event_date===ds&&!e.start_time).forEach(e=>{cell+=`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();viewEvent('${e.id}')">${esc(e.title)}</div>`;});
+      html+=`<div class="cal-allday clickable cal-week-cell" style="height:auto;" onclick="calDayClick(event,'${ds}')">${cell}</div>`;
+    }
     // Hours 7am-7pm
     for(let h=7;h<=19;h++){
       const label=h===12?'12 PM':h>12?(h-12)+' PM':h+' AM';
       html+=`<div class="cal-week-time">${label}</div>`;
       for(let i=0;i<7;i++){
         const d=new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i);
-        const dateStr=d.toISOString().split('T')[0];
-        const events=getBookedLeads().filter(l=>{
-          if(l.sched_date!==dateStr) return false;
-          const lh=l.sched_time?parseInt(l.sched_time.split(':')[0]):0;
-          return lh===h;
-        });
-        html+=`<div class="cal-week-cell">${events.map(l=>`<div class="cal-event ${l.status.toLowerCase()}" onclick="viewLead('${l.id}')" style="position:absolute;left:2px;right:2px;top:2px;">${l.sched_time?l.sched_time.slice(0,5)+' ':''} ${l.first_name} ${l.last_name}</div>`).join('')}</div>`;
+        const dateStr=calDateStr(d);
+        const hourOf=t=>t?parseInt(String(t).split(':')[0]):-1;
+        const inRow=t=>{const x=hourOf(t);return x===h||(h===7&&x>=0&&x<7)||(h===19&&x>19);};
+        const items=[];
+        getBookedLeads().filter(l=>l.sched_date===dateStr&&l.sched_time&&inRow(l.sched_time)).forEach(l=>items.push(`<div class="cal-event ${l.status.toLowerCase()}" onclick="event.stopPropagation();viewLead('${l.id}')">${l.sched_time.slice(0,5)} ${esc(l.first_name)} ${esc(l.last_name)}</div>`));
+        getCalEvents().filter(e=>e.event_date===dateStr&&e.start_time&&inRow(e.start_time)).forEach(e=>items.push(`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();viewEvent('${e.id}')">${e.start_time.slice(0,5)} ${esc(e.title)}</div>`));
+        html+=`<div class="cal-week-cell clickable" style="overflow:hidden;" onclick="calDayClick(event,'${dateStr}','${String(h).padStart(2,'0')}:00')">${items.join('')}</div>`;
       }
     }
     html+='</div>';
@@ -5850,13 +5926,14 @@ function nav(el){
   if(page==='dashboard'){renderDashboard();}
 }
 // ── Events (calendar meetings) ─────────────────────────────────────────────
-function openAddEvent(dateStr){
-  document.getElementById('modal-event-title').textContent='Add event';
+function openAddEvent(dateStr,timeStr){
+  document.getElementById('modal-event-title').textContent=dateStr?'Add to '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}):'Add event';
   document.getElementById('event-edit-id').value='';
   document.getElementById('ev-title').value='';
-  document.getElementById('ev-type').value='meeting';
-  document.getElementById('ev-date').value=dateStr||new Date().toISOString().split('T')[0];
-  document.getElementById('ev-start').value='';
+  document.getElementById('ev-type').value='job';
+  document.getElementById('ev-type-custom').value='';evTypeChanged();
+  document.getElementById('ev-date').value=dateStr||calDateStr(new Date());
+  document.getElementById('ev-start').value=timeStr||'';
   document.getElementById('ev-end').value='';
   document.getElementById('ev-with').value='';
   document.getElementById('ev-location').value='';
@@ -5874,7 +5951,7 @@ function viewEvent(id){
   document.getElementById('modal-event-title').textContent='Edit event';
   document.getElementById('event-edit-id').value=e.id;
   document.getElementById('ev-title').value=e.title||'';
-  document.getElementById('ev-type').value=e.event_type||'meeting';
+  {const t=e.event_type||'meeting';const std=CAL_STD_TYPES.includes(t);document.getElementById('ev-type').value=std?t:'custom';document.getElementById('ev-type-custom').value=std?'':(t==='other'?'':t);evTypeChanged();}
   document.getElementById('ev-date').value=e.event_date||'';
   document.getElementById('ev-start').value=e.start_time||'';
   document.getElementById('ev-end').value=e.end_time||'';
@@ -5893,10 +5970,12 @@ async function saveEvent(){
   const title=document.getElementById('ev-title').value.trim();
   const date=document.getElementById('ev-date').value;
   if(!title||!date){alert('Title and date are required.');return;}
+  let evType=document.getElementById('ev-type').value;
+  if(evType==='custom'){evType=document.getElementById('ev-type-custom').value.trim();if(!evType){alert('Type the custom event type, or pick one from the list.');document.getElementById('ev-type-custom').focus();return;}}
   const id=document.getElementById('event-edit-id').value||uid();
   const ev={
     id, title,
-    event_type:document.getElementById('ev-type').value,
+    event_type:evType,
     event_date:date,
     start_time:document.getElementById('ev-start').value||null,
     end_time:document.getElementById('ev-end').value||null,
