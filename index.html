@@ -198,6 +198,8 @@ tbody tr:hover td{background:#faf9f6;}
 .d2d-cond{background:var(--teal-50);border-radius:var(--r-sm);padding:10px 12px;}
 @media(min-width:600px){.d2d-form{grid-template-columns:1fr 1fr;}.d2d-form .span2{grid-column:1/-1;}}
 @media(max-width:600px){#modal-d2d-entry .modal{width:100%!important;}.d2d-entry .btn{padding:6px 8px;}}
+.ref-count{cursor:pointer;text-decoration:underline;text-underline-offset:3px;}.ref-count:hover{color:var(--teal-600);}
+.ref-job{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;cursor:pointer;}.ref-job:hover{border-color:var(--teal-500);background:var(--teal-50);}
 .comm-chip-link{cursor:pointer;}.comm-chip-link:hover{text-decoration:underline;filter:brightness(.95);}
 .nav-badge{background:#dc2626;color:#fff;font-size:10px;font-weight:600;border-radius:9px;padding:0 6px;margin-left:6px;line-height:16px;display:inline-block;}
 #comms-toolbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;background:var(--teal-50);border:1px solid var(--border);border-radius:var(--r-sm);}
@@ -1924,6 +1926,15 @@ tbody tr:hover td{background:#faf9f6;}
 </div>
 
 <!-- VIEW ACCOUNT MODAL -->
+<div class="overlay" id="modal-conn-referrals">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><h2 id="conn-ref-title">Jobs referred</h2><button class="btn btn-sm" onclick="closeModal('conn-referrals')"><i class="ti ti-x"></i></button></div>
+    <div id="conn-ref-summary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-bottom:12px;"></div>
+    <div id="conn-ref-list"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('conn-referrals')">Close</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-view-account">
   <div class="modal" style="width:760px;">
     <div class="modal-head"><h2 id="view-acct-name">Account</h2><button class="btn btn-sm" onclick="closeModal('view-account')"><i class="ti ti-x"></i></button></div>
@@ -4214,7 +4225,7 @@ function viewConnection(id){
   const c=allConnections.find(x=>x.id===id);if(!c)return;
   window._viewConnId=id;
   document.getElementById('view-conn-title').textContent=`${c.first_name} ${c.last_name}`;
-  const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
+  const jobsReferred=connReferredLeads(c).length;
   const tierInfo=getReferralTier(jobsReferred);
   const linkedEvents=allEvents.filter(e=>e.connection_id===c.id);
   document.getElementById('view-conn-body').innerHTML=`
@@ -4226,7 +4237,7 @@ function viewConnection(id){
       <div class="record-field"><div class="lbl">Last contact</div><div class="val"><div id="conn-lc-val">${lastContactCell(connLastContact(c,buildLastContactIndex()),false)}</div><button class="btn btn-sm" style="margin-top:6px;" onclick="logConnectionContact('${c.id}')"><i class="ti ti-phone-check"></i> Log contact today</button></div></div>
       <div class="record-field"><div class="lbl">Account</div><div class="val"><div id="conn-acct-val">${connAcctHtml(c)}</div></div></div>
       <div class="record-field"><div class="lbl">Referral partner</div><div class="val">${c.is_referral_partner?'✅ Yes':'No'}</div></div>
-      <div class="record-field"><div class="lbl">Jobs referred</div><div class="val" style="font-weight:600;color:var(--teal-500);">${jobsReferred}</div></div>
+      <div class="record-field"><div class="lbl">Jobs referred</div><div class="val" style="font-weight:600;color:var(--teal-500);">${jobsReferred?`<a class="ref-count" title="See referred jobs" onclick="openConnReferrals('${c.id}')">${jobsReferred}</a>`:'0'}</div></div>
       ${c.is_referral_partner?`<div class="record-field"><div class="lbl">Current tier</div><div class="val">${tierInfo.label}</div></div><div class="record-field"><div class="lbl">Bonuses paid</div><div class="val">${$m(c.bonuses_paid)}</div></div>`:''}
     </div></div>
     ${c.notes?`<div class="record-section"><div class="record-section-title">Notes</div><div style="font-size:13px;line-height:1.6;">${c.notes}</div></div>`:''}
@@ -4251,6 +4262,34 @@ function viewConnection(id){
   document.getElementById('conn-del-btn').onclick=()=>deleteConnection(c.id);
   openModal('view-conn');
 }
+// Jobs a connection referred: linked by "Referred by", or their name in the lead's source
+function connReferredLeads(c){
+  const nm=`${c.first_name||''} ${c.last_name||''}`.trim().toLowerCase();
+  return allLeads.filter(l=>l.referrer_id===c.id||(nm&&l.source&&l.source.toLowerCase().includes(nm)));
+}
+function openConnReferrals(id){
+  const c=allConnections.find(x=>x.id===id);if(!c)return;
+  const order={Booked:0,Quoted:1,Lead:2,Completed:3,Lost:4};
+  const jobs=connReferredLeads(c).slice().sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)||String(b.job_date||b.created_at||'').localeCompare(String(a.job_date||a.created_at||'')));
+  const done=jobs.filter(l=>l.status==='Completed');
+  const rev=done.reduce((t,l)=>t+(parseFloat(l.revenue)||0),0);
+  document.getElementById('conn-ref-title').textContent=`Jobs referred by ${`${c.first_name||''} ${c.last_name||''}`.trim()||'this contact'}`;
+  document.getElementById('conn-ref-summary').innerHTML=`<span><b>${jobs.length}</b> job${jobs.length===1?'':'s'}</span><span><b>${done.length}</b> completed</span><span><b>${$m(rev)}</b> revenue</span>`;
+  document.getElementById('conn-ref-list').innerHTML=jobs.length?jobs.map(l=>{
+    const name=`${l.first_name||''} ${l.last_name||''}`.trim();
+    const when=l.status==='Booked'&&l.sched_date?`Booked for ${l.sched_date}`:l.job_date?`Job date ${l.job_date}`:'';
+    return`<div class="ref-job" onclick="openReferredJob('${l.id}')">
+      <div style="flex:1;min-width:0;"><div style="font-weight:500;font-size:13px;">${esc(name||l.address||'Untitled job')}</div><div style="font-size:12px;color:var(--ink-3);">${esc([l.address&&name?l.address:'',l.service,when].filter(Boolean).join(' · '))||'&nbsp;'}</div></div>
+      <div style="text-align:right;flex-shrink:0;">${badge(l.status)}${l.status==='Completed'&&l.revenue?`<div style="font-size:12px;font-weight:500;color:var(--green-600);margin-top:3px;">${$m(l.revenue)}</div>`:(l.quote?`<div style="font-size:12px;color:var(--ink-3);margin-top:3px;">Quote ${$m(l.quote)}</div>`:'')}</div>
+    </div>`;
+  }).join(''):'<div style="color:var(--ink-3);font-size:13px;padding:12px 0;">No referred jobs yet.</div>';
+  openModal('conn-referrals');
+}
+function openReferredJob(leadId){
+  closeModal('conn-referrals');
+  if(document.getElementById('modal-view-conn')?.classList.contains('open'))closeModal('view-conn');
+  viewLead(leadId);
+}
 function renderConnections(){
   const search=(document.getElementById('conn-search').value||'').toLowerCase();
   const fType=document.getElementById('conn-filter-type').value;
@@ -4260,8 +4299,8 @@ function renderConnections(){
   if(sortBy==='oldest')rows.sort((a,b)=>(a.lc?a.lc.ts:0)-(b.lc?b.lc.ts:0));
   else if(sortBy==='newest')rows.sort((a,b)=>(b.lc?b.lc.ts:0)-(a.lc?a.lc.ts:0));
   document.getElementById('connections-body').innerHTML=rows.length?rows.map(({c,lc})=>{
-    const jobsReferred=allLeads.filter(l=>l.referrer_id===c.id||(l.source&&l.source.toLowerCase().includes((c.first_name+' '+c.last_name).toLowerCase()))).length;
-    return`<tr><td style="font-weight:500;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</td><td>${esc(c.company)||'—'}${c.account_id&&allAccounts.find(a=>a.id===c.account_id)?`<div class="td-muted">Account: ${esc(allAccounts.find(a=>a.id===c.account_id).name)}</div>`:''}</td><td><span class="badge badge-lead">${esc(c.contact_type)||'—'}</span></td><td>${esc(c.phone)||'—'}</td><td style="font-size:12px;">${esc(c.email)||'—'}</td><td>${lastContactCell(lc,true)}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;
+    const jobsReferred=connReferredLeads(c).length;
+    return`<tr><td style="font-weight:500;">${esc(`${c.first_name||''} ${c.last_name||''}`.trim())}</td><td>${esc(c.company)||'—'}${c.account_id&&allAccounts.find(a=>a.id===c.account_id)?`<div class="td-muted">Account: ${esc(allAccounts.find(a=>a.id===c.account_id).name)}</div>`:''}</td><td><span class="badge badge-lead">${esc(c.contact_type)||'—'}</span></td><td>${esc(c.phone)||'—'}</td><td style="font-size:12px;">${esc(c.email)||'—'}</td><td>${lastContactCell(lc,true)}</td><td style="font-weight:500;color:var(--teal-500);">${jobsReferred?`<a class="ref-count" title="See referred jobs" onclick="openConnReferrals('${c.id}')">${jobsReferred}</a>`:'0'}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td><td><button class="btn btn-sm" onclick="viewConnection('${c.id}')"><i class="ti ti-eye"></i></button></td></tr>`;
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--ink-3);padding:30px;">No contacts yet.</td></tr>';
 }
 
