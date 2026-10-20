@@ -908,7 +908,7 @@ tbody tr:hover td{background:#faf9f6;}
             <button class="btn" onclick="openD2DImport('research')"><i class="ti ti-clipboard-list"></i> From Research</button>
             <button class="btn" onclick="openD2DImport('outreach')"><i class="ti ti-mail-forward"></i> From Outreach</button>
             <div style="flex:1;"></div>
-            <select id="d2d-entry-filter" onchange="renderD2DSession()"><option value="">All statuses</option><option>No one home</option><option>Not interested</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select>
+            <select id="d2d-entry-filter" onchange="renderD2DSession()"><option value="">All statuses</option><option>No one home</option><option>Not interested</option><option>Wasn't a no</option><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select>
             <input type="search" id="d2d-entry-search" placeholder="Search this session..." oninput="renderD2DSession()" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:inherit;min-width:0;">
           </div>
           <div id="d2d-entries" class="card" style="padding:6px 14px;"></div>
@@ -1390,9 +1390,9 @@ tbody tr:hover td{background:#faf9f6;}
     <div id="d2de-lead-link"></div>
     <div class="form-grid d2d-form">
       <div class="field span2"><label>Address *</label><div class="addr-wrap"><input id="d2de-addr" placeholder="123 King St, Charleston SC 29401" oninput="addrAutocomplete(this,'d2de-addr-suggestions')" onkeydown="addrKeydown(event,'d2de-addr-suggestions')" autocomplete="off"><div class="addr-suggestions" id="d2de-addr-suggestions"></div></div></div>
-      <div class="field span2"><label>Status *</label><select id="d2de-status" onchange="d2dToggleEntryFields()"><option value="">— Pick what happened at the door —</option><option>No one home</option><option>Not interested</option><option>Lead</option><option>Quoted</option><option>Booked</option></select><div id="d2de-lead-note" style="font-size:11px;color:var(--teal-600);"></div></div>
+      <div class="field span2"><label>Status *</label><select id="d2de-status" onchange="d2dToggleEntryFields()"><option value="">— Pick what happened at the door —</option><option>No one home</option><option>Not interested</option><option>Wasn't a no</option><option>Lead</option><option>Quoted</option><option>Booked</option></select><div id="d2de-lead-note" style="font-size:11px;color:var(--teal-600);"></div></div>
 
-      <div class="field span2 d2d-cond" id="d2de-sec-noh"><label class="d2d-check" style="font-size:14px;"><input type="checkbox" id="d2de-card"> Left a card</label></div>
+      <div class="field span2 d2d-cond" id="d2de-sec-noh"><label class="d2d-check" style="font-size:14px;"><input type="checkbox" id="d2de-card"> <span id="d2de-card-label">Left a card</span></label><div id="d2de-wan-note" style="font-size:11px;color:var(--ink-3);">Stays in Door-to-Door only. No lead is created.</div></div>
       <div class="field span2 d2d-cond" id="d2de-sec-ni"><label>Reason</label><select id="d2de-ni-reason" onchange="d2dToggleEntryFields()"><option>N/A</option><option>Use another company</option><option>Do it themselves</option><option>Other</option></select>
         <div id="d2de-ni-other-wrap" style="margin-top:8px;"><label>Name other reason *</label><input id="d2de-ni-other" placeholder="What did they say?"></div></div>
       <div class="field span2 d2d-cond" id="d2de-sec-lead"><label>Why it's a lead</label>
@@ -2460,7 +2460,8 @@ async function upsertComm(comm){const{data,error}=await sb.from('communications'
 // Sessions (one per outing) hold entries (one per door). Lead/Quoted/Booked entries
 // create or link a Leads profile; that lead's status is the live status shown here.
 const D2D_TEAM=['Jack','Charlie','Tanner'];
-const D2D_STATUSES=['No one home','Not interested','Lead','Quoted','Booked'];
+const D2D_STATUSES=['No one home','Not interested',"Wasn't a no",'Lead','Quoted','Booked'];
+const D2D_CARD_STATUSES=['No one home',"Wasn't a no",'Quoted','Booked'];
 const D2D_NI_REASONS=['N/A','Use another company','Do it themselves','Other'];
 const D2D_LEAD_STATUSES=['Lead','Quoted','Booked'];
 let allD2DSessions=[],allD2DEntries=[],d2dMissing=false,leadsHasD2DCols=false;
@@ -2489,7 +2490,7 @@ function d2dLiveStatus(entry){
   return l.status||entry.status;
 }
 function d2dBadge(s){
-  const map={'No one home':['#f1f0ee','#5f5e5a'],'Not interested':['#fcebeb','#a32d2d'],'Door-to-door':['#f0e6fb','#6b21a8']};
+  const map={'No one home':['#f1f0ee','#5f5e5a'],'Not interested':['#fcebeb','#a32d2d'],"Wasn't a no":['#fef6e4','#8a5c00'],'Door-to-door':['#f0e6fb','#6b21a8']};
   if(map[s])return`<span class="badge" style="background:${map[s][0]};color:${map[s][1]};">${esc(s)}</span>`;
   return badge(s);
 }
@@ -2502,7 +2503,7 @@ function d2dToday(){const d=new Date();return`${d.getFullYear()}-${String(d.getM
 function d2dStats(entries){
   const n=entries.length;
   const by=s=>entries.filter(e=>e.status===s).length;
-  const noOne=by('No one home'),ni=by('Not interested'),lead=by('Lead'),quoted=by('Quoted'),booked=by('Booked');
+  const noOne=by('No one home'),ni=by('Not interested'),wan=by("Wasn't a no"),lead=by('Lead'),quoted=by('Quoted'),booked=by('Booked');
   const answered=n-noOne;
   const converted=lead+quoted+booked;
   const cards=entries.filter(e=>e.card_left).length;
@@ -2511,14 +2512,14 @@ function d2dStats(entries){
   const completed=uniqLeads.filter(l=>l.status==='Completed');
   const revenue=completed.reduce((s,l)=>s+(parseFloat(l.revenue)||0),0);
   const bookedNow=uniqLeads.filter(l=>l.status==='Booked'||l.status==='Completed').length;
-  return{n,noOne,ni,lead,quoted,booked,answered,converted,cards,completed:completed.length,revenue,bookedNow,
+  return{n,noOne,ni,wan,lead,quoted,booked,answered,converted,cards,completed:completed.length,revenue,bookedNow,
     answerRate:n?answered/n*100:0,convRate:answered?converted/answered*100:0,closeRate:n?bookedNow/n*100:0};
 }
 function d2dMetricsHtml(st){
   const p=v=>v.toFixed(0)+'%';
   return`<div class="metrics" style="margin-bottom:16px;">
-    <div class="metric"><div class="metric-label">Doors knocked</div><div class="metric-value">${st.n}</div><div class="metric-sub">${st.cards} card${st.cards===1?'':'s'} left</div></div>
-    <div class="metric"><div class="metric-label">Answered</div><div class="metric-value">${p(st.answerRate)}</div><div class="metric-sub">${st.answered} talked to · ${st.noOne} no one home</div></div>
+    <div class="metric"><div class="metric-label">Doors knocked</div><div class="metric-value">${st.n}</div><div class="metric-sub">${st.cards} card${st.cards===1?'':'s'} handed out</div></div>
+    <div class="metric"><div class="metric-label">Answered</div><div class="metric-value">${p(st.answerRate)}</div><div class="metric-sub">${st.answered} talked to · ${st.noOne} no one home${st.wan?` · ${st.wan} wasn't a no`:''}</div></div>
     <div class="metric teal"><div class="metric-label">Became leads</div><div class="metric-value">${st.converted}</div><div class="metric-sub">${p(st.convRate)} of doors answered</div></div>
     <div class="metric amber"><div class="metric-label">Quoted at door</div><div class="metric-value">${st.quoted}</div><div class="metric-sub">${st.lead} lead · ${st.booked} booked at door</div></div>
     <div class="metric green"><div class="metric-label">Booked or done now</div><div class="metric-value">${st.bookedNow}</div><div class="metric-sub">${p(st.closeRate)} of all doors</div></div>
@@ -2595,6 +2596,7 @@ function renderD2DSession(){
     const name=[e.first_name,e.last_name].filter(Boolean).join(' ');
     const det=[];
     if(e.status==='No one home')det.push(e.card_left?'Card left':'No card left');
+    else if(D2D_CARD_STATUSES.includes(e.status)&&e.card_left)det.push('Took a card');
     if(e.status==='Not interested')det.push('Reason: '+(e.ni_reason==='Other'?(e.ni_reason_other||'Other'):(e.ni_reason||'N/A')));
     if(e.status==='Lead'){const r=d2dList(e.lead_reasons);if(r.length)det.push(r.join(', '));if(e.followup_date)det.push('Follow up '+d2dFmtDate(e.followup_date));}
     if(e.service)det.push(e.service);
@@ -2722,7 +2724,9 @@ function openD2DEntry(id){
 function d2dToggleEntryFields(){
   const st=document.getElementById('d2de-status').value;
   const show=(id,on)=>{document.getElementById(id).style.display=on?'':'none';};
-  show('d2de-sec-noh',st==='No one home');
+  show('d2de-sec-noh',D2D_CARD_STATUSES.includes(st));
+  document.getElementById('d2de-card-label').textContent=st==='No one home'?'Left a card':'Took a card';
+  show('d2de-wan-note',st==="Wasn't a no");
   show('d2de-sec-ni',st==='Not interested');
   show('d2de-ni-other-wrap',st==='Not interested'&&document.getElementById('d2de-ni-reason').value==='Other');
   show('d2de-sec-lead',st==='Lead');
@@ -2768,7 +2772,7 @@ async function saveD2DEntry(){
     phone:fmtPhoneNum(g('d2de-phone'))||null,email:g('d2de-email')||null,
     address,neighborhood:g('d2de-hood')||null,notes:g('d2de-notes')||null,
     property_type:ptype||null,status,
-    card_left:status==='No one home'?document.getElementById('d2de-card').checked:false,
+    card_left:D2D_CARD_STATUSES.includes(status)?document.getElementById('d2de-card').checked:false,
     ni_reason:status==='Not interested'?niReason:null,
     ni_reason_other:status==='Not interested'&&niReason==='Other'?niOther:null,
     lead_reasons:status==='Lead'?[lrFuture?'Future date':'',lrReach?'Will reach back out to us':''].filter(Boolean).join(', ')||null:null,
@@ -2876,7 +2880,7 @@ function d2dLeadInfoHtml(l){
   return out.join('');
 }
 function d2dMapEntries(){
-  return allD2DEntries.filter(e=>(e.status==='No one home'||e.status==='Not interested')&&!d2dLeadFor(e)&&e.address&&allD2DSessions.some(s=>s.id===e.session_id));
+  return allD2DEntries.filter(e=>(e.status==='No one home'||e.status==='Not interested'||e.status==="Wasn't a no")&&!d2dLeadFor(e)&&e.address&&allD2DSessions.some(s=>s.id===e.session_id));
 }
 async function d2dPlotMap(){
   const on=document.getElementById('mf-door');if(on&&!on.checked)return;
@@ -2890,7 +2894,7 @@ async function d2dPlotMap(){
     m.bindTooltip(`<div style="font-family:-apple-system,sans-serif;min-width:150px;">
       <div style="font-weight:600;font-size:12px;">${esc(e.address)}</div>
       <div style="font-size:11px;margin-top:3px;"><span style="background:#6b21a8;color:#fff;padding:1px 6px;border-radius:10px;">Door-to-door · ${esc(e.status)}</span></div>
-      <div style="font-size:10px;color:#888;margin-top:3px;">${s?esc(s.name)+' · '+esc(s.session_date):''}${e.status==='No one home'&&e.card_left?' · card left':''}</div>
+      <div style="font-size:10px;color:#888;margin-top:3px;">${s?esc(s.name)+' · '+esc(s.session_date):''}${e.card_left?(e.status==='No one home'?' · card left':' · took a card'):''}</div>
     </div>`,{sticky:false,offset:[0,-4]});
     m.on('click',()=>{nav(document.querySelector('.nav-item[data-page="d2d"]'));d2dActiveSessionId=e.session_id;renderD2D();openD2DEntry(e.id);});
     m.addTo(leafletMap);mapMarkers.push(m);
