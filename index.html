@@ -694,6 +694,7 @@ tbody tr:hover td{background:#faf9f6;}
           <span>Editing a saved quote — saving will update the original file, not create a new one.</span>
           <div style="flex:1;"></div>
           <button class="btn btn-sm" onclick="clearQuote()">Cancel edit</button>
+          <button class="btn btn-sm btn-primary" onclick="saveQuoteToCRM()"><i class="ti ti-device-floppy"></i> Save changes</button>
         </div>
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
           <select id="quote-lead-select" style="padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);min-width:240px;" onchange="prefillQuote()">
