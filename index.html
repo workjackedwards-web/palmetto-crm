@@ -1,4 +1,4 @@
-<!-- build 2026-10-07 republish -->
+<!-- build 2026-10-29 republish -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -464,10 +464,10 @@ tbody tr:hover td{background:#faf9f6;}
         </div>
         <div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;color:var(--ink-3);">
           <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--green-light);border:1px solid var(--green-600);"></span> New website lead, not yet opened</div>
-          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--amber-light);border:1px solid var(--amber-600);"></span> Needs follow-up (7+ days)</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--amber-light);border:1px solid var(--amber-600);"></span> Needs follow-up (7+ days, stays in date order)</div>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Lead</th><th>Type</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Date</th><th></th></tr></thead>
+          <table><thead><tr><th>Lead</th><th>Type</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Added</th><th></th></tr></thead>
           <tbody id="leads-body"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
         </div>
       </div>
@@ -544,6 +544,7 @@ tbody tr:hover td{background:#faf9f6;}
             <select id="cal-filter" onchange="renderCalendar()" style="padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);">
               <option value="">Everything</option>
               <option value="job">Jobs only</option>
+              <option value="quote">Quotes only</option>
               <option value="recurring">Recurring visits only</option>
               <option value="followup">Follow-ups only</option>
               <option value="d2d">Door-to-door only</option>
@@ -565,6 +566,7 @@ tbody tr:hover td{background:#faf9f6;}
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#3B6D11;"></div>Completed Job</div>
           <div class="cal-leg"><div style="background:#ea580c;"></div>Recurring visit</div>
           <div class="cal-leg"><div style="background:#1e5a8a;"></div>Job event</div>
+          <div class="cal-leg"><div style="background:#b45309;"></div>Quote</div>
           <div class="cal-leg"><div style="background:#BA7517;"></div>Follow-up</div>
           <div class="cal-leg"><div style="background:#6b21a8;"></div>Door-to-door</div>
           <div class="cal-leg"><div style="background:#0f766e;"></div>Research</div>
@@ -1196,11 +1198,24 @@ tbody tr:hover td{background:#faf9f6;}
       </div>
       <div class="field"><label>Status</label><select id="f-stat" onchange="toggleStatusSections()"><option>Lead</option><option>Quoted</option><option>Booked</option><option>Completed</option><option>Lost</option></select></div>
       <div class="field"><label>Quote ($)</label><input id="f-quote" type="number" step="0.01" placeholder="0.00"></div>
-      <div class="field"><label>Job date</label><input id="f-date" type="date"></div>
+      <div class="field"><label>Job date</label><input id="f-date" type="date"><div style="font-size:11px;color:var(--ink-3);">The day the work is done.</div></div>
+      <div class="field"><label>Date created</label><div id="f-created-display" style="padding:8px 0;font-size:13px;color:var(--ink-2);">Set when you save</div></div>
       <div class="field"><label>Neighborhood</label><input id="f-hood" placeholder="e.g. Byrnes Downs"></div>
       <div class="field"><label>Follow up on</label><input id="f-followup" type="date"><div style="font-size:11px;color:var(--ink-3);">Lead turns yellow on this date.</div></div>
       <div class="field span2"><label>Lead reason</label><div class="d2d-checks"><label class="d2d-check"><input type="checkbox" id="f-lr-future"> Future date</label><label class="d2d-check"><input type="checkbox" id="f-lr-reach"> Will reach back out to us</label></div></div>
       <div class="field span2"><label>Notes</label><textarea id="f-notes" placeholder="Property details, access info, referral name..."></textarea></div>
+    </div>
+
+    <!-- Quoted section -->
+    <div class="fin-section" id="quoted-section">
+      <div class="fin-title" style="color:var(--amber-600);">💬 How the quote was given</div>
+      <div class="form-grid">
+        <div class="field"><label>Quote given</label>
+          <select id="f-quote-method" onchange="toggleQuoteVisit()"><option value="">Select...</option><option>Online</option><option>In person</option></select></div>
+        <div class="field" id="f-quote-visit-wrap"><label>In-person date and time</label>
+          <div style="display:flex;gap:8px;"><input id="f-quote-date" type="date" style="flex:1;min-width:0;"><input id="f-quote-time" type="time" style="flex:1;min-width:0;"></div>
+          <div style="font-size:11px;color:var(--ink-3);">Shows on the Calendar once a date is set.</div></div>
+      </div>
     </div>
 
     <!-- Booked section -->
@@ -1608,6 +1623,7 @@ tbody tr:hover td{background:#faf9f6;}
         <label>Event type</label>
         <select id="ev-type" onchange="evTypeChanged()">
           <option value="job">Job</option>
+          <option value="quote">Quote</option>
           <option value="followup">Follow-up</option>
           <option value="d2d">Door-to-door session</option>
           <option value="research">Research</option>
@@ -1617,14 +1633,19 @@ tbody tr:hover td{background:#faf9f6;}
         </select>
         <input id="ev-type-custom" placeholder="Type your own, e.g. Equipment pickup" style="display:none;margin-top:6px;">
       </div>
-      <div class="field"><label>Date *</label><input id="ev-date" type="date"></div>
+      <div class="field"><label>Start date *</label><input id="ev-date" type="date" onchange="evDatesChanged()"></div>
+      <div class="field"><label>End date <span style="font-weight:400;color:var(--ink-3);">(for multi-day)</span></label><input id="ev-end-date" type="date"></div>
       <div class="field"><label>Start time</label><input id="ev-start" type="time"></div>
       <div class="field"><label>End time</label><input id="ev-end" type="time"></div>
+      <div class="field"><label>Repeats</label>
+        <select id="ev-repeat" onchange="evRepeatChanged()"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekly">Every week on…</option><option value="monthly">Every month on this date</option></select></div>
+      <div class="field" id="ev-repeat-until-wrap"><label>Repeat ends on <span style="font-weight:400;color:var(--ink-3);">(blank = no end)</span></label><input id="ev-repeat-until" type="date"></div>
+      <div class="field span2" id="ev-repeat-days-wrap"><label>Repeat on</label><div class="d2d-checks" id="ev-repeat-days"></div></div>
       <div class="field"><label>With / Attendees</label><input id="ev-with" placeholder="e.g. Sarah Johnson, Charlie"></div>
       <div class="field"><label>Location</label><input id="ev-location" placeholder="e.g. 123 King St, Zoom, Phone call"></div>
       <div class="field">
         <label>Link to customer (optional)</label>
-        <select id="ev-lead-id"><option value="">Not linked</option></select>
+        <select id="ev-lead-id" onchange="evLeadLinked()"><option value="">Not linked</option></select>
       </div>
       <div class="field">
         <label>Link to contact (optional)</label>
@@ -1636,6 +1657,18 @@ tbody tr:hover td{background:#faf9f6;}
       <button class="btn btn-danger btn-sm" id="ev-del-btn" style="display:none;" onclick="deleteEvent()"><i class="ti ti-trash"></i> Delete</button>
       <button class="btn" onclick="closeModal('event')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-check"></i> Save event</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-event-view">
+  <div class="modal" style="width:520px;">
+    <div class="modal-head"><h2 id="evv-title">Event</h2><button class="btn btn-sm" onclick="closeModal('event-view')"><i class="ti ti-x"></i></button></div>
+    <div id="evv-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="evv-del" style="margin-right:auto;"><i class="ti ti-trash"></i> Delete</button>
+      <button class="btn" onclick="closeModal('event-view')">Close</button>
+      <button class="btn btn-primary" id="evv-edit"><i class="ti ti-edit"></i> Edit</button>
     </div>
   </div>
 </div>
@@ -2465,7 +2498,7 @@ const D2D_STATUSES=['No one home','Not interested',"Wasn't a no",'Lead','Quoted'
 const D2D_CARD_STATUSES=['No one home',"Wasn't a no",'Quoted','Booked'];
 const D2D_NI_REASONS=['N/A','Use another company','Do it themselves','Other'];
 const D2D_LEAD_STATUSES=['Lead','Quoted','Booked'];
-let allD2DSessions=[],allD2DEntries=[],d2dMissing=false,leadsHasD2DCols=false;
+let allD2DSessions=[],allD2DEntries=[],d2dMissing=false,leadsHasD2DCols=false,leadsHasQuoteCols=false,eventsHasRepeatCols=false;
 let d2dActiveSessionId=null,d2dEditingEntryId=null,d2dPrefill=null;
 
 async function loadD2D(){
@@ -2478,6 +2511,8 @@ async function loadD2D(){
     else{d2dMissing=false;allD2DSessions=s.data||[];allD2DEntries=e.data||[];}
   }catch(err){console.error('loadD2D failed:',err);}
   try{const{error}=await sb.from('leads').select('neighborhood,followup_date,lead_reasons,d2d_entry_id').limit(1);leadsHasD2DCols=!error;}catch(err){leadsHasD2DCols=false;}
+  try{const{error}=await sb.from('leads').select('quote_method,quote_date,quote_time').limit(1);leadsHasQuoteCols=!error;}catch(err){leadsHasQuoteCols=false;}
+  try{const{error}=await sb.from('events').select('end_date,repeat,repeat_days,repeat_until').limit(1);eventsHasRepeatCols=!error;}catch(err){eventsHasRepeatCols=false;}
 }
 
 // ── helpers ──
@@ -2964,7 +2999,8 @@ function openAddLead(){
   setSelectedServices('');
   document.getElementById('f-src').value='Website Form';document.getElementById('f-stat').value='Lead';
   document.getElementById('f-duration').value='';document.getElementById('f-completed-by').value='';
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value='';
+  document.getElementById('f-created-display').textContent='Set when you save';
   document.getElementById('fin-section').style.display='none';
   document.getElementById('scheduled-section').style.display='none';
   document.getElementById('profit-preview').style.display='none';
@@ -2977,7 +3013,8 @@ function openAddLead(){
   const cSection=document.getElementById('f-contacts-section');if(cSection)cSection.style.display='none';
   const cList=document.getElementById('f-contacts-list');if(cList)cList.innerHTML='';
   leadContactCount=0;
-  ['f-hood','f-followup'].forEach(id=>document.getElementById(id).value='');
+  ['f-hood','f-followup','f-quote-method','f-quote-date','f-quote-time'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('quoted-section').style.display='none';
   document.getElementById('f-lr-future').checked=false;document.getElementById('f-lr-reach').checked=false;
   document.getElementById('f-sched-partner').value='';
   document.getElementById('f-sched-duration').value='';
@@ -3002,6 +3039,8 @@ function editLeadModal(lead){
   document.getElementById('f-oth').value=lead.other_exp||'';document.getElementById('f-duration').value=lead.duration||'';
   document.getElementById('f-completed-by').value=lead.completed_by||'';document.getElementById('f-chemicals').value=lead.chemicals||'';
   document.getElementById('f-hood').value=lead.neighborhood||'';document.getElementById('f-followup').value=lead.followup_date||'';
+  document.getElementById('f-quote-method').value=lead.quote_method||'';document.getElementById('f-quote-date').value=lead.quote_date||'';document.getElementById('f-quote-time').value=lead.quote_time?String(lead.quote_time).slice(0,5):'';
+  document.getElementById('f-created-display').textContent=lead.created_at?new Date(lead.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
   {const lr=String(lead.lead_reasons||'');document.getElementById('f-lr-future').checked=lr.includes('Future date');document.getElementById('f-lr-reach').checked=lr.includes('Will reach back out');}
   document.getElementById('f-tip').value=lead.tip||'';document.getElementById('f-line-items-json').value=lead.job_line_items||'';
   document.getElementById('fin-section').style.display=lead.status==='Completed'?'block':'none';
@@ -3029,9 +3068,12 @@ function toggleStatusSections(){
   const stat=document.getElementById('f-stat').value;
   document.getElementById('fin-section').style.display=stat==='Completed'?'block':'none';
   document.getElementById('scheduled-section').style.display=stat==='Booked'?'block':'none';
+  document.getElementById('quoted-section').style.display=stat==='Quoted'?'block':'none';
+  toggleQuoteVisit();
   if(stat==='Completed'){renderFinServiceBoxes();calcProfit();}
 }
 function toggleFinancials(){toggleStatusSections();}
+function toggleQuoteVisit(){const w=document.getElementById('f-quote-visit-wrap');if(w)w.style.display=document.getElementById('f-quote-method').value==='In person'?'':'none';}
 
 // ── Calendar ───────────────────────────────────────────────────────────────
 let calDate = new Date();
@@ -3054,8 +3096,8 @@ function calToday(){ calDate = new Date(); renderCalendar(); }
 
 function getCalFilter(){return(document.getElementById('cal-filter')||{value:''}).value;}
 
-const CAL_STD_TYPES=['job','followup','d2d','research','meeting','personal'];
-const CAL_TYPE_LABEL={job:'Job',followup:'Follow-up',d2d:'Door-to-door session',research:'Research',meeting:'Meeting',personal:'Personal',other:'Other'};
+const CAL_STD_TYPES=['job','quote','followup','d2d','research','meeting','personal'];
+const CAL_TYPE_LABEL={job:'Job',quote:'Quote',followup:'Follow-up',d2d:'Door-to-door session',research:'Research',meeting:'Meeting',personal:'Personal',other:'Other'};
 function calTypeKey(t){return CAL_STD_TYPES.includes(t)?t:'custom';}
 function calTypeLabel(t){return CAL_TYPE_LABEL[t]||t||'Other';}
 function getCalVisits(){
@@ -3077,6 +3119,84 @@ function calD2DChip(s){
   return`<div class="cal-event d2d-sess" onclick="event.stopPropagation();nav(document.querySelector('.nav-item[data-page=&quot;d2d&quot;]'));openD2DSession('${s.id}')" title="Door-to-door session · ${esc(s.name)}">🚪 ${esc(s.name)}</div>`;
 }
 function calDateStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+const EV_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function calAddDays(ds,n){const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return calDateStr(d);}
+function calDaysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+// Does event e appear on day ds? Handles multi-day spans and daily/weekly/monthly repeats.
+function calEventOn(e,ds){
+  const start=e.event_date;if(!start||ds<start)return false;
+  const span=e.end_date&&e.end_date>start?calDaysBetween(start,e.end_date):0;
+  if(!e.repeat)return ds<=calAddDays(start,span);
+  const until=e.repeat_until||'9999-12-31';
+  const days=String(e.repeat_days||'').split(',').filter(x=>x!=='').map(Number);
+  const startDow=new Date(start+'T12:00:00').getDay(),startDom=+start.slice(8,10);
+  for(let k=0;k<=span;k++){
+    const occ=calAddDays(ds,-k);
+    if(occ<start||occ>until)continue;
+    const d=new Date(occ+'T12:00:00');
+    if(e.repeat==='daily')return true;
+    if(e.repeat==='weekly'&&(days.length?days:[startDow]).includes(d.getDay()))return true;
+    if(e.repeat==='monthly'&&d.getDate()===startDom)return true;
+  }
+  return false;
+}
+function calEventDayLabel(e,ds){
+  if(e.repeat||!e.end_date||e.end_date<=e.event_date)return '';
+  const n=calDaysBetween(e.event_date,ds)+1,t=calDaysBetween(e.event_date,e.end_date)+1;
+  return ` (day ${n}/${t})`;
+}
+function getCalQuotes(){
+  const f=getCalFilter();
+  if(f&&f!=='quote')return [];
+  return allLeads.filter(l=>l.quote_date&&l.quote_method==='In person'&&l.status!=='Lost');
+}
+function calQuoteChip(l,showTime){
+  const t=l.quote_time?String(l.quote_time).slice(0,5)+' ':'';
+  return`<div class="cal-event" style="background:#b45309;" onclick="event.stopPropagation();viewLead('${l.id}')" title="In-person quote · ${esc(l.address||'')}">${showTime?t:''}💬 ${esc(`${l.first_name||''} ${l.last_name||''}`.trim()||l.address||'Quote')}</div>`;
+}
+function evRepeatChanged(){
+  const r=document.getElementById('ev-repeat').value;
+  document.getElementById('ev-repeat-until-wrap').style.display=r?'':'none';
+  document.getElementById('ev-repeat-days-wrap').style.display=r==='weekly'?'':'none';
+  if(r==='weekly'&&!document.querySelector('#ev-repeat-days input:checked')){const ds=document.getElementById('ev-date').value;if(ds){const cb=document.querySelector(`#ev-repeat-days input[value="${new Date(ds+'T12:00:00').getDay()}"]`);if(cb)cb.checked=true;}}
+}
+function evSetRepeatDays(list){document.getElementById('ev-repeat-days').innerHTML=EV_DAYS.map((d,i)=>`<label class="d2d-check"><input type="checkbox" value="${i}" ${list.includes(i)?'checked':''}> ${d}</label>`).join('');}
+function evDatesChanged(){const s=document.getElementById('ev-date').value,e=document.getElementById('ev-end-date');if(s&&e.value&&e.value<s)e.value='';e.min=s||'';}
+let _evAutoLoc='';
+function evLeadLinked(){
+  const id=document.getElementById('ev-lead-id').value;const loc=document.getElementById('ev-location');
+  const l=allLeads.find(x=>x.id===id);
+  if(l&&l.address&&(!loc.value.trim()||loc.value===_evAutoLoc)){loc.value=l.address;_evAutoLoc=l.address;}
+  else if(!l&&loc.value===_evAutoLoc){loc.value='';_evAutoLoc='';}
+}
+function evFillRepeat(e){
+  document.getElementById('ev-end-date').value=e&&e.end_date||'';
+  document.getElementById('ev-repeat').value=e&&e.repeat||'';
+  document.getElementById('ev-repeat-until').value=e&&e.repeat_until||'';
+  evSetRepeatDays(String(e&&e.repeat_days||'').split(',').filter(x=>x!=='').map(Number));
+  evRepeatChanged();evDatesChanged();
+}
+function evTime12(t){if(!t)return'';const[h,m]=String(t).split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;}
+function evFmtDate(ds){return ds?new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'';}
+function showEventDetail(id){
+  const e=allEvents.find(x=>x.id===id);if(!e)return;
+  const color=getEventColor(e.event_type);
+  const when=[evFmtDate(e.event_date)+(e.end_date&&e.end_date>e.event_date&&!e.repeat?' – '+evFmtDate(e.end_date):''),e.start_time?evTime12(e.start_time)+(e.end_time?' – '+evTime12(e.end_time):''):'All day'].join(' · ');
+  let rep='';
+  if(e.repeat){const days=String(e.repeat_days||'').split(',').filter(x=>x!=='').map(n=>EV_DAYS[+n]);rep=(e.repeat==='daily'?'Every day':e.repeat==='weekly'?'Every week on '+(days.length?days.join(', '):EV_DAYS[new Date(e.event_date+'T12:00:00').getDay()]):'Every month on day '+(+e.event_date.slice(8,10)))+(e.repeat_until?', until '+evFmtDate(e.repeat_until):', no end date');}
+  const lead=e.lead_id?allLeads.find(l=>l.id===e.lead_id):null;
+  const conn=e.connection_id?allConnections.find(c=>c.id===e.connection_id):null;
+  const row=(lbl,val)=>val?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`:'';
+  document.getElementById('evv-title').textContent=e.title||'Event';
+  document.getElementById('evv-body').innerHTML=`<div style="margin-bottom:12px;"><span class="badge" style="background:${color};color:#fff;">${esc(calTypeLabel(e.event_type))}</span></div>
+    <div class="record-grid">${row('When',esc(when))}${row('Repeats',esc(rep))}${row('Location',esc(e.location))}${row('With',esc(e.attendees))}
+    ${lead?row('Linked job',`<a style="color:var(--teal-600);cursor:pointer;font-weight:500;" onclick="closeModal('event-view');viewLead('${lead.id}')">${esc(`${lead.first_name||''} ${lead.last_name||''}`.trim()||lead.address)}</a> ${badge(lead.status)}`):''}
+    ${conn?row('Linked contact',`<a style="color:var(--teal-600);cursor:pointer;font-weight:500;" onclick="closeModal('event-view');viewConnection('${conn.id}')">${esc(`${conn.first_name||''} ${conn.last_name||''}`.trim())}</a>`):''}
+    ${row('Notes',esc(e.notes).replace(/\n/g,'<br>'))}</div>`;
+  document.getElementById('evv-edit').onclick=()=>{closeModal('event-view');viewEvent(id);};
+  document.getElementById('evv-del').onclick=()=>{closeModal('event-view');document.getElementById('event-edit-id').value=id;deleteEvent();};
+  openModal('event-view');
+}
 function calDayClick(e,dateStr,time){
   if(e&&e.target&&e.target.closest('.cal-event'))return;
   openAddEvent(dateStr,time);
@@ -3101,7 +3221,7 @@ function getCalEvents(){
 }
 
 function getEventColor(type){
-  return {job:'#1e5a8a',followup:'#BA7517',d2d:'#6b21a8',research:'#0f766e',meeting:'#4f46e5',personal:'#666',other:'#444'}[type]||'#444';
+  return {job:'#1e5a8a',quote:'#b45309',followup:'#BA7517',d2d:'#6b21a8',research:'#0f766e',meeting:'#4f46e5',personal:'#666',other:'#444'}[type]||'#444';
 }
 
 function renderCalendar(){
@@ -3122,7 +3242,7 @@ function renderCalendar(){
       const isToday=dt.getTime()===today.getTime();
       const dateStr=calDateStr(dt);
       const jobs=getBookedLeads().filter(l=>l.sched_date===dateStr);
-      const evts=getCalEvents().filter(e=>e.event_date===dateStr).sort((a,b)=>String(a.start_time||'99').localeCompare(String(b.start_time||'99')));
+      const evts=getCalEvents().filter(e=>calEventOn(e,dateStr)).sort((a,b)=>String(a.start_time||'99').localeCompare(String(b.start_time||'99')));
       const visits=getCalVisits().filter(x=>x.v.visit_date===dateStr);
       const sess=getCalD2DSessions().filter(x=>x.session_date===dateStr);
       html+=`<div class="cal-day clickable${isToday?' today':''}" onclick="calDayClick(event,'${dateStr}')" title="Click to add something on this day">`;
@@ -3134,10 +3254,11 @@ function renderCalendar(){
       });
       visits.forEach(x=>{html+=calVisitChip(x);});
       sess.forEach(x=>{html+=calD2DChip(x);});
+      getCalQuotes().filter(l=>l.quote_date===dateStr).forEach(l=>{html+=calQuoteChip(l,true);});
       evts.forEach(e=>{
         const time=e.start_time?e.start_time.slice(0,5)+' ':'';
         const color=getEventColor(e.event_type);
-        html+=`<div class="cal-event" style="background:${color};cursor:pointer;" onclick="event.stopPropagation();viewEvent('${e.id}')" title="${esc(calTypeLabel(e.event_type))} · ${esc(e.title)}">${time}${esc(e.title)}</div>`;
+        html+=`<div class="cal-event" style="background:${color};cursor:pointer;" onclick="event.stopPropagation();showEventDetail('${e.id}')" title="${esc(calTypeLabel(e.event_type))} · ${esc(e.title)}">${time}${esc(e.title)}${calEventDayLabel(e,dateStr)}${e.repeat?' ↻':''}</div>`;
       });
       html+=`</div>`;
     }
@@ -3172,7 +3293,8 @@ function renderCalendar(){
       getBookedLeads().filter(l=>l.sched_date===ds&&!l.sched_time).forEach(l=>{cell+=`<div class="cal-event ${l.status.toLowerCase()}" onclick="event.stopPropagation();viewLead('${l.id}')">${esc(l.first_name)} ${esc(l.last_name)}</div>`;});
       getCalVisits().filter(x=>x.v.visit_date===ds).forEach(x=>{cell+=calVisitChip(x);});
       getCalD2DSessions().filter(x=>x.session_date===ds).forEach(x=>{cell+=calD2DChip(x);});
-      getCalEvents().filter(e=>e.event_date===ds&&!e.start_time).forEach(e=>{cell+=`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();viewEvent('${e.id}')">${esc(e.title)}</div>`;});
+      getCalEvents().filter(e=>calEventOn(e,ds)&&(!e.start_time||(e.end_date&&e.end_date>e.event_date&&!e.repeat))).forEach(e=>{cell+=`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();showEventDetail('${e.id}')">${esc(e.title)}${calEventDayLabel(e,ds)}${e.repeat?' ↻':''}</div>`;});
+      getCalQuotes().filter(l=>l.quote_date===ds&&!l.quote_time).forEach(l=>{cell+=calQuoteChip(l,false);});
       html+=`<div class="cal-allday clickable cal-week-cell" style="height:auto;" onclick="calDayClick(event,'${ds}')">${cell}</div>`;
     }
     // Hours 7am-7pm
@@ -3186,7 +3308,8 @@ function renderCalendar(){
         const inRow=t=>{const x=hourOf(t);return x===h||(h===7&&x>=0&&x<7)||(h===19&&x>19);};
         const items=[];
         getBookedLeads().filter(l=>l.sched_date===dateStr&&l.sched_time&&inRow(l.sched_time)).forEach(l=>items.push(`<div class="cal-event ${l.status.toLowerCase()}" onclick="event.stopPropagation();viewLead('${l.id}')">${l.sched_time.slice(0,5)} ${esc(l.first_name)} ${esc(l.last_name)}</div>`));
-        getCalEvents().filter(e=>e.event_date===dateStr&&e.start_time&&inRow(e.start_time)).forEach(e=>items.push(`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();viewEvent('${e.id}')">${e.start_time.slice(0,5)} ${esc(e.title)}</div>`));
+        getCalEvents().filter(e=>calEventOn(e,dateStr)&&e.start_time&&!(e.end_date&&e.end_date>e.event_date&&!e.repeat)&&inRow(e.start_time)).forEach(e=>items.push(`<div class="cal-event" style="background:${getEventColor(e.event_type)};" onclick="event.stopPropagation();showEventDetail('${e.id}')">${e.start_time.slice(0,5)} ${esc(e.title)}${e.repeat?' ↻':''}</div>`));
+        getCalQuotes().filter(l=>l.quote_date===dateStr&&l.quote_time&&inRow(l.quote_time)).forEach(l=>items.push(calQuoteChip(l,true)));
         html+=`<div class="cal-week-cell clickable" style="overflow:hidden;" onclick="calDayClick(event,'${dateStr}','${String(h).padStart(2,'0')}:00')">${items.join('')}</div>`;
       }
     }
@@ -3271,6 +3394,12 @@ async function saveLead(){
     sched_duration:document.getElementById('f-sched-duration').value||null,
     sched_notes:document.getElementById('f-sched-notes').value||null,
     added_by:currentUser?.email,updated_at:new Date().toISOString()};
+  if(leadsHasQuoteCols){
+    lead.quote_method=document.getElementById('f-quote-method').value||null;
+    const inPerson=lead.quote_method==='In person';
+    lead.quote_date=inPerson?(document.getElementById('f-quote-date').value||null):null;
+    lead.quote_time=inPerson?(document.getElementById('f-quote-time').value||null):null;
+  }
   if(leadsHasD2DCols){
     lead.neighborhood=document.getElementById('f-hood').value.trim()||null;
     lead.followup_date=document.getElementById('f-followup').value||null;
@@ -3332,6 +3461,8 @@ function viewLead(id){
     <div class="record-section"><div class="record-section-title">Job details</div><div class="record-grid">
       <div class="record-field"><div class="lbl">Service</div><div class="val">${l.service}</div></div>
       <div class="record-field"><div class="lbl">Job date</div><div class="val">${l.job_date||'—'}</div></div>
+      <div class="record-field"><div class="lbl">Date created</div><div class="val">${l.created_at?new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</div></div>
+      ${l.quote_method?`<div class="record-field"><div class="lbl">Quote given</div><div class="val">${esc(l.quote_method)}${l.quote_method==='In person'&&l.quote_date?` · ${l.quote_date}${l.quote_time?' at '+String(l.quote_time).slice(0,5):''}`:''}</div></div>`:''}
       <div class="record-field"><div class="lbl">Quote</div><div class="val">${$m(l.quote)}</div></div>
       <div class="record-field"><div class="lbl">Added by</div><div class="val" style="font-size:12px;">${l.added_by||'—'}</div></div>
       ${l.account_id&&leadAccountName(l)?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Account</div><div class="val"><a style="color:var(--teal-600);font-weight:500;cursor:pointer;" onclick="closeModal('view');viewAccount('${l.account_id}')">${esc(leadAccountName(l))}</a></div></div>`:''}
@@ -3702,6 +3833,8 @@ async function refreshCommsLive(){
     await loadComms();
     const after=allComms.map(c=>c.id+'|'+(c.received_at||'')).join(',');
     if(after!==before)refreshCommViews();
+    const ln=allLeads.length,lt=allLeads.reduce((m,l)=>l.created_at>m?l.created_at:m,'');
+    if(!document.querySelector('.overlay.open')){await loadLeads();const lt2=allLeads.reduce((m,l)=>l.created_at>m?l.created_at:m,'');if(allLeads.length!==ln||lt2!==lt){try{renderLeads();renderDashboard();}catch(e){}}}
     updateUnmatchedBadge();
   }catch(e){console.error('refreshCommsLive failed:',e);}finally{_commRefreshBusy=false;}
 }
@@ -4151,8 +4284,9 @@ function renderLeads(){
     if(l.followup_date){const due=new Date(l.followup_date+'T00:00:00').getTime();if(Date.now()<due)return false;const seen=l.last_viewed_at?new Date(l.last_viewed_at).getTime():0;if(seen<due)return true;}
     return (Date.now()-new Date(l.last_viewed_at||l.created_at).getTime())>STALE_MS;
   };
-  const isNewLead=l=>l.source==='Website Form'&&!l.last_viewed_at;
+  const isNewLead=l=>String(l.source||'').startsWith('Website Form')&&!l.last_viewed_at;
   const priority=l=>isNewLead(l)?0:isStale(l)?1:2;
+  const pinned=l=>isNewLead(l)?0:1;
 
   const statusMatch=l=>{
     if(fStat==='active') return l.status!=='Lost';
@@ -4171,8 +4305,8 @@ function renderLeads(){
   });
 
   data=data.slice().sort((a,b)=>{
-    const pa=priority(a),pb=priority(b);
-    if(pa!==pb) return pa-pb; // new-lead and needs-follow-up always pin to the top
+    const pa=pinned(a),pb=pinned(b);
+    if(pa!==pb) return pa-pb; // only brand-new website submissions pin to the top; follow-ups stay in date order
     if(fSort==='oldest') return new Date(a.created_at)-new Date(b.created_at);
     if(fSort==='stale') return new Date(a.last_viewed_at||a.created_at)-new Date(b.last_viewed_at||b.created_at);
     if(fSort==='name') return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
@@ -4181,14 +4315,15 @@ function renderLeads(){
   });
 
   // Group by client key (phone or name)
-  const groups={};
+  // Map keeps the sorted order (a plain object would re-sort phone-number keys like 2032162738 numerically)
+  const groups=new Map();
   data.forEach(l=>{
     const key=l.phone?l.phone.replace(/\D/g,''):`${l.first_name}_${l.last_name}`;
-    if(!groups[key]) groups[key]={leads:[],key};
-    groups[key].leads.push(l);
+    if(!groups.has(key)) groups.set(key,{leads:[],key});
+    groups.get(key).leads.push(l);
   });
 
-  const rows=Object.values(groups).map(g=>{
+  const rows=[...groups.values()].map(g=>{
     const first=g.leads[0];
     const multi=g.leads.length>1;
     const name=`${first.first_name} ${first.last_name}`;
@@ -4206,7 +4341,7 @@ function renderLeads(){
         <td style="font-size:12px;">${l.service}</td>
         <td>${badge(l.status)}</td>
         <td>${l.source||'—'}</td>
-        <td>${l.job_date||'—'}</td>
+        <td style="white-space:nowrap;">${leadAddedDate(l)}</td>
         <td><button class="btn btn-sm" onclick="viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td>
       </tr>`;
     }
@@ -4231,13 +4366,14 @@ function renderLeads(){
       const lp=priority(l);
       const subBg=lp===0?'var(--green-light)':lp===1?'var(--amber-light)':'#f8fcfd';
       return`<tr class="${groupId}" style="display:none;background:${subBg};">
-        <td style="padding-left:32px;"><div style="font-size:12px;color:var(--ink-3);">📍 ${l.address||'No address'}</div>${accountTag(l)}</td>
+        <td style="padding-left:32px;font-size:12px;color:var(--ink-3);">↳ ${esc(`${l.first_name||''} ${l.last_name||''}`.trim())}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':'var(--blue-light)'};color:${l.property_type==='Commercial'?'#92400e':'var(--blue-600)'};">${l.property_type||'Residential'}</span></td>
-        <td style="font-size:12px;">${l.service}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.address||'No address'}${accountTag(l)}</td>
+        <td style="font-size:12px;">${l.service||'—'}</td>
         <td>${badge(l.status)}</td>
         <td style="font-size:12px;">${l.source||'—'}</td>
-        <td>${l.job_date||'—'}</td>
-        <td colspan="2"><button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${l.id}')"><i class="ti ti-eye"></i> Open</button></td>
+        <td style="white-space:nowrap;">${leadAddedDate(l)}</td>
+        <td><button class="btn btn-sm" onclick="event.stopPropagation();viewLead('${l.id}')"><i class="ti ti-eye"></i></button></td>
       </tr>`;
     }).join('')}`;
   });
@@ -4245,6 +4381,7 @@ function renderLeads(){
   document.getElementById('leads-body').innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:30px;">No active leads.</td></tr>';
 }
 
+function leadAddedDate(l){if(!l.created_at)return'—';const d=new Date(l.created_at);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'});}
 function toggleLeadGroup(id){
   const rows=document.querySelectorAll('.'+id);
   const icon=document.getElementById(id+'-icon');
@@ -4959,7 +5096,7 @@ function renderEmbed(){
   <div><label>Last name</label><input id="pp-ln" placeholder="Smith"></div>
 </div>
 <div class="row">
-  <div><label>Phone <span class="req">*</span></label><input id="pp-ph" placeholder="(843) 555-0100"></div>
+  <div><label>Phone <span class="req">*</span></label><input id="pp-ph" placeholder="(843) 555-0100" inputmode="tel" maxlength="14" oninput="ppFmtPhone(this)"></div>
   <div><label>Email</label><input id="pp-em" placeholder="john@email.com"></div>
 </div>
 <div class="row">
@@ -5002,10 +5139,6 @@ function renderEmbed(){
 </div>
 <input type="hidden" id="pp-water">
 
-<label style="margin-bottom:8px;display:block;">How did you find us?</label>
-<div class="row" style="margin-bottom:12px;">
-  <div class="full"><select id="pp-sr"><option value="" disabled selected>Please select one of the following</option><option>Google</option><option>Referral</option><option>Realtor</option><option>Social Media</option><option>HOA</option><option>Door-to-door</option><option>Other</option></select></div>
-</div>
 
 <label style="margin-bottom:6px;display:block;">📸 Photos / Videos <span style="font-weight:400;color:#888;text-transform:none;font-size:11px;letter-spacing:0;">(optional — helps us give you a faster, more accurate quote!)</span></label>
 <div class="photo-area" onclick="document.getElementById('pp-photos').click()">
@@ -5016,6 +5149,13 @@ function renderEmbed(){
 </div>
 <div class="photo-preview" id="pp-photo-preview"></div>
 
+<label style="margin-bottom:8px;display:block;">How did you hear about us? <span class="req">*</span></label>
+<div class="row" style="margin-bottom:12px;">
+  <div class="full"><select id="pp-sr" onchange="document.getElementById('pp-sr-other-wrap').style.display=this.value==='Other'?'block':'none'"><option value="" disabled selected>Please select one of the following</option><option>Google</option><option>Facebook</option><option>Instagram</option><option>Pamphlet</option><option>Neighbor/Friend</option><option>Sign</option><option>Ad</option><option>Other</option></select></div>
+</div>
+<div class="row" id="pp-sr-other-wrap" style="display:none;margin-bottom:12px;">
+  <div class="full"><label>Where did you hear about us?</label><input id="pp-sr-other" placeholder="Tell us a little more (optional)"></div>
+</div>
 <div class="row"><div class="full"><label>Additional notes</label><textarea id="pp-nt" placeholder="Tell us anything else about your property — square footage, special access, specific areas of concern..."></textarea></div></div>
 
 <button onclick="ppSubmit()">Request My Free Quote →</button>
@@ -5041,6 +5181,7 @@ document.addEventListener('click',function(e){
   const list=document.getElementById('pp-sv-list');
   if(list&&toggle&&!toggle.contains(e.target)&&!list.contains(e.target)){list.style.display='none';}
 });
+function ppFmtPhone(el){let d=el.value.replace(/[^0-9]/g,'');if(d.length===11&&d[0]==='1')d=d.slice(1);d=d.slice(0,10);el.value=d.length>6?'('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6):d.length>3?'('+d.slice(0,3)+') '+d.slice(3):d;}
 function selectWater(type){
   document.getElementById('pp-city').classList.toggle('selected', type==='city');
   document.getElementById('pp-well').classList.toggle('selected', type==='well');
@@ -5074,15 +5215,20 @@ async function ppSubmit(){
   if(!fn||!ph||!ad){alert('Please fill in your name, phone, and address.');return;}
   if(!checked.length){alert('Please select at least one service.');return;}
   if(!water){alert('Please select your water source (city or well water).');return;}
+  const heard=document.getElementById('pp-sr').value;
+  if(!heard){alert('Please tell us how you heard about us.');return;}
+  const phDigits=ph.replace(/[^0-9]/g,'').replace(/^1(?=[0-9]{10}$)/,'');
+  if(phDigits.length!==10){alert('Please enter a 10-digit phone number.');return;}
+  const phFmt='('+phDigits.slice(0,3)+') '+phDigits.slice(3,6)+'-'+phDigits.slice(6);
+  const heardOther=document.getElementById('pp-sr-other').value.trim();
   const leadId=crypto.randomUUID();
   const notes=[document.getElementById('pp-nt').value,'Water source: '+(water==='city'?'City water':'Well water')].filter(Boolean).join(' | ');
   const{error}=await _sb.from('leads').insert([{
     id:leadId,first_name:fn,last_name:document.getElementById('pp-ln').value,
-    phone:ph,email:document.getElementById('pp-em').value,address:ad,
+    phone:phFmt,email:document.getElementById('pp-em').value.trim(),address:ad,
     service:checked.join(', '),
-    source:'Website Form - '+document.getElementById('pp-sr').value,
+    source:'Website Form - '+heard+(heard==='Other'&&heardOther?': '+heardOther:''),
     status:'Lead',notes,
-    job_date:new Date().toISOString().split('T')[0],
     created_at:new Date().toISOString()
   }]);
   if(error){alert('Submission failed. Please call us at (843) 608-0529.');return;}
@@ -5098,7 +5244,8 @@ async function ppSubmit(){
   document.getElementById('pp-ok').style.display='block';
   document.querySelectorAll('.pp-svc-opt.selected').forEach(o=>o.classList.remove('selected'));document.getElementById('pp-sv-label').textContent='Please select one of the following';document.getElementById('pp-sv-label').style.color='#999';document.getElementById('pp-sv-list').style.display='none';
   selectWater('');document.getElementById('pp-water').value='';
-  ['pp-fn','pp-ln','pp-ph','pp-em','pp-ad','pp-nt'].forEach(id=>document.getElementById(id).value='');
+  ['pp-fn','pp-ln','pp-ph','pp-em','pp-ad','pp-nt','pp-sr-other'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pp-sr').value='';document.getElementById('pp-sr-other-wrap').style.display='none';
   document.getElementById('pp-photo-preview').innerHTML='';
 }
 <\/script>`;}
@@ -5939,6 +6086,7 @@ function openAddEvent(dateStr,timeStr){
   document.getElementById('ev-type-custom').value='';evTypeChanged();
   document.getElementById('ev-date').value=dateStr||calDateStr(new Date());
   document.getElementById('ev-start').value=timeStr||'';
+  _evAutoLoc='';evFillRepeat(null);
   document.getElementById('ev-end').value='';
   document.getElementById('ev-with').value='';
   document.getElementById('ev-location').value='';
@@ -5958,6 +6106,7 @@ function viewEvent(id){
   document.getElementById('ev-title').value=e.title||'';
   {const t=e.event_type||'meeting';const std=CAL_STD_TYPES.includes(t);document.getElementById('ev-type').value=std?t:'custom';document.getElementById('ev-type-custom').value=std?'':(t==='other'?'':t);evTypeChanged();}
   document.getElementById('ev-date').value=e.event_date||'';
+  _evAutoLoc='';evFillRepeat(e);
   document.getElementById('ev-start').value=e.start_time||'';
   document.getElementById('ev-end').value=e.end_time||'';
   document.getElementById('ev-with').value=e.attendees||'';
@@ -5975,6 +6124,8 @@ async function saveEvent(){
   const title=document.getElementById('ev-title').value.trim();
   const date=document.getElementById('ev-date').value;
   if(!title||!date){alert('Title and date are required.');return;}
+  if(!eventsHasRepeatCols&&(document.getElementById('ev-end-date').value||document.getElementById('ev-repeat').value)){alert('Multi-day and repeating events need the calendar setup SQL run in Supabase first. Run it, reload the CRM, then save again.');return;}
+  {const ru=document.getElementById('ev-repeat-until').value;if(document.getElementById('ev-repeat').value&&ru&&ru<date){alert('"Repeat ends on" must be after the start date.');return;}}
   let evType=document.getElementById('ev-type').value;
   if(evType==='custom'){evType=document.getElementById('ev-type-custom').value.trim();if(!evType){alert('Type the custom event type, or pick one from the list.');document.getElementById('ev-type-custom').focus();return;}}
   const id=document.getElementById('event-edit-id').value||uid();
@@ -5990,6 +6141,11 @@ async function saveEvent(){
     connection_id:document.getElementById('ev-conn-id').value||null,
     notes:document.getElementById('ev-notes').value||null,
     created_by:currentUser?.email,
+    ...(eventsHasRepeatCols?(()=>{
+      const end=document.getElementById('ev-end-date').value;const r=document.getElementById('ev-repeat').value;
+      const days=[...document.querySelectorAll('#ev-repeat-days input:checked')].map(i=>i.value).join(',');
+      return{end_date:end&&end>date?end:null,repeat:r||null,repeat_days:r==='weekly'?(days||String(new Date(date+'T12:00:00').getDay())):null,repeat_until:r?(document.getElementById('ev-repeat-until').value||null):null};
+    })():{}),
     updated_at:new Date().toISOString()
   };
   try{
@@ -6251,7 +6407,8 @@ function selectExistingCustomer(key){
   document.getElementById('f-phone').value=c.phone||'';
   document.getElementById('f-email').value=c.email||'';
   document.getElementById('f-addr').value=c.address||'';
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value='';
+  document.getElementById('f-created-display').textContent='Set when you save';
   // Clear services for new job selection
   setSelectedServices('');
 }
