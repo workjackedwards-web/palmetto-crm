@@ -286,7 +286,8 @@ tbody tr:hover td{background:#faf9f6;}
   .content{padding:12px;}
   /* Tables — scroll horizontally */
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  table{min-width:500px;}
+  .modal .table-wrap table{min-width:500px;}
+  .d2d-tbl{width:100%;}.d2d-tbl th,.d2d-tbl td{white-space:normal;}
   /* Metrics */
   .metrics{grid-template-columns:1fr 1fr;}
   .metric{padding:12px;}
@@ -355,9 +356,52 @@ tbody tr:hover td{background:#faf9f6;}
   #cal-card:has(.cal-week-grid){overflow-x:auto!important;-webkit-overflow-scrolling:touch;}
   .cal-week-grid{min-width:720px;}
   .cal-agenda-item .cal-event{font-size:13px;padding:8px 10px;margin-bottom:6px;white-space:normal;border-radius:6px;}
-  /* Tables: keep rows short, swipe sideways for the rest */
-  td,th{white-space:nowrap;}
-  .table-wrap td .td-muted{white-space:nowrap;}
+  /* Text always wraps inside its box instead of running past it */
+  .content,.modal{overflow-wrap:anywhere;word-break:break-word;}
+  .content div,.content span,.content td,.content a,.content p,.modal div,.modal span,.modal td{min-width:0;}
+  .card,.stat-card,.comm-item,.comm-body{min-width:0;max-width:100%;}
+  .badge,.btn,.nav-item,.modal-tab{overflow-wrap:normal;word-break:normal;}
+  .content .btn,.modal .btn{white-space:normal;text-align:center;line-height:1.25;}
+  /* List tables become one card per row: label on the left, value on the right, everything wraps */
+  .page-content .table-wrap{overflow:visible!important;border:none;background:transparent;box-shadow:none;}
+  .page-content .table-wrap>table{display:block;width:100%!important;min-width:0!important;}
+  .page-content .table-wrap>table>thead{display:none;}
+  .page-content .table-wrap>table>tbody{display:block;width:100%;}
+  .page-content .table-wrap>table>tbody>tr:not([style*="display:none"]):not([style*="display: none"]){display:block!important;}
+  .page-content .table-wrap>table>tbody>tr{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .page-content .table-wrap>table>tbody>tr>td{display:block;width:auto!important;max-width:none!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;border:none!important;padding:6px 0!important;text-align:right!important;font-size:13px;overflow-wrap:anywhere;}
+  .page-content .table-wrap>table>tbody>tr>td+td{border-top:1px solid var(--border)!important;}
+  .page-content .table-wrap>table>tbody>tr>td::after{content:"";display:block;clear:both;}
+  .page-content .table-wrap>table>tbody>tr>td[data-label]::before{content:attr(data-label);float:left;max-width:45%;margin-right:10px;text-align:left;font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;line-height:1.9;}
+  .page-content .table-wrap>table>tbody>tr>td[data-label=""]::before{display:none;}
+  .page-content .table-wrap>table>tbody>tr>td:first-child{text-align:left!important;font-size:14px;padding-left:0!important;}
+  .page-content .table-wrap>table>tbody>tr>td:first-child::before{display:none;}
+  .page-content .table-wrap>table>tbody>tr>td[colspan]{text-align:left!important;}
+  .page-content .table-wrap>table>tbody>tr>td[colspan]::before{display:none;}
+  .page-content .table-wrap>table>tbody>tr>td input[type=checkbox]{float:left;}
+  .page-content .table-wrap .badge{white-space:normal;}
+  /* Quote Builder on a phone */
+  #pg-quotes>div>select{min-width:0!important;flex:1 1 100%;width:100%;}
+  #pg-quotes>div>.btn{flex:1 1 auto;justify-content:center;}
+  #quote-edit-banner{flex-wrap:wrap;}
+  #quote-edit-banner>div[style*="flex:1"]{display:none;}
+  #quote-doc{padding:14px!important;max-width:100%!important;box-sizing:border-box;}
+  #quote-doc .quote-header-row>div:first-child>div:first-child{font-size:18px!important;}
+  #quote-doc .quote-meta-grid{grid-template-columns:96px minmax(0,1fr)!important;}
+  .quote-cust-grid{grid-template-columns:1fr!important;}
+  .quote-cust-grid>div{grid-column:auto!important;}
+  #q-svc-table{font-size:12px;}
+  #quote-doc>table{table-layout:fixed;width:100%;}
+  #quote-doc>table th,#quote-doc>table td{padding:6px 4px!important;white-space:normal!important;overflow-wrap:anywhere;font-size:11px!important;}
+  #quote-doc>table th:nth-child(2),#quote-doc>table td:nth-child(2){display:none;}
+  #quote-doc .quote-totals{width:100%!important;}
+  #quote-doc .quote-sign-grid{grid-template-columns:1fr!important;}
+  #quote-doc .quote-calc-foot{flex-wrap:wrap;justify-content:space-between!important;}
+  #quote-doc .quote-footer{line-height:1.6;}
+  .calc-row-grid{grid-template-columns:1fr 1fr!important;}
+  .calc-row-grid>*:first-child{grid-column:1/-1;}
+  .calc-row-grid>*:last-child:not(:nth-child(even)){grid-column:1/-1;}
+  .calc-row{padding:10px!important;}
 }
 @media(max-width:768px) and (orientation:landscape){
   .modal{max-height:calc(100dvh - 8px);}
@@ -505,8 +549,8 @@ tbody tr:hover td{background:#faf9f6;}
           </label>
         </div>
         <div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;color:var(--ink-3);">
-          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--green-light);border:1px solid var(--green-600);"></span> New website lead, not yet opened</div>
-          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--amber-light);border:1px solid var(--amber-600);"></span> Needs follow-up (7+ days, stays in date order)</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="flex-shrink:0;width:10px;height:10px;border-radius:3px;background:var(--green-light);border:1px solid var(--green-600);"></span> New website lead, not yet opened</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="flex-shrink:0;width:10px;height:10px;border-radius:3px;background:var(--amber-light);border:1px solid var(--amber-600);"></span> Needs follow-up (7+ days, stays in date order)</div>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Lead</th><th>Type</th><th>Address</th><th>Service</th><th>Status</th><th>Source</th><th>Added</th><th></th></tr></thead>
@@ -790,7 +834,7 @@ tbody tr:hover td{background:#faf9f6;}
             <div style="font-size:11px;font-weight:600;color:var(--teal-700);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">📐 Quote Calculator — Enter measurements to auto-calculate</div>
             <div id="calc-rows"></div>
             <button class="btn btn-sm" onclick="addCalcRow()" style="margin-top:8px;background:var(--teal-600);color:#fff;border-color:var(--teal-600);"><i class="ti ti-plus"></i> Add service</button>
-            <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:16px;align-items:center;">
+            <div class="quote-calc-foot" style="display:flex;justify-content:flex-end;margin-top:12px;gap:16px;align-items:center;">
               <div>
                 <label style="font-size:12px;color:var(--ink-3);margin-right:6px;">Discount %</label>
                 <input id="q-discount" type="number" value="0" min="0" max="100" style="width:60px;padding:4px 6px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;font-family:var(--font);" oninput="recalcQuote()">
@@ -814,7 +858,7 @@ tbody tr:hover td{background:#faf9f6;}
 
           <!-- Totals -->
           <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-            <div style="width:280px;">
+            <div class="quote-totals" style="width:280px;">
               <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>Subtotal</span><span id="q-subtotal-display">$0.00</span></div>
               <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--red-600);"><span>Discount</span><span id="q-discount-display">—</span></div>
               <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--teal-600);color:#fff;border-radius:var(--r-sm);margin-top:4px;font-size:14px;font-weight:600;"><span>TOTAL ESTIMATE</span><span id="q-total-display">$0.00</span></div>
@@ -828,14 +872,14 @@ tbody tr:hover td{background:#faf9f6;}
           </div>
 
           <!-- Signature -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="quote-sign-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
             <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">CUSTOMER SIGNATURE</div><input type="text" placeholder="X ___________________________" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
             <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">PRINTED NAME</div><input type="text" placeholder="Full name" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
             <div><div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">DATE ACCEPTED</div><input type="date" style="padding:5px 8px;border:1px solid var(--border-md);border-radius:4px;font-size:12px;width:100%;font-family:var(--font);"></div>
           </div>
 
           <!-- Footer -->
-          <div style="border-top:2px solid var(--teal-600);padding-top:10px;text-align:center;font-size:11px;color:var(--ink-3);">
+          <div class="quote-footer" style="border-top:2px solid var(--teal-600);padding-top:10px;text-align:center;font-size:11px;color:var(--ink-3);">
             Thank you for choosing Palmetto Pressure Pros! &nbsp;|&nbsp; (843) 608-0529 &nbsp;|&nbsp; info.palmettopressurepros@gmail.com &nbsp;|&nbsp; palmettopressureprosllc.com<br>
             <span style="font-size:10px;">This quote is valid for 30 days from the date issued. All pricing subject to on-site assessment.</span>
           </div>
@@ -3318,18 +3362,26 @@ function showEventDetail(id){
   openModal('event-view');
 }
 // ── Phone: shrink any page that is wider than the screen so it fits; pinch to zoom in ──
-const FIT_SKIP={map:1,calendar:1};
+const FIT_SKIP={map:1,calendar:1,quotes:1};
+function labelTableCells(page){
+  page.querySelectorAll('.table-wrap>table').forEach(t=>{
+    const heads=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());if(!heads.length)return;
+    t.querySelectorAll('tbody>tr').forEach(tr=>{let i=0;[...tr.children].forEach(td=>{const span=+td.getAttribute('colspan')||1;
+      const lbl=span>1?'':(heads[i]||'');if(td.getAttribute('data-label')!==lbl)td.setAttribute('data-label',lbl);i+=span;});});
+  });
+}
 function fitPageToScreen(){
   const page=document.querySelector('.page-content[style*="block"]');
   document.querySelectorAll('.page-content').forEach(p=>{if(p!==page&&p.style.zoom){p.style.zoom='';p.classList.remove('fit-zoomed');}});
   if(!page)return;
   const id=(page.id||'').replace('pg-','');
   const phone=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+  if(phone)labelTableCells(page);
   if(!phone||FIT_SKIP[id]){page.style.zoom='';page.classList.remove('fit-zoomed');return;}
   page.classList.add('fit-zoomed');page.style.zoom='';
   const box=page.parentElement;const cs=getComputedStyle(box);
   const avail=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
-  const need=Math.max(page.scrollWidth,...[...page.querySelectorAll('table,.pipeline')].map(t=>t.scrollWidth));
+  const need=Math.max(page.scrollWidth,...[...page.querySelectorAll('table:not(.table-wrap>table),.pipeline')].map(t=>t.scrollWidth));
   if(need>avail+2)page.style.zoom=Math.max(0.4,avail/need).toFixed(3);
 }
 let _fitTimer=null;
