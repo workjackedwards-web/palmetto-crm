@@ -1,9 +1,11 @@
-<!-- build 2026-10-07 republish -->
+<!-- build 2026-11/4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Palmetto Pressure Pros — CRM</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,8 +41,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14p
 .auth-toggle{font-size:13px;color:var(--ink-3);text-align:center;margin-top:18px;}
 .auth-toggle a{color:var(--teal-500);cursor:pointer;font-weight:500;}
 .auth-security{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
-#app{display:none;height:100vh;}
-.shell{display:flex;height:100vh;}
+#app{display:none;height:100vh;height:100dvh;}
+.shell{display:flex;height:100vh;height:100dvh;}
 .app-layout{flex-direction:row;}
 @media(max-width:768px){.shell{flex-direction:column;height:100dvh;}}
 .sidebar{width:216px;background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;}
@@ -208,7 +210,7 @@ tbody tr:hover td{background:#faf9f6;}
 .np-card{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border-md);border-radius:var(--r-sm);cursor:pointer;margin-bottom:8px;background:#fff;}
 .np-card:hover{border-color:var(--teal-500);background:var(--teal-50);}
 .np-card i{font-size:20px;color:var(--teal-600);margin-top:1px;}
-.cal-grid-month { display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-grid-month { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
 .cal-day-header { text-align:center; font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; padding:10px 0; border-bottom:1px solid var(--border); background:#faf9f6; }
 .cal-day { min-height:100px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:6px; vertical-align:top; }
 .cal-day:nth-child(7n) { border-right:none; }
@@ -320,10 +322,44 @@ tbody tr:hover td{background:#faf9f6;}
   td:nth-child(5),th:nth-child(5){display:none;}
   /* Leads filter row — compact + flexible instead of 7 stacked full rows */
   #search{min-width:0;width:100%;flex-basis:100%;}
-  #f-status,#f-source,#f-ptype,#f-account,#f-service,#f-sort{flex:1 1 150px;min-width:0;font-size:12px!important;padding:6px 8px!important;}
+  #f-status,#f-source,#f-ptype,#f-account,#f-service,#f-sort{flex:1 1 130px;min-width:0;font-size:12px!important;padding:6px 8px!important;}
+}
+
+/* ── iPhone / iPad (Safari) ─────────────────────────────────────────────── */
+@media(max-width:768px){
+  .content{padding-bottom:calc(16px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
+  .sidebar{padding-top:env(safe-area-inset-top);}
+  /* iOS zooms the page when a field under 16px is tapped; this stops that */
+  input,select,textarea{font-size:16px!important;}
+  /* Pop-up forms: fit above Safari's address bar, scroll inside, Save always visible */
+  .overlay{height:100vh;height:100dvh;}
+  .modal{max-height:calc(100vh - 24px);max-height:calc(100dvh - 16px - env(safe-area-inset-top));padding-bottom:0!important;}
+  .modal-foot{position:sticky;bottom:0;background:#fff;margin:16px -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);z-index:2;flex-wrap:wrap;}
+  .map-container{height:calc(100vh - 220px);height:calc(100dvh - 220px);}
+  /* Calendar: whole month fits the screen; tap a day to see its full list below */
+  #cal-card{overflow:visible!important;}
+  .cal-grid-month .cal-day{min-height:62px;padding:3px 2px;overflow:hidden;}
+  .cal-day-num{font-size:11px;margin-bottom:2px;}
+  .cal-day.today .cal-day-num{width:18px;height:18px;}
+  .cal-grid-month .cal-event{font-size:9px;padding:1px 3px;margin-bottom:2px;border-radius:2px;line-height:1.3;}
+  .cal-add{display:none;}
+  .cal-day.cal-selected{outline:2px solid var(--teal-600);outline-offset:-2px;}
+  .cal-day-header{font-size:10px;padding:6px 0;}
+  /* Week view scrolls sideways instead of squeezing */
+  #cal-card:has(.cal-week-grid){overflow-x:auto!important;-webkit-overflow-scrolling:touch;}
+  .cal-week-grid{min-width:720px;}
+  .cal-agenda-item .cal-event{font-size:13px;padding:8px 10px;margin-bottom:6px;white-space:normal;border-radius:6px;}
+  /* Tables: keep rows short, swipe sideways for the rest */
+  td,th{white-space:nowrap;}
+  .table-wrap td .td-muted{white-space:nowrap;}
+}
+@media(max-width:768px) and (orientation:landscape){
+  .modal{max-height:calc(100dvh - 8px);}
 }
 @media(max-width:480px){
   .metrics{grid-template-columns:1fr;}
+  .modal{padding-bottom:0!important;}
+  .modal-foot{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;}
   .nav-item span{font-size:8px;}
   .modal{padding:16px 12px;}
 }
@@ -558,9 +594,10 @@ tbody tr:hover td{background:#faf9f6;}
             <button class="btn btn-primary" onclick="openAddEvent()"><i class="ti ti-plus"></i> Add event</button>
           </div>
         </div>
-        <div class="card" style="padding:0;overflow:hidden;">
+        <div class="card" id="cal-card" style="padding:0;overflow:hidden;">
           <div id="cal-grid"></div>
         </div>
+        <div id="cal-agenda" class="card" style="display:none;margin-top:12px;padding:14px;"></div>
         <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#185FA5;"></div>Booked Job</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);"><div style="width:12px;height:12px;border-radius:3px;background:#3B6D11;"></div>Completed Job</div>
@@ -3219,8 +3256,20 @@ function showEventDetail(id){
   document.getElementById('evv-del').onclick=()=>{closeModal('event-view');document.getElementById('event-edit-id').value=id;deleteEvent();};
   openModal('event-view');
 }
+function calIsPhone(){return window.matchMedia&&window.matchMedia('(max-width:768px)').matches;}
+function calShowAgenda(dateStr){
+  window._calSelected=dateStr;
+  document.querySelectorAll('.cal-day.cal-selected').forEach(d=>d.classList.remove('cal-selected'));
+  const cell=document.querySelector(`.cal-day[data-date="${dateStr}"]`);if(cell)cell.classList.add('cal-selected');
+  const box=document.getElementById('cal-agenda');if(!box)return;
+  const items=cell?[...cell.querySelectorAll('.cal-event')].map(x=>x.outerHTML).join(''):'';
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;"><div style="font-weight:600;">${new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}</div><button class="btn btn-primary btn-sm" onclick="openAddEvent('${dateStr}')"><i class="ti ti-plus"></i> Add</button></div><div class="cal-agenda-item">${items||'<div style="color:var(--ink-3);font-size:13px;">Nothing scheduled.</div>'}</div>`;
+  box.style.display='block';
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 function calDayClick(e,dateStr,time){
   if(e&&e.target&&e.target.closest('.cal-event'))return;
+  if(calIsPhone()&&!time&&calView==='month'){calShowAgenda(dateStr);return;}
   openAddEvent(dateStr,time);
 }
 function evTypeChanged(){
@@ -3267,7 +3316,7 @@ function renderCalendar(){
       const evts=getCalEvents().filter(e=>calEventOn(e,dateStr)).sort((a,b)=>String(a.start_time||'99').localeCompare(String(b.start_time||'99')));
       const visits=getCalVisits().filter(x=>x.v.visit_date===dateStr);
       const sess=getCalD2DSessions().filter(x=>x.session_date===dateStr);
-      html+=`<div class="cal-day clickable${isToday?' today':''}" onclick="calDayClick(event,'${dateStr}')" title="Click to add something on this day">`;
+      html+=`<div class="cal-day clickable${isToday?' today':''}${dateStr===window._calSelected?' cal-selected':''}" data-date="${dateStr}" onclick="calDayClick(event,'${dateStr}')" title="Click to add something on this day">`;
       html+=`<div class="cal-day-num">${d}<span class="cal-add"><i class="ti ti-plus"></i></span></div>`;
       jobs.forEach(l=>{
         const cls=l.status.toLowerCase();
@@ -3289,7 +3338,10 @@ function renderCalendar(){
     for(let i=0;i<remaining;i++) html+=`<div class="cal-day other-month"></div>`;
     html+='</div>';
     document.getElementById('cal-grid').innerHTML=html;
+    const ag=document.getElementById('cal-agenda');
+    if(ag){if(calIsPhone()&&window._calSelected&&document.querySelector(`.cal-day[data-date="${window._calSelected}"]`))calShowAgenda(window._calSelected);else ag.style.display='none';}
   } else {
+    {const ag=document.getElementById('cal-agenda');if(ag)ag.style.display='none';}
     // Week view
     const startOfWeek=new Date(calDate);
     startOfWeek.setDate(calDate.getDate()-calDate.getDay());
