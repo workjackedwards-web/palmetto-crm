@@ -192,6 +192,10 @@ tbody tr:hover td{background:#faf9f6;}
 .d2d-actions select{padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-size:13px;font-family:inherit;background:var(--surface);}
 .d2d-entry{display:flex;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;}
 .d2d-entry:last-child{border-bottom:none;}
+.d2d-flash{animation:d2dflash 2s ease;}
+@keyframes d2dflash{0%,40%{background:#fff3c4;}100%{background:transparent;}}
+.d2d-link{color:var(--teal-600);cursor:pointer;font-weight:500;}
+.d2d-link:hover{text-decoration:underline;}
 .d2d-entry:hover{background:var(--teal-50);}
 .d2d-checks{display:flex;flex-wrap:wrap;gap:6px 16px;}
 .d2d-check{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ink);text-transform:none;letter-spacing:0;}
@@ -274,6 +278,8 @@ tbody tr:hover td{background:#faf9f6;}
   .nav-item{flex-direction:column;align-items:center;justify-content:center;padding:8px 10px;gap:2px;min-width:60px;border-radius:8px;white-space:nowrap;}
   .nav-item span{display:block;font-size:9px;margin-top:2px;}
   .nav-item i{font-size:20px;width:auto;}
+  .nav-item{position:relative;}
+  .nav-item .nav-badge{position:absolute;top:3px;left:50%;margin-left:4px;font-size:9px;line-height:14px;min-width:14px;padding:0 4px;text-align:center;border-radius:7px;box-shadow:0 0 0 2px var(--sidebar-bg);}
   .main{flex:1;overflow:hidden;}
   .topbar{padding:10px 12px;}
   .topbar-title{font-size:16px;}
@@ -2571,6 +2577,7 @@ async function loadD2D(){
   }catch(err){console.error('loadD2D failed:',err);}
   try{const{error}=await sb.from('leads').select('neighborhood,followup_date,lead_reasons,d2d_entry_id').limit(1);leadsHasD2DCols=!error;}catch(err){leadsHasD2DCols=false;}
   try{const{error}=await sb.from('leads').select('quote_method,quote_date,quote_time').limit(1);leadsHasQuoteCols=!error;}catch(err){leadsHasQuoteCols=false;}
+  try{await d2dAutoLink();}catch(err){}
   try{const{error}=await sb.from('events').select('end_date,repeat,repeat_days,repeat_until').limit(1);eventsHasRepeatCols=!error;}catch(err){eventsHasRepeatCols=false;}
 }
 
@@ -2696,7 +2703,7 @@ function renderD2DSession(){
     if(e.status==='Lead'){const r=d2dList(e.lead_reasons);if(r.length)det.push(r.join(', '));if(e.followup_date)det.push('Follow up '+d2dFmtDate(e.followup_date));}
     if(e.service)det.push(e.service);
     if(e.status==='Booked'&&e.sched_date)det.push('Job '+d2dFmtDate(e.sched_date)+(e.sched_time?' at '+e.sched_time:''));
-    return`<div class="d2d-entry" onclick="openD2DEntry('${e.id}')">
+    return`<div class="d2d-entry" data-entry-id="${e.id}" onclick="openD2DEntry('${e.id}')">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span style="font-weight:600;font-size:14px;">${esc(e.address)}</span>${d2dBadge(e.status)}${live!==e.status?`<span style="font-size:11px;color:var(--ink-3);">now</span>${d2dBadge(live)}`:''}</div>
         <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${[name,e.phone,e.neighborhood,e.knocked_by?'Knocked by '+d2dList(e.knocked_by).join(' & '):''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div>
@@ -2833,9 +2840,49 @@ function d2dToggleEntryFields(){
 }
 
 // Find a lead already at this address (or with this phone) so a revisit doesn't duplicate it
-function d2dFindExistingLead(addr,phone,excludeId){
-  const na=d2dNormAddr(addr);const ph=lastTen(phone);
-  return allLeads.find(l=>l.id!==excludeId&&((na&&d2dNormAddr(l.address)===na)||(ph&&lastTen(l.phone)===ph)))||null;
+// "12 Oak Street, Charleston, SC 29407" and "12 oak st charleston sc" are the same house
+const D2D_STREET_TYPES=new Set(['st','rd','dr','ave','ln','ct','blvd','cir','pl','pkwy','hwy','ter','trl','way','row','loop','run','pass','xing','aly','sq','pt']);
+const D2D_SUFFIX={street:'st',road:'rd',drive:'dr',avenue:'ave',av:'ave',lane:'ln',court:'ct',boulevard:'blvd',circle:'cir',place:'pl',parkway:'pkwy',highway:'hwy',terrace:'ter',trail:'trl',north:'n',south:'s',east:'e',west:'w',point:'pt',island:'is',square:'sq'};
+function d2dAddrKey(a){
+  const s=String(a||'').toLowerCase().trim();if(!s)return null;
+  const rest=s.includes(',')?s.slice(s.indexOf(',')):'';
+  const zip=(rest.match(/\b(\d{5})(?:-\d{4})?\b(?!.*\b\d{5}\b)/)||[])[1]||'';
+  const words=s.split(',')[0].replace(/\./g,'').split(/\s+/).filter(Boolean).map(w=>D2D_SUFFIX[w]||w);
+  // stop at the street type so "12 oak st charleston sc" and "12 Oak St, Charleston" match
+  const cut=words.findIndex((w,i)=>i>1&&D2D_STREET_TYPES.has(w));
+  const street=(cut>0?words.slice(0,cut+1):words).join('').replace(/[^a-z0-9]/g,'');
+  if(!/^\d+[a-z]*[a-z]/.test(street))return null;
+  return{k:street,zip};
+}
+function d2dSameAddr(a,b){const x=d2dAddrKey(a),y=d2dAddrKey(b);if(!x||!y||x.k!==y.k)return false;return !(x.zip&&y.zip&&x.zip!==y.zip);}
+function d2dLeadMatches(l,addr,phone){
+  if(addr&&l.address)return d2dSameAddr(addr,l.address);
+  const ph=lastTen(phone);return !!(ph&&lastTen(l.phone)===ph);
+}
+const D2D_LEAD_PREF={Booked:0,Quoted:1,Lead:2,Lost:3,Completed:4};
+// openOnly: skip finished jobs, so a new quote at a past customer's house becomes a new job
+function d2dFindExistingLead(addr,phone,excludeId,openOnly){
+  const c=allLeads.filter(l=>l.id!==excludeId&&d2dLeadMatches(l,addr,phone)&&(!openOnly||l.status!=='Completed'));
+  c.sort((a,b)=>(D2D_LEAD_PREF[a.status]??5)-(D2D_LEAD_PREF[b.status]??5)||String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  return c[0]||null;
+}
+// Link every door to the lead/customer at the same address — runs after loading, saving and new website leads
+let _d2dLinking=false;
+async function d2dAutoLink(){
+  if(_d2dLinking||d2dMissing||!allD2DEntries.length||!allLeads.length)return 0;
+  _d2dLinking=true;let n=0;
+  try{
+    for(const e of allD2DEntries){
+      if(e.lead_id&&allLeads.some(l=>l.id===e.lead_id))continue;
+      const l=d2dFindExistingLead(e.address,e.phone,null,false);if(!l)continue;
+      const{error}=await sb.from('d2d_entries').update({lead_id:l.id}).eq('id',e.id);if(error){console.warn('d2d link failed',error);continue;}
+      e.lead_id=l.id;n++;
+      if(leadsHasD2DCols&&!l.d2d_entry_id){l.d2d_entry_id=e.id;sb.from('leads').update({d2d_entry_id:e.id}).eq('id',l.id).then(()=>{},()=>{});}
+    }
+  }catch(err){console.error('d2dAutoLink failed:',err);}
+  _d2dLinking=false;
+  if(n){try{if(document.getElementById('pg-d2d')?.style.display==='block')renderD2D();}catch(e){}}
+  return n;
 }
 
 async function saveD2DEntry(){
@@ -2888,8 +2935,12 @@ async function saveD2DEntry(){
     if(entry.lat==null){const c=await geocodeAddress(address);if(c){entry.lat=c.lat;entry.lng=c.lng;}}
     // Create, link or update the Leads profile
     let lead=entry.lead_id?allLeads.find(l=>l.id===entry.lead_id):null;
-    if(!lead&&D2D_LEAD_STATUSES.includes(status))lead=d2dFindExistingLead(address,entry.phone,null);
-    if(D2D_LEAD_STATUSES.includes(status)||(lead&&status==='Not interested')){
+    const wantsLead=D2D_LEAD_STATUSES.includes(status);
+    if(wantsLead&&lead&&lead.status==='Completed')lead=null; // finished job stays untouched; this becomes a new job for the same customer
+    if(!lead&&wantsLead)lead=d2dFindExistingLead(address,entry.phone,null,true);
+    if(!lead&&!wantsLead){const m=d2dFindExistingLead(address,entry.phone,null,false);if(m)entry.lead_id=m.id;} // just link, no status change
+    const closesLead=!!lead&&status==='Not interested'&&(lead.status==='Lead'||lead.status==='Quoted');
+    if(wantsLead||closesLead){
       const session=allD2DSessions.find(s=>s.id===sessionId);
       const d2dNote=`Door-to-door: ${session?session.name+' ('+session.session_date+')':''}${entry.knocked_by?' · knocked by '+entry.knocked_by:''}`;
       let row;
@@ -2965,13 +3016,23 @@ function pickD2DImport(id){
 }
 
 // ── Territory Map: doors that didn't become leads ──
+function openD2DFromProfile(sessionId,entryId){
+  ['view','view-customer'].forEach(m=>{const el=document.getElementById('modal-'+m);if(el&&el.classList.contains('open'))closeModal(m);});
+  const item=document.querySelector('.nav-item[data-page="d2d"]');if(item)nav(item);
+  d2dActiveSessionId=sessionId;document.getElementById('d2d-entry-search').value='';document.getElementById('d2d-entry-filter').value='';renderD2D();
+  setTimeout(()=>{const row=entryId&&document.querySelector(`.d2d-entry[data-entry-id="${entryId}"]`);if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('d2d-flash');setTimeout(()=>row.classList.remove('d2d-flash'),2200);}},120);
+}
+function d2dDoorsForLeads(ids){return allD2DEntries.filter(e=>ids.includes(e.lead_id)&&allD2DSessions.some(s=>s.id===e.session_id)).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
+function d2dDoorLinks(doors){
+  return doors.map(e=>{const s=allD2DSessions.find(x=>x.id===e.session_id);return`<div style="padding:3px 0;"><a class="d2d-link" onclick="openD2DFromProfile('${e.session_id}','${e.id}')">🚪 Door-to-door · ${esc(s?s.name:'Session')}</a> <span style="color:var(--ink-3);font-size:12px;">${s?d2dFmtDate(s.session_date):''}</span> · ${d2dBadge(e.status)}${e.knocked_by?` <span style="font-size:12px;color:var(--ink-3);">by ${esc(d2dList(e.knocked_by).join(' & '))}</span>`:''}</div>`;}).join('');
+}
 function d2dLeadInfoHtml(l){
   const out=[];
   if(l.neighborhood)out.push(`<div class="record-field"><div class="lbl">Neighborhood</div><div class="val">${esc(l.neighborhood)}</div></div>`);
   if(l.followup_date)out.push(`<div class="record-field"><div class="lbl">Follow up on</div><div class="val">${d2dFmtDate(l.followup_date)}</div></div>`);
   if(l.lead_reasons)out.push(`<div class="record-field"><div class="lbl">Lead reason</div><div class="val">${esc(l.lead_reasons)}</div></div>`);
-  const doors=allD2DEntries.filter(e=>e.lead_id===l.id).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-  if(doors.length)out.push(`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Door-to-door history</div><div class="val">${doors.map(e=>{const s=allD2DSessions.find(x=>x.id===e.session_id);return`<div style="padding:3px 0;"><a style="color:var(--teal-600);cursor:pointer;font-weight:500;" onclick="closeModal('view');nav(document.querySelector('.nav-item[data-page=&quot;d2d&quot;]'));d2dActiveSessionId='${e.session_id}';renderD2D();">${esc(s?s.name:'Session')}</a> <span style="color:var(--ink-3);font-size:12px;">${s?d2dFmtDate(s.session_date):''}</span> · ${d2dBadge(e.status)}${e.knocked_by?` <span style="font-size:12px;color:var(--ink-3);">by ${esc(d2dList(e.knocked_by).join(' & '))}</span>`:''}</div>`;}).join('')}</div></div>`);
+  const doors=d2dDoorsForLeads([l.id]);
+  if(doors.length)out.push(`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Door-to-door history</div><div class="val">${d2dDoorLinks(doors)}</div></div>`);
   return out.join('');
 }
 function d2dMapEntries(){
@@ -3499,7 +3560,7 @@ async function saveLead(){
     lead.followup_date=document.getElementById('f-followup').value||null;
     lead.lead_reasons=[document.getElementById('f-lr-future').checked?'Future date':'',document.getElementById('f-lr-reach').checked?'Will reach back out to us':''].filter(Boolean).join(', ')||null;
   }
-  try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);await consumePendingCommLink('lead',saved.id);closeModal('lead');refreshAll();}
+  try{const saved=await upsertLead(lead);const idx=allLeads.findIndex(l=>l.id===id);if(idx>-1)allLeads[idx]=saved;else allLeads.unshift(saved);d2dAutoLink();await consumePendingCommLink('lead',saved.id);closeModal('lead');refreshAll();}
   catch(e){alert('Save failed: '+e.message);}
   btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save lead';
 }
@@ -3544,7 +3605,7 @@ function viewLead(id){
   document.getElementById('view-tab-info').innerHTML=`
     <div class="record-section"><div class="record-section-title">Contact</div><div class="record-grid">
       <div class="record-field"><div class="lbl">Status</div>${badge(l.status)}</div>
-      <div class="record-field"><div class="lbl">Source</div><div class="val">${l.source||'—'}</div></div>
+      <div class="record-field"><div class="lbl">Source</div><div class="val">${(()=>{const d=d2dDoorsForLeads([l.id])[0];return d?`${esc(l.source||'—')}<div><a class="d2d-link" onclick="openD2DFromProfile('${d.session_id}','${d.id}')">🚪 Linked to door-to-door</a></div>`:esc(l.source||'—');})()}</div></div>
       <div class="record-field"><div class="lbl">Property type</div><div class="val"><span style="font-size:12px;padding:2px 8px;border-radius:12px;font-weight:500;background:${l.property_type==='Commercial'?'#fef3c7':l.property_type==='Residential'?'var(--blue-light)':'var(--border)'};color:${l.property_type==='Commercial'?'#92400e':l.property_type==='Residential'?'var(--blue-600)':'var(--ink-3)'};">${l.property_type||'Residential'}</span></div></div>
       ${l.business_name?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Business name</div><div class="val" style="font-weight:500;">${l.business_name}</div></div>`:''}
       ${l.contacts&&l.contacts!=='[]'?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Additional contacts</div><div class="val">${(()=>{try{return JSON.parse(l.contacts).map(c=>`<div style="display:flex;gap:16px;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-weight:500;">${c.name}</span>${c.title?`<span style="color:var(--ink-3);">${c.title}</span>`:''}${c.phone?`<span>${c.phone}</span>`:''}</div>`).join('');}catch(e){return '';}})()}</div></div>`:''}
@@ -3928,7 +3989,7 @@ async function refreshCommsLive(){
     const after=allComms.map(c=>c.id+'|'+(c.received_at||'')).join(',');
     if(after!==before)refreshCommViews();
     const ln=allLeads.length,lt=allLeads.reduce((m,l)=>l.created_at>m?l.created_at:m,'');
-    if(!document.querySelector('.overlay.open')){await loadLeads();const lt2=allLeads.reduce((m,l)=>l.created_at>m?l.created_at:m,'');if(allLeads.length!==ln||lt2!==lt){try{renderLeads();renderDashboard();}catch(e){}}}
+    if(!document.querySelector('.overlay.open')){await loadLeads();const lt2=allLeads.reduce((m,l)=>l.created_at>m?l.created_at:m,'');if(allLeads.length!==ln||lt2!==lt){try{await d2dAutoLink();renderLeads();renderDashboard();}catch(e){}}}
     updateUnmatchedBadge();
   }catch(e){console.error('refreshCommsLive failed:',e);}finally{_commRefreshBusy=false;}
 }
@@ -6368,6 +6429,7 @@ function viewCustomer(key){
         <div class="record-field"><div class="lbl">Phone</div><div class="val">${c.phone||'—'}</div></div>
         <div class="record-field"><div class="lbl">Email</div><div class="val">${c.email||'—'}</div></div>
         <div class="record-field"><div class="lbl">Address</div><div class="val">${c.address||'—'}</div></div>
+        ${(()=>{const d=d2dDoorsForLeads(c.jobs.map(j=>j.id));return d.length?`<div class="record-field" style="grid-column:1/-1;"><div class="lbl">Door-to-door history</div><div class="val">${d2dDoorLinks(d)}</div></div>`:'';})()}
       </div>
     </div>
     <div class="record-section"><div class="record-section-title">Account summary</div>
