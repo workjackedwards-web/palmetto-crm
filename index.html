@@ -1,4 +1,4 @@
-<!-- build 2026-11/4 -->
+<!-- build 2026-10-07 republish -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -286,7 +286,7 @@ tbody tr:hover td{background:#faf9f6;}
   .metric{padding:12px;}
   .metric-value{font-size:22px;}
   /* Pipeline */
-  .pipeline{grid-template-columns:1fr;}
+  .pipeline{grid-template-columns:repeat(5,minmax(170px,1fr));min-width:900px;}
   /* Grid */
   .grid2{grid-template-columns:1fr;}
   .record-grid{grid-template-columns:1fr;}
@@ -303,7 +303,8 @@ tbody tr:hover td{background:#faf9f6;}
   /* Modals */
   .overlay{padding:0;align-items:flex-end;z-index:9999;}
   .modal{width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:20px 16px;margin:0;}
-  .modal-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .modal-tabs{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;touch-action:pan-x;overscroll-behavior:contain;scrollbar-width:none;align-items:stretch;}
+  .modal-tabs::-webkit-scrollbar{display:none;}
   .modal-tab{white-space:nowrap;flex-shrink:0;}
   /* Map */
   .map-container{height:calc(100vh - 200px);}
@@ -318,8 +319,7 @@ tbody tr:hover td{background:#faf9f6;}
   .btn{padding:7px 10px;font-size:12px;}
   .btn-primary{padding:8px 12px;}
   /* Hide less critical columns on mobile */
-  td:nth-child(4),th:nth-child(4){display:none;}
-  td:nth-child(5),th:nth-child(5){display:none;}
+  .fit-zoomed .table-wrap{overflow:visible;}
   /* Leads filter row — compact + flexible instead of 7 stacked full rows */
   #search{min-width:0;width:100%;flex-basis:100%;}
   #f-status,#f-source,#f-ptype,#f-account,#f-service,#f-sort{flex:1 1 130px;min-width:0;font-size:12px!important;padding:6px 8px!important;}
@@ -3256,6 +3256,26 @@ function showEventDetail(id){
   document.getElementById('evv-del').onclick=()=>{closeModal('event-view');document.getElementById('event-edit-id').value=id;deleteEvent();};
   openModal('event-view');
 }
+// ── Phone: shrink any page that is wider than the screen so it fits; pinch to zoom in ──
+const FIT_SKIP={map:1,calendar:1};
+function fitPageToScreen(){
+  const page=document.querySelector('.page-content[style*="block"]');
+  document.querySelectorAll('.page-content').forEach(p=>{if(p!==page&&p.style.zoom){p.style.zoom='';p.classList.remove('fit-zoomed');}});
+  if(!page)return;
+  const id=(page.id||'').replace('pg-','');
+  const phone=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+  if(!phone||FIT_SKIP[id]){page.style.zoom='';page.classList.remove('fit-zoomed');return;}
+  page.classList.add('fit-zoomed');page.style.zoom='';
+  const box=page.parentElement;const cs=getComputedStyle(box);
+  const avail=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const need=Math.max(page.scrollWidth,...[...page.querySelectorAll('table,.pipeline')].map(t=>t.scrollWidth));
+  if(need>avail+2)page.style.zoom=Math.max(0.4,avail/need).toFixed(3);
+}
+let _fitTimer=null;
+function queueFit(){clearTimeout(_fitTimer);_fitTimer=setTimeout(fitPageToScreen,60);}
+window.addEventListener('resize',queueFit);
+window.addEventListener('orientationchange',()=>setTimeout(fitPageToScreen,300));
+document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('.content');if(c&&window.MutationObserver)new MutationObserver(queueFit).observe(c,{childList:true,subtree:true});});
 function calIsPhone(){return window.matchMedia&&window.matchMedia('(max-width:768px)').matches;}
 function calShowAgenda(dateStr){
   window._calSelected=dateStr;
@@ -6128,6 +6148,7 @@ function nav(el){
   el.classList.add('active');
   const page=el.dataset.page;
   document.getElementById('pg-'+page).style.display='block';
+  try{queueFit();}catch(e){}
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   if(page==='leads')renderLeads();
   if(page==='customers')renderCustomers();
