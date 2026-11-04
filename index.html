@@ -1,4 +1,4 @@
-<!-- build 2026-10-29 republish -->
+<!-- build 2026-10-07 republish -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -350,13 +350,13 @@ tbody tr:hover td{background:#faf9f6;}
   </div>
   <div class="auth-card" id="recovery-card" style="display:none;">
     <div class="auth-logo" id="recovery-logo"></div>
-    <h2>Set a new password</h2>
-    <p>Choose a new password for your account. You'll be signed in right after.</p>
+    <h2 id="rec-heading">Set a new password</h2>
+    <p id="rec-sub">Choose a new password for your account. You'll be signed in right after.</p>
     <div class="auth-field"><label>New password</label><input type="password" id="rec-pass1" placeholder="At least 8 characters" autocomplete="new-password"></div>
     <div class="auth-field"><label>Confirm new password</label><input type="password" id="rec-pass2" placeholder="Type it again" autocomplete="new-password" onkeydown="if(event.key==='Enter')recoverySubmit()"></div>
     <button class="auth-btn" id="rec-btn" onclick="recoverySubmit()">Save new password</button>
     <div class="auth-error" id="rec-error"></div>
-    <div class="auth-toggle"><a onclick="recoveryCancel()">Cancel and go back to sign in</a></div>
+    <div class="auth-toggle"><a onclick="recoveryCancel()" id="rec-cancel">Cancel and go back to sign in</a></div>
   </div>
 </div>
 
@@ -395,7 +395,7 @@ tbody tr:hover td{background:#faf9f6;}
       <div class="nav-item" data-page="settings" onclick="nav(this)"><i class="ti ti-settings"></i><span>Settings</span></div>
       <div class="nav-item" data-page="embed" onclick="nav(this)"><i class="ti ti-code"></i><span>Website Form</span></div>
     </nav>
-    <div class="sidebar-foot"><div class="logout-btn" onclick="signOut()"><i class="ti ti-logout"></i><span>Sign out</span></div></div>
+    <div class="sidebar-foot"><div class="logout-btn" onclick="openChangePassword()"><i class="ti ti-key"></i><span>Change password</span></div><div class="logout-btn" onclick="signOut()"><i class="ti ti-logout"></i><span>Sign out</span></div></div>
   </aside>
 
   <div class="main">
@@ -2088,6 +2088,9 @@ tbody tr:hover td{background:#faf9f6;}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 let _recoveryMode=/[#&?]type=recovery\b/.test(window.location.hash+window.location.search);
+let _pwChangeMode=false;
+// A reset/invite link that expired or was already used comes back as #error=...&error_code=...
+const _authLinkError=(()=>{const q=new URLSearchParams((window.location.hash||'').replace(/^#/,'')+'&'+(window.location.search||'').replace(/^\?/,''));return q.get('error_code')||q.get('error')?(q.get('error_code')||q.get('error')):null;})();
 const SUPABASE_URL  = 'https://ddfseexcltwrryoouhjo.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkZnNlZXhjbHR3cnJ5b291aGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU1MzUsImV4cCI6MjA5NjA1MTUzNX0.XV7mtSvnalEG8S8T2ABHvlooi1PLGhmlNV4dfg681-0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -2133,6 +2136,10 @@ async function signOut(){
 async function handleAuthSession(event,session){
   if(event==='PASSWORD_RECOVERY')_recoveryMode=true;
   if(session&&_recoveryMode){showRecoveryScreen();return;}
+  if(_authLinkError&&!window._authLinkErrShown){window._authLinkErrShown=true;try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+    const msg='That password link expired or was already used.';
+    if(session)setTimeout(()=>{if(confirm(msg+' Want to set a new password now? You are already signed in, so you can do it right here.'))openChangePassword();},800);
+    else setTimeout(()=>showAuthErr(msg+' Type your email above and click "Forgot password?" for a fresh one.'),300);}
   if(session){
     currentUser=session.user;
     const meta=session.user.user_metadata||{};
@@ -2164,6 +2171,14 @@ async function handleAuthSession(event,session){
 sb.auth.onAuthStateChange(handleAuthSession);
 
 // ── Password reset ─────────────────────────────────────────────────────────
+function openChangePassword(){
+  _pwChangeMode=true;
+  document.getElementById('rec-heading').textContent='Change your password';
+  document.getElementById('rec-sub').textContent='Pick a new password. You stay signed in.';
+  document.getElementById('rec-cancel').textContent='Cancel and go back to the CRM';
+  showRecoveryScreen();
+  setTimeout(()=>document.getElementById('rec-pass1').focus(),50);
+}
 function showRecoveryScreen(){
   document.getElementById('app').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
@@ -2182,6 +2197,10 @@ async function recoverySubmit(){
   try{
     const{error}=await sb.auth.updateUser({password:p1});
     if(error)throw error;
+    if(_pwChangeMode){_pwChangeMode=false;document.getElementById('rec-pass1').value='';document.getElementById('rec-pass2').value='';
+      document.getElementById('recovery-card').style.display='none';document.getElementById('login-card').style.display='block';
+      document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';
+      btn.disabled=false;btn.textContent='Save new password';setTimeout(()=>alert('Password changed.'),50);return;}
     _recoveryMode=false;
     try{history.replaceState(null,'',window.location.pathname);}catch(e){}
     document.getElementById('recovery-card').style.display='none';
@@ -2193,6 +2212,9 @@ async function recoverySubmit(){
   btn.disabled=false;btn.textContent='Save new password';
 }
 async function recoveryCancel(){
+  if(_pwChangeMode){_pwChangeMode=false;document.getElementById('rec-pass1').value='';document.getElementById('rec-pass2').value='';document.getElementById('rec-error').style.display='none';
+    document.getElementById('recovery-card').style.display='none';document.getElementById('login-card').style.display='block';
+    document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';return;}
   _recoveryMode=false;
   try{history.replaceState(null,'',window.location.pathname);}catch(e){}
   await signOut();
